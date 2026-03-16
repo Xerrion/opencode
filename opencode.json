@@ -1,7 +1,27 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "lmstudio": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "LM Studio",
+      "options": {
+        "baseURL": "http://192.168.1.61:1234/v1"
+      },
+      "models": {
+        "qwen/qwen3.5-9b": {
+          "name": "Qwen3.5 9B"
+        },
+        "qwen/qwen3.5-35b-a3b": {
+          "name": "Qwen3.5 35B"
+        },
+        "zai-org/glm-4.7-flash": {
+          "name": "GLM-4.7 Flash 130B"
+        }
+      }
+    }
+  },
   "mcp": {
-    "sonarqube": {
+    /* "sonarqube": {
       "type": "local",
       "command": [
         "docker",
@@ -24,8 +44,8 @@
         "SONARQUBE_TOKEN": "{env:SONARQUBE_TOKEN}",
         "SONARQUBE_IDE_PORT": "{env:SONARQUBE_IDE_PORT}"
       }
-    },
-    "servicenow": {
+    }, */
+    /* "servicenow": {
       "type": "local",
       "command": [
         "uv",
@@ -42,7 +62,7 @@
         "SERVICENOW_ENV": "{env:≤}"
       },
       "enabled": true
-    },
+    },*/
     "github": {
       "type": "remote",
       "headers": {
@@ -64,26 +84,20 @@
       "type": "remote",
       "url": "https://mcp.grep.app",
       "enabled": true
-    },
-    "atlassian": {
+    }
+    /* "atlassian": {
       "type": "remote",
       "url": "https://mcp.atlassian.com/v1/mcp",
       "oauth": {}
-    }
+    } */
   },
   "lsp": {
     "pyright": {
       "disabled": true
     },
     "basedpyright": {
-      "command": [
-        "basedpyright-langserver",
-        "--stdio"
-      ],
-      "extensions": [
-        ".py",
-        ".pyi"
-      ]
+      "command": ["basedpyright-langserver", "--stdio"],
+      "extensions": [".py", ".pyi"]
     }
   },
   "plugin": [
@@ -93,8 +107,8 @@
   ],
   "permission": {
     "task": "deny",
-    "context7_*": "deny",
-    "exa_*": "deny",
+    "context7_*": "allow",
+    "exa_*": "allow",
     "gh_grep_*": "deny",
     "kagi_*": "deny",
     "webfetch": "deny",
@@ -259,7 +273,5 @@
       }
     }
   },
-  "instructions": [
-    "./philosophy/AGENTS.md"
-  ]
+  "instructions": ["./philosophy/AGENTS.md"]
 }
