@@ -1,27 +1,7 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "provider": {
-    "lmstudio": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "LM Studio",
-      "options": {
-        "baseURL": "http://192.168.1.61:1234/v1"
-      },
-      "models": {
-        "qwen/qwen3.5-9b": {
-          "name": "Qwen3.5 9B"
-        },
-        "qwen/qwen3.5-35b-a3b": {
-          "name": "Qwen3.5 35B"
-        },
-        "zai-org/glm-4.7-flash": {
-          "name": "GLM-4.7 Flash 130B"
-        }
-      }
-    }
-  },
   "mcp": {
-    /* "sonarqube": {
+    "sonarqube": {
       "type": "local",
       "command": [
         "docker",
@@ -33,94 +13,101 @@
         "-e",
         "SONARQUBE_ORG",
         "-e",
-        "SONARQUBE_CLOUD_URL",
+        "S ONARQUBE_CLOUD_URL",
         "-e",
         "SONARQUBE_IDE_PORT",
-        "mcp/sonarqube"
+        "mcp/sonarqube",
       ],
       "environment": {
         "SONARQUBE_ORG": "{env:SONARQUBE_ORG}",
         "SONARQUBE_CLOUD_URL": "{env:SONARQUBE_CLOUD_URL}",
         "SONARQUBE_TOKEN": "{env:SONARQUBE_TOKEN}",
-        "SONARQUBE_IDE_PORT": "{env:SONARQUBE_IDE_PORT}"
-      }
-    }, */
-    /* "servicenow": {
+        "SONARQUBE_IDE_PORT": "{env:SONARQUBE_IDE_PORT}",
+      },
+    },
+    "servicenow": {
       "type": "local",
       "command": [
         "uv",
         "run",
         "--directory",
         "/Users/lasn/Projects/servicenow-devtools-mcp",
-        "servicenow-devtools-mcp"
+        "servicenow-devtools-mcp",
       ],
       "environment": {
         "SERVICENOW_INSTANCE_URL": "{env:SERVICENOW_MCP_DEV_INSTANCE_URL}",
         "SERVICENOW_USERNAME": "{env:SERVICENOW_MCP_USERNAME}",
         "SERVICENOW_PASSWORD": "{env:SERVICENOW_MCP_DEV_PASSWORD}",
         "MCP_TOOL_PACKAGE": "{env:SERVICENOW_MCP_TOOL_PACKAGE}",
-        "SERVICENOW_ENV": "{env:≤}"
+        "SERVICENOW_ENV": "{env:SERVICENOW_MCP_DEV_ENV}",
+        "SENTRY_DSN": "{env:SENTRY_DSN}",
+        "SENTRY_ENVIRONMENT": "{env:SENTRY_ENVIRONMENT}",
+        "OTEL_ENABLED": "{env:OTEL_ENABLED}",
+        "OTEL_EXPORTER_OTLP_ENDPOINT": "{env:OTEL_EXPORTER_OTLP_ENDPOINT}",
+        "OTEL_EXPORTER_CONSOLE": "{env:OTEL_EXPORTER_CONSOLE}",
       },
-      "enabled": true
-    },*/
+      "enabled": true,
+    },
     "github": {
       "type": "remote",
       "headers": {
-        "Authorization": "Bearer {env:GITHUB_MCP_TOKEN}"
+        "Authorization": "Bearer {env:GITHUB_MCP_TOKEN}",
       },
-      "url": "https://api.githubcopilot.com/mcp/"
+      "url": "https://api.githubcopilot.com/mcp/",
     },
     "context7": {
       "type": "remote",
       "url": "https://mcp.context7.com/mcp",
-      "enabled": true
+      "enabled": true,
     },
     "exa": {
       "type": "remote",
       "url": "https://mcp.exa.ai/mcp",
-      "enabled": true
+      "enabled": true,
     },
-    "gh_grep": {
+    "grep": {
       "type": "remote",
       "url": "https://mcp.grep.app",
-      "enabled": true
-    }
+      "enabled": true,
+    },
     /* "atlassian": {
       "type": "remote",
       "url": "https://mcp.atlassian.com/v1/mcp",
-      "oauth": {}
-    } */
+      "oauth": {},
+    }, */
   },
   "lsp": {
     "pyright": {
-      "disabled": true
+      "disabled": true,
     },
     "basedpyright": {
       "command": ["basedpyright-langserver", "--stdio"],
-      "extensions": [".py", ".pyi"]
-    }
+      "extensions": [".py", ".pyi"],
+    },
   },
   "plugin": [
-    "@plannotator/opencode@latest",
     "@tarquinen/opencode-dcp@latest",
-    "@franlol/opencode-md-table-formatter@latest"
+    "@franlol/opencode-md-table-formatter@latest",
+    "@plannotator/opencode@latest",
   ],
   "permission": {
     "task": "deny",
-    "context7_*": "allow",
+    "context7_*": "deny",
     "exa_*": "allow",
-    "gh_grep_*": "deny",
+    "grep*": "deny",
     "kagi_*": "deny",
     "webfetch": "deny",
-    "worktree_*": "deny"
+    "worktree_*": "deny",
+    "external_directory": {
+      "/Users/lasn/.plannotator/**": "allow",
+    },
   },
   "agent": {
     "researcher": {
       "permission": {
         "context7_*": "allow",
         "exa_*": "allow",
-        "gh_grep_*": "allow",
-        "kagi_*": "deny",
+        "grep": "allow",
         "webfetch": "allow",
         "write": "deny",
         "edit": "deny",
@@ -164,28 +151,29 @@
           "uniq *": "allow",
           "cut *": "allow",
           "awk *": "allow",
-          "tr *": "allow"
-        }
-      }
+          "tr *": "allow",
+        },
+      },
     },
     "scribe": {
+      "model": "github-copilot/claude-sonnet-4.6",
       "permission": {
         "bash": {
-          "*": "deny"
+          "*": "deny",
         },
         "edit": "allow",
         "glob": "allow",
         "read": "allow",
         "write": "allow",
         "plan_read": "deny",
-        "todoread": "deny"
-      }
+        "todoread": "deny",
+      },
     },
     "coder": {
       "permission": {
-        "context7_*": "deny",
-        "exa_*": "deny",
-        "gh_grep_*": "deny",
+        "context7_*": "allow",
+        "exa_*": "allow",
+        "grep*": "deny",
         "read": "allow",
         "write": "allow",
         "edit": "allow",
@@ -193,8 +181,8 @@
         "grep": "allow",
         "bash": "allow",
         "plan_read": "deny",
-        "todoread": "deny"
-      }
+        "todoread": "deny",
+      },
     },
     "reviewer": {
       "temperature": 0.1,
@@ -207,23 +195,23 @@
           "git log*": "allow",
           "git show*": "allow",
           "git blame*": "allow",
-          "rg *": "allow"
+          "rg *": "allow",
         },
         "plan_read": "allow",
         "delegation_read": "allow",
-        "delegation_list": "allow"
-      }
+        "delegation_list": "allow",
+      },
     },
     "plan": {
       "permission": {
         "edit": "deny",
         "write": "deny",
         "bash": {
-          "*": "deny"
+          "*": "deny",
         },
         "task": "allow",
-        "worktree_*": "allow"
-      }
+        "worktree_*": "allow",
+      },
     },
     "build": {
       "prompt": "You are a **build orchestrator**. You coordinate implementation through delegation - you do NOT implement directly.\\\\\\\\n\\\\\\\\n## Your Role\\\\\\\\n- Delegate implementation to `coder`\\\\\\\\n- Delegate documentation to `scribe`\\\\\\\\n- Delegate codebase analysis to `explore`\\\\\\\\n- Delegate external research to `researcher`\\\\\\\\n- Interpret results and decide next steps\\\\\\\\n\\\\\\\\n## Critical Constraint\\\\\\\\nYou CANNOT edit files or run commands directly. For ALL implementation and verification, delegate to `coder`.",
@@ -231,11 +219,11 @@
         "edit": "deny",
         "write": "deny",
         "bash": {
-          "*": "deny"
+          "*": "deny",
         },
         "task": "allow",
-        "worktree_*": "allow"
-      }
+        "worktree_*": "allow",
+      },
     },
     "explore": {
       "permission": {
@@ -268,10 +256,10 @@
           "hostname": "allow",
           "whoami": "allow",
           "which *": "allow",
-          "realpath *": "allow"
-        }
-      }
-    }
+          "realpath *": "allow",
+        },
+      },
+    },
   },
-  "instructions": ["./philosophy/AGENTS.md"]
+  "instructions": ["./philosophy/AGENTS.md"],
 }
