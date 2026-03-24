@@ -10,6 +10,7 @@ import type { Plugin } from "@opencode-ai/plugin";
  *
  * Write operations that are blocked:
  * - record_create, record_update, record_delete, record_apply
+ * - artifact_create, artifact_update
  * - incident_create, incident_update, incident_resolve
  * - change_create, change_update
  * - problem_create, problem_update, problem_root_cause
@@ -26,6 +27,9 @@ const WRITE_TOOLS = new Set([
   "record_update",
   "record_delete",
   "record_apply",
+  // Artifact write
+  "artifact_create",
+  "artifact_update",
   // Incidents
   "incident_create",
   "incident_update",

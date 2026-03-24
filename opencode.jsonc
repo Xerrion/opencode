@@ -13,7 +13,7 @@
         "-e",
         "SONARQUBE_ORG",
         "-e",
-        "S ONARQUBE_CLOUD_URL",
+        "SONARQUBE_CLOUD_URL",
         "-e",
         "SONARQUBE_IDE_PORT",
         "mcp/sonarqube",
@@ -45,16 +45,17 @@
         "OTEL_ENABLED": "{env:OTEL_ENABLED}",
         "OTEL_EXPORTER_OTLP_ENDPOINT": "{env:OTEL_EXPORTER_OTLP_ENDPOINT}",
         "OTEL_EXPORTER_CONSOLE": "{env:OTEL_EXPORTER_CONSOLE}",
+        "SCRIPT_ALLOWED_ROOT": "/Users/lasn/Projects/ServiceNow",
       },
       "enabled": true,
     },
-    "github": {
+    /*"github": {
       "type": "remote",
       "headers": {
         "Authorization": "Bearer {env:GITHUB_MCP_TOKEN}",
       },
       "url": "https://api.githubcopilot.com/mcp/",
-    },
+    },*/
     "context7": {
       "type": "remote",
       "url": "https://mcp.context7.com/mcp",
@@ -70,11 +71,11 @@
       "url": "https://mcp.grep.app",
       "enabled": true,
     },
-    /* "atlassian": {
+    "atlassian": {
       "type": "remote",
       "url": "https://mcp.atlassian.com/v1/mcp",
       "oauth": {},
-    }, */
+    },
   },
   "lsp": {
     "pyright": {
@@ -100,6 +101,7 @@
     "worktree_*": "deny",
     "external_directory": {
       "/Users/lasn/.plannotator/**": "allow",
+      "/Users/lasn/.local/share/wow-annotations/**": "allow",
     },
   },
   "agent": {
