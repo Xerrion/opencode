@@ -5,43 +5,43 @@ description: Internal logic and data flow philosophy (The 5 Laws of Elegant Defe
 
 # Internal Logic Philosophy: The 5 Laws of Elegant Defense
 
-**Role:** Principal Engineer for all **Internal Logic & Data Flow** — applies to backend, React components, hooks, state management, and any code where functionality matters.
+**Role:** Principal Engineer for all **Internal Logic & Data Flow** - backend, components, async handlers, state, and any code where functionality matters.
 
-**Philosophy:** Elegant Simplicity — code should guide data so naturally that errors become impossible, keeping core logic flat, readable, and pristine.
+**Philosophy:** Code MUST guide data so naturally that errors become impossible. Core logic stays flat, readable, and pristine.
 
 ## The 5 Laws
 
-### 1. The Law of the Early Exit (Guard Clauses)
-- **Concept:** Indentation is the enemy of simplicity. Deep nesting hides bugs.
-- **Rule:** Handle edge cases, nulls, and errors at the very top of functions.
-- **Practice:** Use `if (!valid) return; doWork();` instead of `if (valid) { doWork(); }`.
+### 1. Early Exit (Guard Clauses)
+- MUST handle edge cases, nulls, and errors at the top of every function. Indentation hides bugs.
+- MUST guard before async work, not after. Wasting an I/O call on invalid input is a defect.
+- Bad: `if user: data = fetch_data(...)` - Good: `if not user: return None` then `data = fetch_data(...)`
 
-### 2. Make Illegal States Unrepresentable (Parse, Don't Validate)
-- **Concept:** Don't check data repeatedly; structure it so it can't be wrong.
-- **Rule:** Parse inputs at the boundary. Once data enters internal logic, it must be in trusted, typed state.
-- **Why:** Removes defensive checks deep in algorithmic code, keeping core logic pristine.
+### 2. Parse, Don't Validate (Illegal States Unrepresentable)
+- MUST parse inputs into trusted, typed state at the boundary. Once inside business logic, data is never re-checked.
+- NEVER pass raw untyped/unvalidated data into business logic. Parse it into a known shape first or reject it.
+- Bad: `charge(raw_data)` - Good: `charge(parse_invoice(raw_data))` where parsing happens at the edge.
 
-### 3. The Law of Atomic Predictability
-- **Concept:** A function must never surprise the caller.
-- **Rule:** Functions should be "Pure" where possible. Same Input = Same Output. No hidden mutations.
-- **Defense:** Avoid `void` functions that mutate global state. Return new data structures instead.
+### 3. Atomic Predictability
+- Functions MUST be pure where possible. Same input = same output. No hidden mutations.
+- NEVER write fire-and-forget side effects. Functions MUST return results - let the caller decide what to do with them.
+- Bad: `function save(user) { db.write(user); }` - Good: `function save(user) { return db.write(user); }`
 
-### 4. The Law of "Fail Fast, Fail Loud"
-- **Concept:** Silent failures cause complexity later.
-- **Rule:** If a state is invalid, halt immediately with a descriptive error. Do not try to "patch" bad data.
-- **Result:** Keeps logic simple by never accounting for "half-broken" states.
+### 4. Fail Fast, Fail Loud
+- If a state is invalid, MUST halt immediately with a descriptive error. NEVER patch bad data and continue.
+- NEVER silently swallow errors - no empty handlers, no returning `None`/`null`/`nil` to hide failures.
+- Bad: `except: return None` - Good: `except PaymentError as e: raise InvoiceError("charge failed") from e`
 
-### 5. The Law of Intentional Naming
-- **Concept:** Comments are often a crutch for bad code.
-- **Rule:** Variables and functions must be named so clearly that logic reads like an English sentence.
-- **Defense:** `isUserEligible` is better than `check()`. The name itself guarantees the boolean logic.
+### 5. Intentional Naming
+- Variables and functions MUST read so clearly that comments become unnecessary.
+- Booleans MUST use `is`/`has`/`can`/`should` prefix (snake_case or camelCase per language convention). NEVER name a boolean `check`, `flag`, `ok`, or `status`.
+- Bad: `valid = check(u)` - Good: `is_eligible = has_active_subscription(user)`
 
 ---
 
 ## Adherence Checklist
-Before completing your task, verify:
-- [ ] **Guard Clauses:** Are all edge cases handled at the top with early returns?
-- [ ] **Parsed State:** Is data parsed into trusted types at the boundary?
-- [ ] **Purity:** Are functions predictable and free of hidden mutations?
-- [ ] **Fail Loud:** Do invalid states throw clear, descriptive errors immediately?
-- [ ] **Readability:** Does the logic read like an English sentence?
+Before completing your task, verify each with a hard yes/no:
+- [ ] Does every function handle its failure modes before its first meaningful line of work?
+- [ ] Can any raw, unvalidated external data reach business logic without being parsed into a known shape?
+- [ ] Could any function return a different result given the same input due to hidden state?
+- [ ] Is there any error handler that swallows the error, returns a silent sentinel, or does nothing?
+- [ ] Can you read every conditional aloud as an English sentence and have it make sense?

@@ -2,12 +2,20 @@
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
     "sonarqube": {
+      // Requires: docker pull mcp/sonarqube (image must be pre-pulled)
       "type": "local",
       "command": [
         "docker",
         "run",
         "-i",
         "--rm",
+        "--read-only",
+        "--tmpfs",
+        "/tmp:rw,noexec,nosuid,size=64m",
+        "--tmpfs",
+        "/app/storage:rw,noexec,nosuid,size=64m",
+        "--tmpfs",
+        "/etc/ssl/certs:rw,noexec,nosuid,size=8m",
         "-e",
         "SONARQUBE_TOKEN",
         "-e",
@@ -24,8 +32,10 @@
         "SONARQUBE_TOKEN": "{env:SONARQUBE_TOKEN}",
         "SONARQUBE_IDE_PORT": "{env:SONARQUBE_IDE_PORT}",
       },
+      "enabled": true,
     },
     "servicenow": {
+      // Requires: /Users/lasn/Projects/servicenow-devtools-mcp to exist (local clone)
       "type": "local",
       "command": [
         "uv",
@@ -40,41 +50,34 @@
         "SERVICENOW_PASSWORD": "{env:SERVICENOW_MCP_DEV_PASSWORD}",
         "MCP_TOOL_PACKAGE": "{env:SERVICENOW_MCP_TOOL_PACKAGE}",
         "SERVICENOW_ENV": "{env:SERVICENOW_MCP_DEV_ENV}",
-        "SENTRY_DSN": "{env:SENTRY_DSN}",
-        "SENTRY_ENVIRONMENT": "{env:SENTRY_ENVIRONMENT}",
-        "OTEL_ENABLED": "{env:OTEL_ENABLED}",
-        "OTEL_EXPORTER_OTLP_ENDPOINT": "{env:OTEL_EXPORTER_OTLP_ENDPOINT}",
-        "OTEL_EXPORTER_CONSOLE": "{env:OTEL_EXPORTER_CONSOLE}",
         "SCRIPT_ALLOWED_ROOT": "/Users/lasn/Projects/ServiceNow",
       },
       "enabled": true,
     },
-    /*"github": {
-      "type": "remote",
-      "headers": {
-        "Authorization": "Bearer {env:GITHUB_MCP_TOKEN}",
-      },
-      "url": "https://api.githubcopilot.com/mcp/",
-    },*/
     "context7": {
       "type": "remote",
       "url": "https://mcp.context7.com/mcp",
       "enabled": true,
+      "timeout": 10000,
     },
     "exa": {
       "type": "remote",
       "url": "https://mcp.exa.ai/mcp",
       "enabled": true,
+      "timeout": 10000,
     },
-    "grep": {
+    "gh_grep": {
       "type": "remote",
       "url": "https://mcp.grep.app",
       "enabled": true,
+      "timeout": 10000,
     },
     "atlassian": {
       "type": "remote",
       "url": "https://mcp.atlassian.com/v1/mcp",
+      // oauth: {} triggers dynamic client registration (RFC 7591) - no explicit config needed
       "oauth": {},
+      "enabled": true,
     },
   },
   "lsp": {
@@ -82,39 +85,54 @@
       "disabled": true,
     },
     "basedpyright": {
+      // Requires: basedpyright-langserver in PATH (npm install -g basedpyright)
       "command": ["basedpyright-langserver", "--stdio"],
       "extensions": [".py", ".pyi"],
     },
   },
   "plugin": [
+    "./plugins/sn-credential-protection.ts",
+    "./plugins/sn-production-warning.ts",
     "@tarquinen/opencode-dcp@latest",
     "@franlol/opencode-md-table-formatter@latest",
     "@plannotator/opencode@latest",
   ],
   "permission": {
+    "read": "allow",
+    "write": "allow",
+    "edit": "allow",
+    "glob": "allow",
+    "bash": "allow",
     "task": "deny",
     "context7_*": "deny",
-    "exa_*": "allow",
-    "grep*": "deny",
-    "kagi_*": "deny",
+    "exa_*": "deny",
+    "gh_grep*": "deny",
+    "kagi_*": "deny", // Preemptive block - kagi MCP not configured but blocked if accidentally added
     "webfetch": "deny",
     "worktree_*": "deny",
+    "wow-api-dev": "deny",
     "external_directory": {
       "/Users/lasn/.plannotator/**": "allow",
       "/Users/lasn/.local/share/wow-annotations/**": "allow",
+      "/Users/lasn/Projects/**": "allow",
     },
   },
   "agent": {
     "researcher": {
+      "model": "github-copilot/gpt-5.4-mini",
+      "temperature": 0.3,
       "permission": {
         "context7_*": "allow",
         "exa_*": "allow",
-        "grep": "allow",
+        "gh_grep*": "allow",
         "webfetch": "allow",
         "write": "deny",
         "edit": "deny",
         "plan_read": "deny",
         "todoread": "deny",
+        "wow-api-dev": "allow",
+        "read": "allow",
+        "glob": "allow",
         "bash": {
           "*": "deny",
           "gh repo view*": "allow",
@@ -145,7 +163,6 @@
           "jq *": "allow",
           "head *": "allow",
           "tail *": "allow",
-          "base64 *": "allow",
           "grep *": "allow",
           "rg *": "allow",
           "wc *": "allow",
@@ -158,7 +175,8 @@
       },
     },
     "scribe": {
-      "model": "github-copilot/claude-sonnet-4.6",
+      "model": "github-copilot/gpt-5.4-mini",
+      "temperature": 0.3,
       "permission": {
         "bash": {
           "*": "deny",
@@ -172,21 +190,23 @@
       },
     },
     "coder": {
+      "model": "github-copilot/claude-opus-4.6",
+      "temperature": 0.3,
       "permission": {
         "context7_*": "allow",
         "exa_*": "allow",
-        "grep*": "deny",
         "read": "allow",
         "write": "allow",
         "edit": "allow",
         "glob": "allow",
-        "grep": "allow",
         "bash": "allow",
         "plan_read": "deny",
         "todoread": "deny",
+        "wow-api-dev": "allow",
       },
     },
     "reviewer": {
+      "model": "github-copilot/claude-sonnet-4.6",
       "temperature": 0.1,
       "permission": {
         "edit": "deny",
@@ -202,9 +222,12 @@
         "plan_read": "allow",
         "delegation_read": "allow",
         "delegation_list": "allow",
+        "read": "allow",
+        "glob": "allow",
       },
     },
     "plan": {
+      "model": "github-copilot/claude-sonnet-4.6",
       "permission": {
         "edit": "deny",
         "write": "deny",
@@ -212,11 +235,13 @@
           "*": "deny",
         },
         "task": "allow",
-        "worktree_*": "allow",
+        "worktree_create": "allow",
+        "worktree_list": "allow",
+        "worktree_remove": "allow",
       },
     },
     "build": {
-      "prompt": "You are a **build orchestrator**. You coordinate implementation through delegation - you do NOT implement directly.\\\\\\\\n\\\\\\\\n## Your Role\\\\\\\\n- Delegate implementation to `coder`\\\\\\\\n- Delegate documentation to `scribe`\\\\\\\\n- Delegate codebase analysis to `explore`\\\\\\\\n- Delegate external research to `researcher`\\\\\\\\n- Interpret results and decide next steps\\\\\\\\n\\\\\\\\n## Critical Constraint\\\\\\\\nYou CANNOT edit files or run commands directly. For ALL implementation and verification, delegate to `coder`.",
+      "prompt": "./agents/build.md",
       "permission": {
         "edit": "deny",
         "write": "deny",
@@ -224,7 +249,9 @@
           "*": "deny",
         },
         "task": "allow",
-        "worktree_*": "allow",
+        "worktree_create": "allow",
+        "worktree_list": "allow",
+        "worktree_remove": "allow",
       },
     },
     "explore": {
@@ -233,12 +260,12 @@
         "write": "deny",
         "plan_read": "deny",
         "todoread": "deny",
+        "wow-api-dev": "allow",
         "bash": {
           "*": "deny",
           "ls *": "allow",
           "tree *": "allow",
           "pwd": "allow",
-          "cat *": "allow",
           "head *": "allow",
           "tail *": "allow",
           "wc *": "allow",
@@ -246,7 +273,8 @@
           "stat *": "allow",
           "grep *": "allow",
           "rg *": "allow",
-          "find *": "allow",
+          "docker inspect*": "allow",
+          "docker run --rm*": "allow",
           "git status*": "allow",
           "git log*": "allow",
           "git diff*": "allow",
@@ -254,14 +282,32 @@
           "git blame*": "allow",
           "git branch*": "allow",
           "git ls-files*": "allow",
-          "uname*": "allow",
-          "hostname": "allow",
-          "whoami": "allow",
           "which *": "allow",
           "realpath *": "allow",
         },
       },
     },
+    "servicenow": {
+      "permission": {
+        "bash": { "*": "deny" },
+        "edit": "deny",
+        "task": "allow",
+        "worktree_create": "allow",
+        "worktree_list": "allow",
+        "worktree_remove": "allow",
+      },
+    },
+    "servicenow-dev": {
+      "permission": {
+        "bash": { "*": "deny" },
+        "webfetch": "deny",
+        "read": "allow",
+        "write": "allow",
+        "edit": "allow",
+        "glob": "allow",
+        "servicenow_*": "allow",
+      },
+    },
   },
-  "instructions": ["./philosophy/AGENTS.md"],
+  "instructions": ["./AGENTS.md", "./philosophy/AGENTS.md"],
 }

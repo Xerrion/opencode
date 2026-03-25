@@ -52,9 +52,9 @@ function simplifyQuery(query: string): string {
   // Strip common prefixes to find a filename-friendly search term
   // "C_LootHistory" -> "LootHistory", "Enum.ItemQuality" -> "ItemQuality"
   return query
-    .replaceAll(/^C_/, "")
-    .replaceAll(/^Enum\./, "")
-    .replaceAll(/^Mixin\./, "")
+    .replace(/^C_/, "")
+    .replace(/^Enum\./, "")
+    .replace(/^Mixin\./, "")
     .replaceAll(".", "");
 }
 

@@ -133,6 +133,9 @@ When returning to the orchestrator, provide:
 
 ## Notes
 [Any important context, warnings, or follow-up items for the orchestrator]
+
+## Review Expected
+Code review by `code-reviewer` should follow this response.
 ```
 
 ## Example Workflow

@@ -1,16 +1,26 @@
-## Code Philosophy - MANDATORY
+## Code Philosophy - ZERO EXCEPTIONS
 
-Before writing or modifying any code, you MUST:
+**Every code change requires a loaded philosophy. No load, no code. If you already started writing - stop, load it, then resume.**
 
-1. **Select the relevant philosophy** based on your task:
-   - Working on UI/frontend? → Load **`frontend-philosophy`** (The 5 Pillars of Intentional UI)
-   - Working on backend/logic? → Load **`code-philosophy`** (The 5 Laws of Elegant Defense)
-   - Working on both? → Load both
+### 1. Load Before You Touch Code
 
-2. **Load the skill** using the `skill` tool BEFORE implementation
+Pick by task. When in doubt, load both.
 
-3. **Verify your implementation** against the philosophy checklist BEFORE completing
+| Task | Skill to load |
+|------|---------------|
+| React hooks, data transforms, validation, error handling, business logic | `code-philosophy` |
+| Styling, layout, colors, typography, animation, spacing | `frontend-philosophy` |
+| Component with both logic and visual work | Both |
 
-4. **Refactor if needed** - if code violates any principle, fix it before proceeding
+### 2. Implement Against the Philosophy
 
-This is NOT optional. These philosophies define how code must be written in this project.
+Not beside it. Not after it. The philosophy defines what correct code looks like. Refactor until compliant - do not ship violations.
+
+### 3. Name What You Checked
+
+Before marking done, explicitly list which laws/pillars your code satisfies. Not "checklist passed" - name them:
+
+- **Code**: Early Exit, Parse Don't Validate, Atomic Predictability, Fail Fast, Intentional Naming
+- **Frontend**: Typography, Color, Motion, Composition, Atmosphere
+
+Omitting this step means the task is not done.
