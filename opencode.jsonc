@@ -93,16 +93,16 @@
   "plugin": [
     "./plugins/sn-credential-protection.ts",
     "./plugins/sn-production-warning.ts",
-    "@tarquinen/opencode-dcp@latest",
+    "@tarquinen/opencode-dcp@3.0.4",
     "@franlol/opencode-md-table-formatter@latest",
     "@plannotator/opencode@latest",
   ],
   "permission": {
     "read": "allow",
-    "write": "allow",
-    "edit": "allow",
-    "glob": "allow",
-    "bash": "allow",
+    "write": "deny",
+    "edit": "deny",
+    "glob": "deny",
+    "bash": "deny",
     "task": "deny",
     "context7_*": "deny",
     "exa_*": "deny",
@@ -126,8 +126,6 @@
         "exa_*": "allow",
         "gh_grep*": "allow",
         "webfetch": "allow",
-        "write": "deny",
-        "edit": "deny",
         "plan_read": "deny",
         "todoread": "deny",
         "wow-api-dev": "allow",
@@ -243,7 +241,7 @@
     "build": {
       "prompt": "./agents/build.md",
       "permission": {
-        "edit": "deny",
+        "read": "deny",
         "write": "deny",
         "bash": {
           "*": "deny",
@@ -260,7 +258,6 @@
         "write": "deny",
         "plan_read": "deny",
         "todoread": "deny",
-        "wow-api-dev": "allow",
         "bash": {
           "*": "deny",
           "ls *": "allow",
