@@ -405,6 +405,20 @@
         },
       },
     },
+    "wow-addon": {
+      "permission": {
+        "edit": "deny",
+        "write": "deny",
+        "bash": { "*": "deny" },
+        "webfetch": "allow",
+        "wow-api-lookup": "allow",
+        "wow-wiki-fetch": "allow",
+        "wow-event-info": "allow",
+        "wow-blizzard-source": "allow",
+        "wow-addon-lint": "allow",
+        "task": { "*": "deny" },
+      },
+    },
     "git": {
       "prompt": "./agents/git.md",
       "permission": {
