@@ -13,9 +13,9 @@ permission:
     "git log*": allow
     "git show*": allow
     "git status*": allow
-    "rg": allow
-    "plan_read": allow
-    "delegation_read": allow
+    "rg *": allow
+  plan_read: allow
+  delegation_read: allow
 ---
 
 # Refactor Agent

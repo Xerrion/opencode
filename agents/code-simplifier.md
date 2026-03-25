@@ -2,10 +2,37 @@
 description: Simplifies recently modified code for clarity and maintainability while strictly preserving behavior.
 mode: subagent
 temperature: 0.3
-tools:
-  write: true
-  edit: true
-  bash: true
+permission:
+  write: allow
+  edit: allow
+  bash:
+    "*": deny
+    "bun *": allow
+    "npm *": allow
+    "npx *": allow
+    "yarn *": allow
+    "pnpm *": allow
+    "node *": allow
+    "cargo *": allow
+    "go *": allow
+    "make *": allow
+    "tsc *": allow
+    "eslint *": allow
+    "prettier *": allow
+    "biome *": allow
+    "ruff *": allow
+    "mypy *": allow
+    "pyright *": allow
+    "basedpyright *": allow
+    "rg *": allow
+    "diff *": allow
+    "cat *": allow
+    "head *": allow
+    "tail *": allow
+    "wc *": allow
+    "ls *": allow
+  task:
+    "*": deny
 ---
 
 # Code Simplifier Agent
