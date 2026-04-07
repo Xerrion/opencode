@@ -10,6 +10,7 @@ Pick by task. When in doubt, load both.
 |------|---------------|
 | React hooks, data transforms, validation, error handling, business logic | `code-philosophy` |
 | Styling, layout, colors, typography, animation, spacing | `frontend-philosophy` |
+| System design, new modules, API shape, dependency direction, data flow   | `architecture-philosophy` |
 | Component with both logic and visual work | Both |
 
 ### 2. Implement Against the Philosophy
@@ -22,5 +23,6 @@ Before marking done, explicitly list which laws/pillars your code satisfies. Not
 
 - **Code**: Early Exit, Parse Don't Validate, Atomic Predictability, Fail Fast, Intentional Naming
 - **Frontend**: Typography, Color, Motion, Composition, Atmosphere
+- **Architecture**: Follow the Grain, Layer Direction, Caller-Designed API, Single State Owner, Explicit Failures
 
 Omitting this step means the task is not done.

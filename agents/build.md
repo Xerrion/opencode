@@ -159,6 +159,7 @@ When a task is fully complete with no follow-ups, end with a clear "Done" signal
 Philosophy loading is enforced by `AGENTS.md` globally. When delegating to `coder`, specify which skills to load:
 
 - **All code**: `code-philosophy` (always), `frontend-philosophy` (when UI/styling is involved)
+- **Structural decisions** (new modules, APIs, data flow, cross-module imports): load `architecture-philosophy` to inform your planning, AND instruct `coder` to load it as well - architecture is a planning-time decision, not an implementation-time decision
 - **WoW addon Lua**: `wow-lua-patterns`, `wow-frame-api`, `wow-event-handling` (as relevant to the task)
 - **ServiceNow**: `servicenow-scripting`, `servicenow-gliderecord`, `servicenow-business-rules`, `servicenow-client-scripts` (as relevant)
 

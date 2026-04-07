@@ -35,14 +35,14 @@
       "enabled": true,
     },
     "servicenow": {
-      // Requires: /Users/lasn/Projects/servicenow-devtools-mcp to exist (local clone)
+      // Requires: /Users/lasn/Projects/servicenow-platform-mcp to exist (local clone)
       "type": "local",
       "command": [
         "uv",
         "run",
         "--directory",
-        "/Users/lasn/Projects/servicenow-devtools-mcp",
-        "servicenow-devtools-mcp",
+        "~/Projects/servicenow-platform-mcp",
+        "servicenow-platform-mcp",
       ],
       "environment": {
         "SERVICENOW_INSTANCE_URL": "{env:SERVICENOW_MCP_DEV_INSTANCE_URL}",
@@ -79,11 +79,6 @@
       "oauth": {},
       "enabled": true,
     },
-    "n8n": {
-      "type": "remote",
-      "url": "https://n8n.xerrion.io/mcp-server/http",
-      "oauth": {},
-    },
   },
   "lsp": {
     "pyright": {
@@ -98,54 +93,134 @@
   "plugin": [
     "./plugins/sn-credential-protection.ts",
     "./plugins/sn-production-warning.ts",
-    "@tarquinen/opencode-dcp@3.0.4",
+    "@tarquinen/opencode-dcp@latest",
     "@franlol/opencode-md-table-formatter@latest",
     "@plannotator/opencode@latest",
   ],
+
+  // ---------------------------------------------------------------------------
+  // Global permissions
+  //
+  // Philosophy: allow read-only / inspection operations outright, prompt ("ask")
+  // for light side-effects (write, edit, webfetch), hard-deny destructive ops
+  // and external MCP tools. Agents override upward as needed.
+  // ---------------------------------------------------------------------------
   "permission": {
+    // Filesystem — reading & globbing are always safe
     "read": "allow",
+    "glob": "allow",
+
+    // Writing/editing
     "write": "deny",
     "edit": "deny",
-    "glob": "deny",
-    "bash": { "*": "deny" },
+
+    // Bash — deny by default, allow only read-only / inspection tools globally.
+    // Agents that need build tools, package managers, or mutating commands opt-in.
+    "bash": {
+      "*": "deny",
+
+      // --- File inspection (read-only) ---
+      "cat *": "allow",
+      "head *": "allow",
+      "tail *": "allow",
+      "wc *": "allow",
+      "ls *": "allow",
+      "tree *": "allow",
+      "find *": "allow",
+      "file *": "allow",
+      "stat *": "allow",
+      "realpath *": "allow",
+      "pwd": "allow",
+      "which *": "allow",
+      "echo *": "allow",
+      "printf *": "allow",
+      "man *": "allow",
+      "tldr *": "allow",
+
+      // --- Search & text processing ---
+      "rg *": "allow",
+      "grep *": "allow",
+      "awk *": "allow",
+      "sed *": "allow",
+      "sort *": "allow",
+      "uniq *": "allow",
+      "cut *": "allow",
+      "tr *": "allow",
+      "diff *": "allow",
+      "jq *": "allow",
+
+      // --- Git (read-only) ---
+      "git status*": "allow",
+      "git log*": "allow",
+      "git diff*": "allow",
+      "git show*": "allow",
+      "git blame*": "allow",
+      "git branch*": "allow",
+      "git ls-files*": "allow",
+      "git fetch*": "allow",
+
+      // --- Networking (read-only lookups) ---
+      "dig *": "allow",
+      "nslookup *": "allow",
+      "whois *": "allow",
+      "host *": "allow",
+
+      // --- Hard deny: destructive / dangerous ---
+      "rm *": "deny",
+      "sudo *": "deny",
+      "shutdown*": "deny",
+      "reboot*": "deny",
+    },
+
+    // Orchestration & networking — prompt for task, deny worktrees by default
     "task": "deny",
     "webfetch": "deny",
     "worktree_*": "deny",
-    // MCP tools - ALL denied globally, agents opt-in
+
+    // MCP tools — denied globally; agents opt-in
+    // (These hit external services with real side-effects)
     "context7_*": "deny",
     "exa_*": "deny",
     "gh_grep*": "deny",
-    "kagi_*": "deny",
-    "wow-api-dev": "deny",
     "atlassian_*": "deny",
     "sonarqube_*": "deny",
     "servicenow_*": "deny",
+    "wow-api-dev": "deny",
     "wow-api-lookup": "deny",
     "wow-wiki-fetch": "deny",
     "wow-event-info": "deny",
     "wow-blizzard-source": "deny",
     "wow-addon-lint": "deny",
+
     "external_directory": {
       "/Users/lasn/.plannotator/**": "allow",
       "/Users/lasn/.local/share/wow-annotations/**": "allow",
       "/Users/lasn/Projects/**": "allow",
+      "/tmp/**": "allow",
     },
   },
+
+  // ---------------------------------------------------------------------------
+  // Agents — only override what differs from the global baseline
+  // ---------------------------------------------------------------------------
   "agent": {
+    // Research agent: read-only, external search tools enabled
     "researcher": {
-      "model": "github-copilot/gpt-5.4-mini",
+      "model": "github-copilot/claude-sonnet-4.6",
       "temperature": 0.3,
       "permission": {
+        // No file mutation
+        "write": "deny",
+        "edit": "deny",
+        "plan_read": "deny",
+        "todoread": "deny",
+        // Enable research MCP tools
         "context7_*": "allow",
         "exa_*": "allow",
         "gh_grep*": "allow",
         "webfetch": "allow",
-        "plan_read": "deny",
-        "todoread": "deny",
-        "read": "allow",
-        "glob": "allow",
+        // Bash: inherits global read-only tools, add GitHub CLI read ops
         "bash": {
-          "*": "deny",
           "gh repo view*": "allow",
           "gh pr view*": "allow",
           "gh pr list*": "allow",
@@ -165,53 +240,35 @@
           "pip index*": "allow",
           "cargo search*": "allow",
           "cargo info*": "allow",
-          "man *": "allow",
-          "tldr *": "allow",
-          "dig *": "allow",
-          "nslookup *": "allow",
-          "whois *": "allow",
-          "host *": "allow",
-          "jq *": "allow",
-          "head *": "allow",
-          "tail *": "allow",
-          "grep *": "allow",
-          "rg *": "allow",
-          "wc *": "allow",
-          "sort *": "allow",
-          "uniq *": "allow",
-          "cut *": "allow",
-          "awk *": "allow",
-          "tr *": "allow",
         },
       },
     },
+
+    // Documentation / prose writer
     "scribe": {
       "model": "github-copilot/gpt-5.4-mini",
       "temperature": 0.3,
       "permission": {
-        "bash": {
-          "*": "deny",
-        },
-        "edit": "allow",
-        "glob": "allow",
-        "read": "allow",
         "write": "allow",
+        "edit": "allow",
         "plan_read": "deny",
         "todoread": "deny",
+        // No bash at all
+        "bash": { "*": "deny" },
       },
     },
+
+    // Full-featured coding agent
     "coder": {
       "model": "github-copilot/claude-opus-4.6",
       "temperature": 0.3,
       "permission": {
-        "read": "allow",
         "write": "allow",
         "edit": "allow",
-        "glob": "allow",
         "plan_read": "deny",
         "todoread": "deny",
+        // Bash: inherits global read-only tools, add dev tooling
         "bash": {
-          "*": "deny",
           // Package managers & build tools
           "bun *": "allow",
           "npm *": "allow",
@@ -239,33 +296,7 @@
           "ruff *": "allow",
           "mypy *": "allow",
           "luacheck *": "allow",
-          // File inspection (read-only)
-          "cat *": "allow",
-          "head *": "allow",
-          "tail *": "allow",
-          "wc *": "allow",
-          "ls *": "allow",
-          "tree *": "allow",
-          "find *": "allow",
-          "file *": "allow",
-          "stat *": "allow",
-          "realpath *": "allow",
-          // Search & text processing
-          "rg *": "allow",
-          "grep *": "allow",
-          "sed *": "allow",
-          "awk *": "allow",
-          "sort *": "allow",
-          "uniq *": "allow",
-          "cut *": "allow",
-          "tr *": "allow",
-          "diff *": "allow",
-          "jq *": "allow",
           // Shell utilities
-          "echo *": "allow",
-          "printf *": "allow",
-          "pwd": "allow",
-          "which *": "allow",
           "env *": "allow",
           "mkdir *": "allow",
           "cp *": "allow",
@@ -275,14 +306,15 @@
         },
       },
     },
+
+    // Simplify / reduce complexity in code
     "code-simplifier": {
       "temperature": 0.3,
       "permission": {
         "write": "allow",
         "edit": "allow",
+        // Bash: inherits global read-only tools, add build & lint
         "bash": {
-          "*": "deny",
-          // Package managers & build tools
           "bun *": "allow",
           "npm *": "allow",
           "npx *": "allow",
@@ -292,7 +324,6 @@
           "cargo *": "allow",
           "go *": "allow",
           "make *": "allow",
-          // Linters, formatters, type checkers
           "tsc *": "allow",
           "eslint *": "allow",
           "prettier *": "allow",
@@ -301,119 +332,83 @@
           "mypy *": "allow",
           "pyright *": "allow",
           "basedpyright *": "allow",
-          // File inspection & search
-          "rg *": "allow",
-          "diff *": "allow",
-          "cat *": "allow",
-          "head *": "allow",
-          "tail *": "allow",
-          "wc *": "allow",
-          "ls *": "allow",
         },
       },
     },
+
+    // Analyse code for refactoring opportunities (read-only)
     "code-refactorer": {
       "temperature": 0.2,
       "permission": {
-        "edit": "deny",
         "write": "deny",
+        "edit": "deny",
         "plan_read": "allow",
         "delegation_read": "allow",
-        "bash": {
-          "*": "deny",
-          "git fetch*": "allow",
-          "git diff*": "allow",
-          "git log*": "allow",
-          "git show*": "allow",
-          "git status*": "allow",
-          "rg *": "allow",
-        },
+        // Bash: inherits global read-only tools (no additions needed)
       },
     },
+
+    // Code review (read-only)
     "reviewer": {
       "model": "github-copilot/claude-sonnet-4.6",
       "temperature": 0.1,
       "permission": {
-        "edit": "deny",
         "write": "deny",
-        "bash": {
-          "*": "deny",
-          "git diff*": "allow",
-          "git log*": "allow",
-          "git show*": "allow",
-          "git blame*": "allow",
-          "rg *": "allow",
-        },
+        "edit": "deny",
         "plan_read": "allow",
         "delegation_read": "allow",
         "delegation_list": "allow",
-        "read": "allow",
-        "glob": "allow",
+        // Bash: inherits global read-only tools (no additions needed)
       },
     },
+
+    // Task orchestrator / planner
     "plan": {
       "model": "github-copilot/claude-sonnet-4.6",
       "permission": {
-        "edit": "deny",
         "write": "deny",
-        "bash": {
-          "*": "deny",
-        },
+        "edit": "deny",
+        "bash": { "*": "deny" },
         "task": "allow",
         "worktree_create": "allow",
         "worktree_list": "allow",
         "worktree_remove": "allow",
       },
     },
+
+    // Build orchestrator
     "build": {
       "prompt": "./agents/build.md",
       "permission": {
         "read": "deny",
         "write": "deny",
-        "bash": {
-          "*": "deny",
-        },
+        "bash": { "*": "deny" },
         "task": "allow",
         "worktree_create": "allow",
         "worktree_list": "allow",
         "worktree_remove": "allow",
       },
     },
+
+    // Filesystem & repo explorer (read-only)
     "explore": {
       "permission": {
-        "edit": "deny",
         "write": "deny",
+        "edit": "deny",
         "plan_read": "deny",
         "todoread": "deny",
+        // Bash: inherits global read-only tools, add docker inspect
         "bash": {
-          "*": "deny",
-          "ls *": "allow",
-          "tree *": "allow",
-          "pwd": "allow",
-          "head *": "allow",
-          "tail *": "allow",
-          "wc *": "allow",
-          "file *": "allow",
-          "stat *": "allow",
-          "grep *": "allow",
-          "rg *": "allow",
           "docker inspect*": "allow",
-          "git status*": "allow",
-          "git log*": "allow",
-          "git diff*": "allow",
-          "git show*": "allow",
-          "git blame*": "allow",
-          "git branch*": "allow",
-          "git ls-files*": "allow",
-          "which *": "allow",
-          "realpath *": "allow",
         },
       },
     },
+
+    // WoW addon reference agent (read-only + external APIs)
     "wow-addon": {
       "permission": {
-        "edit": "deny",
         "write": "deny",
+        "edit": "deny",
         "bash": { "*": "deny" },
         "webfetch": "allow",
         "wow-api-lookup": "allow",
@@ -424,39 +419,41 @@
         "task": { "*": "deny" },
       },
     },
+
+    // Git & GitHub operations
     "git": {
       "prompt": "./agents/git.md",
       "permission": {
-        "read": "allow",
-        "glob": "allow",
-        "edit": "deny",
         "write": "deny",
+        "edit": "deny",
         "bash": {
-          "*": "deny",
           "git *": "allow",
           "gh *": "allow",
         },
       },
     },
+
+    // ServiceNow platform API agent
     "servicenow": {
       "permission": {
-        "bash": { "*": "deny" },
         "edit": "deny",
+        "bash": { "*": "deny" },
         "task": "allow",
         "servicenow_*": "allow",
       },
     },
+
+    // ServiceNow development agent (file access + API)
     "servicenow-dev": {
       "permission": {
-        "bash": { "*": "deny" },
-        "webfetch": "deny",
-        "read": "allow",
         "write": "allow",
         "edit": "allow",
-        "glob": "allow",
+        "bash": { "*": "deny" },
+        "webfetch": "deny",
         "servicenow_*": "allow",
       },
     },
   },
+
   "instructions": ["./AGENTS.md", "./philosophy/AGENTS.md"],
 }
