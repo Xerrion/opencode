@@ -123,8 +123,6 @@
     // Bash — deny by default, allow only read-only / inspection tools globally.
     // Agents that need build tools, package managers, or mutating commands opt-in.
     "bash": {
-      "*": "deny",
-
       // --- File inspection (read-only) ---
       "cat *": "allow",
       "head *": "allow",
@@ -338,23 +336,18 @@
           "mypy *": "allow",
           "pyright *": "allow",
           "basedpyright *": "allow",
+          "rg *": "allow",
+          "diff *": "allow",
+          "cat *": "allow",
+          "head *": "allow",
+          "tail *": "allow",
+          "wc *": "allow",
+          "ls *": "allow",
         },
       },
     },
 
-    // Analyse code for refactoring opportunities (read-only)
-    "code-refactorer": {
-      "temperature": 0.2,
-      "permission": {
-        "write": "deny",
-        "edit": "deny",
-        "plan_read": "allow",
-        "delegation_read": "allow",
-        // Bash: inherits global read-only tools (no additions needed)
-      },
-    },
-
-    // Code  (read-only)
+    // Code reviewer & refactoring analyst (read-only)
     "reviewer": {
       "model": "github-copilot/claude-sonnet-4.6",
       "temperature": 0.1,
@@ -431,11 +424,13 @@
     "git": {
       "prompt": "./agents/git.md",
       "permission": {
+        "read": "allow",
         "write": "deny",
         "edit": "deny",
         "bash": {
-          "git *": "allow",
-          "gh *": "allow",
+          "git": "allow",
+          "gh": "allow",
+          "cat": "allow",
         },
       },
     },
