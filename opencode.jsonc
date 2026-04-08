@@ -174,10 +174,16 @@
       "reboot*": "deny",
     },
 
-    // Orchestration & networking — prompt for task, deny worktrees by default
+    // Orchestration & networking
     "task": "deny",
     "webfetch": "deny",
     "worktree_*": "deny",
+
+    // Delegate — denied by default. Only read-only sub-agents may use delegate.
+    // Write-capable agents (write/edit/bash allow) must use the native task tool
+    // because background delegations run outside OpenCode's session tree and the
+    // undo/branching system cannot track changes made in those sessions.
+    "delegate": "deny",
 
     // MCP tools — denied globally; agents opt-in
     // (These hit external services with real side-effects)
@@ -214,6 +220,7 @@
         // No file mutation
         "write": "deny",
         "edit": "deny",
+        "delegate": "allow",
         "plan_read": "deny",
         "todoread": "deny",
         // Enable research MCP tools
@@ -248,7 +255,7 @@
 
     // Documentation / prose writer
     "scribe": {
-      "model": "github-copilot/gpt-5.4-mini",
+      "model": "github-copilot/gemini-3-flash-preview",
       "temperature": 0.3,
       "permission": {
         "write": "allow",
@@ -311,6 +318,7 @@
 
     // Simplify / reduce complexity in code
     "code-simplifier": {
+      "model": "github-copilot/claude-sonnet-4.6",
       "temperature": 0.3,
       "permission": {
         "write": "allow",
@@ -334,13 +342,6 @@
           "mypy *": "allow",
           "pyright *": "allow",
           "basedpyright *": "allow",
-          "rg *": "allow",
-          "diff *": "allow",
-          "cat *": "allow",
-          "head *": "allow",
-          "tail *": "allow",
-          "wc *": "allow",
-          "ls *": "allow",
         },
       },
     },
@@ -352,10 +353,11 @@
       "permission": {
         "write": "deny",
         "edit": "deny",
+        "delegate": "allow",
         "plan_read": "allow",
         "delegation_read": "allow",
         "delegation_list": "allow",
-        "atlassian": "allow",
+
         // Bash: inherits global read-only tools (no additions needed)
       },
     },
@@ -366,6 +368,7 @@
       "permission": {
         "write": "deny",
         "edit": "deny",
+        "delegate": "allow",
         "bash": { "*": "deny" },
         "task": "allow",
         "worktree_create": "allow",
@@ -376,10 +379,12 @@
 
     // Build orchestrator
     "build": {
+      "model": "github-copilot/claude-sonnet-4.6",
       "prompt": "./agents/build.md",
       "permission": {
         "read": "deny",
         "write": "deny",
+        "delegate": "allow",
         "bash": { "*": "deny" },
         "task": "allow",
         "worktree_create": "allow",
@@ -390,9 +395,11 @@
 
     // Filesystem & repo explorer (read-only)
     "explore": {
+      "model": "github-copilot/claude-haiku-4.5",
       "permission": {
         "write": "deny",
         "edit": "deny",
+        "delegate": "allow",
         "plan_read": "deny",
         "todoread": "deny",
         // Bash: inherits global read-only tools, add docker inspect
@@ -404,9 +411,11 @@
 
     // WoW addon reference agent (read-only + external APIs)
     "wow-addon": {
+      "model": "github-copilot/claude-sonnet-4.6",
       "permission": {
         "write": "deny",
         "edit": "deny",
+        "delegate": "allow",
         "bash": { "*": "deny" },
         "webfetch": "allow",
         "wow-api-lookup": "allow",
@@ -420,6 +429,7 @@
 
     // Git & GitHub operations
     "git": {
+      "model": "github-copilot/gpt-5.4-mini",
       "prompt": "./agents/git.md",
       "permission": {
         "read": "allow",
@@ -435,8 +445,11 @@
 
     // ServiceNow platform API agent
     "servicenow": {
+      "model": "github-copilot/claude-sonnet-4.6",
       "permission": {
+        "write": "deny",
         "edit": "deny",
+        "delegate": "allow",
         "bash": { "*": "deny" },
         "task": "allow",
         "servicenow_*": "allow",
@@ -445,10 +458,12 @@
 
     // ServiceNow development agent (file access + API)
     "servicenow-dev": {
+      "model": "github-copilot/claude-sonnet-4.6",
       "permission": {
         "write": "allow",
         "edit": "allow",
         "bash": { "*": "deny" },
+        "task": "allow",
         "webfetch": "deny",
         "servicenow_*": "allow",
       },

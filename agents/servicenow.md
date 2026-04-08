@@ -39,9 +39,9 @@ Example conditions:
 
 ```json
 [
-  {"operator": "equals", "field": "state", "value": "1"},
-  {"operator": "days_ago", "field": "sys_created_on", "value": "7"},
-  {"operator": "order_by", "field": "sys_created_on", "descending": true}
+  { "operator": "equals", "field": "state", "value": "1" },
+  { "operator": "days_ago", "field": "sys_created_on", "value": "7" },
+  { "operator": "order_by", "field": "sys_created_on", "descending": true }
 ]
 ```
 
@@ -250,12 +250,12 @@ Use the `task()` tool to delegate directly to the dev agent. Pass ALL gathered c
 
 **Select skills to load based on artifact type:**
 
-| Artifact Type | Skills to Load |
-|---|---|
-| Any script | `servicenow-scripting` (always include) |
-| Business Rule | + `servicenow-business-rules` |
-| Client Script, UI Policy, UI Action | + `servicenow-client-scripts` |
-| GlideRecord-heavy logic | + `servicenow-gliderecord` |
+| Artifact Type                       | Skills to Load                          |
+| ----------------------------------- | --------------------------------------- |
+| Any script                          | `servicenow-scripting` (always include) |
+| Business Rule                       | + `servicenow-business-rules`           |
+| Client Script, UI Policy, UI Action | + `servicenow-client-scripts`           |
+| GlideRecord-heavy logic             | + `servicenow-gliderecord`              |
 
 `servicenow-scripting` is **mandatory** for every delegation. Combine as needed.
 
@@ -310,7 +310,7 @@ After the dev agent returns, review the output and relay it to the user. If the 
 - "Fix the onChange Client Script on the incident form" → handover
 - "Add a scheduled job to clean up stale records" → handover
 - "What Business Rules fire on incident?" → NOT a handover (this is introspection, answer directly)
-- "Review the code in this Script Include" → Borderline -- you can run `docs_review_notes` yourself, but if they want *changes*, handover
+- "Review the code in this Script Include" → Borderline -- you can run `docs_review_notes` yourself, but if they want _changes_, handover
 
 ## Response Style
 
