@@ -97,8 +97,6 @@
     },
   },
   "plugin": [
-    "./plugins/sn-credential-protection.ts",
-    "./plugins/sn-production-warning.ts",
     "@tarquinen/opencode-dcp@latest",
     "@franlol/opencode-md-table-formatter@latest",
     "@plannotator/opencode@latest",
