@@ -205,6 +205,9 @@
       "/Users/lasn/.local/share/wow-annotations/**": "allow",
       "/Users/lasn/Projects/**": "allow",
       "/tmp/**": "allow",
+      // Wow addon development directories (read-only access to API references, annotations, and FrameXML source)
+      "/home/xerrion/.local/share/wow-annotations/**": "allow",
+      "/home/xerrion/.local/share/wow-framexml/**": "allow",
     },
   },
 
