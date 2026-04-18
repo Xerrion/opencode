@@ -3,6 +3,9 @@ description: Git and GitHub operations - branching, commits, PRs, issues, releas
 mode: subagent
 temperature: 0.3
 color: "#F05032"
+tools:
+  write: false
+  edit: false
 ---
 
 # Git Agent

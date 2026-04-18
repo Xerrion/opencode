@@ -2,6 +2,9 @@
 description: Fast read-only codebase navigator for structure, patterns, and context gathering
 mode: subagent
 temperature: 0.2
+tools:
+  write: false
+  edit: false
 ---
 
 # Explore Agent

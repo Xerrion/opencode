@@ -1,6 +1,10 @@
 ---
 description: Knowledge architect for external research and documentation
 mode: subagent
+temperature: 0.2
+tools:
+  write: false
+  edit: false
 ---
 
 # Researcher Agent

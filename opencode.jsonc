@@ -34,7 +34,7 @@
       },
       "enabled": true,
     },
-    "servicenow": {
+    /*"servicenow": {
       // Requires: /Users/lasn/Projects/servicenow-platform-mcp to exist (local clone)
       "type": "local",
       "command": [
@@ -53,7 +53,7 @@
         "SCRIPT_ALLOWED_ROOT": "/Users/lasn/Projects/ServiceNow",
       },
       "enabled": true,
-    },
+    }, */
     "context7": {
       "type": "remote",
       "url": "https://mcp.context7.com/mcp",
@@ -72,7 +72,26 @@
       "enabled": true,
       "timeout": 10000,
     },
-    "atlassian": {
+    "playwright": {
+      // Requires: mise + node installed (mise use -g node@lts), chromium pre-installed (npx playwright install chromium)
+      "type": "local",
+      "command": [
+        "mise",
+        "exec",
+        "--",
+        "npx",
+        "-y",
+        "@playwright/mcp@latest",
+        "--headless",
+        "--isolated",
+        "--browser=chromium",
+        "--block-service-workers",
+        "--image-responses=omit",
+        "--output-dir=/tmp/playwright-mcp-research",
+      ],
+      "enabled": true,
+    },
+    /*"atlassian": {
       "type": "local",
       "command": ["uvx", "mcp-atlassian"],
       "environment": {
@@ -84,7 +103,7 @@
         "CONFLUENCE_API_TOKEN": "{env:ATLASSIAN_API_TOKEN}",
       },
       "enabled": true,
-    },
+    },*/
   },
   "lsp": {
     "pyright": {
@@ -193,6 +212,7 @@
     "atlassian*": "allow",
     "sonarqube_*": "deny",
     "servicenow_*": "deny",
+    "playwright_*": "deny",
     "wow-api-dev": "deny",
     "wow-api-lookup": "deny",
     "wow-wiki-fetch": "deny",
@@ -217,7 +237,7 @@
   "agent": {
     // Research agent: read-only, external search tools enabled
     "researcher": {
-      "model": "github-copilot/claude-sonnet-4.6",
+      "model": "github-copilot/claude-opus-4.7",
       "temperature": 0.3,
       "permission": {
         // No file mutation
@@ -230,6 +250,7 @@
         "context7_*": "allow",
         "exa_*": "allow",
         "gh_grep*": "allow",
+        "playwright_*": "allow",
         "webfetch": "allow",
         // Bash: inherits global read-only tools, add GitHub CLI read ops
         "bash": {
@@ -272,16 +293,34 @@
 
     // Full-featured coding agent
     "coder": {
-      "model": "github-copilot/claude-opus-4.6",
+      "model": "github-copilot/claude-opus-4.7",
       "temperature": 0.3,
       "permission": {
         "write": "allow",
         "edit": "allow",
         "plan_read": "deny",
         "todoread": "deny",
-        // Bash: inherits global read-only tools, add dev tooling
+        "playwright_*": "allow",
+        // Bash: give the coder full access to bash.
+        // Reasoning for this is that the coder should not be stopped by missing permissions
         "bash": {
-          // Package managers & build tools
+          "*": "allow",
+        },
+      },
+    },
+
+    // Test authoring and suite execution
+    "tester": {
+      "model": "github-copilot/claude-opus-4.7",
+      "temperature": 0.2,
+      "permission": {
+        "write": "allow",
+        "edit": "allow",
+        "plan_read": "deny",
+        "todoread": "deny",
+        // Bash: inherits global read-only tools, add test runners & dev tooling
+        "bash": {
+          // Package managers & runtimes (needed to invoke test runners)
           "bun *": "allow",
           "npm *": "allow",
           "npx *": "allow",
@@ -298,7 +337,12 @@
           "go *": "allow",
           "make *": "allow",
           "dotnet *": "allow",
-          // Linters, formatters, type checkers
+          // Test frameworks
+          "pytest *": "allow",
+          "jest *": "allow",
+          "vitest *": "allow",
+          "mocha *": "allow",
+          // Linters / type checkers (useful alongside tests)
           "eslint *": "allow",
           "prettier *": "allow",
           "biome *": "allow",
@@ -319,39 +363,9 @@
       },
     },
 
-    // Simplify / reduce complexity in code
-    "code-simplifier": {
-      "model": "github-copilot/claude-sonnet-4.6",
-      "temperature": 0.3,
-      "permission": {
-        "write": "allow",
-        "edit": "allow",
-        // Bash: inherits global read-only tools, add build & lint
-        "bash": {
-          "bun *": "allow",
-          "npm *": "allow",
-          "npx *": "allow",
-          "yarn *": "allow",
-          "pnpm *": "allow",
-          "node *": "allow",
-          "cargo *": "allow",
-          "go *": "allow",
-          "make *": "allow",
-          "tsc *": "allow",
-          "eslint *": "allow",
-          "prettier *": "allow",
-          "biome *": "allow",
-          "ruff *": "allow",
-          "mypy *": "allow",
-          "pyright *": "allow",
-          "basedpyright *": "allow",
-        },
-      },
-    },
-
     // Code reviewer & refactoring analyst (read-only)
     "reviewer": {
-      "model": "github-copilot/claude-sonnet-4.6",
+      "model": "github-copilot/claude-opus-4.7",
       "temperature": 0.1,
       "permission": {
         "write": "deny",
@@ -365,9 +379,24 @@
       },
     },
 
+    // Failure triage & root-cause diagnosis (read-only)
+    "debugger": {
+      "model": "github-copilot/claude-opus-4.7",
+      "temperature": 0.1,
+      "permission": {
+        "write": "deny",
+        "edit": "deny",
+        "delegate": "allow",
+        "plan_read": "allow",
+        "delegation_read": "allow",
+        "delegation_list": "allow",
+        // Bash: inherits global read-only tools (no additions needed)
+      },
+    },
+
     // Task orchestrator / planner
     "plan": {
-      "model": "github-copilot/claude-sonnet-4.6",
+      "model": "github-copilot/claude-opus-4.7",
       "permission": {
         "write": "deny",
         "edit": "deny",
@@ -382,7 +411,7 @@
 
     // Build orchestrator
     "build": {
-      "model": "github-copilot/claude-sonnet-4.6",
+      "model": "github-copilot/claude-opus-4.7",
       "prompt": "./agents/build.md",
       "permission": {
         "read": "deny",
@@ -398,13 +427,14 @@
 
     // Filesystem & repo explorer (read-only)
     "explore": {
-      "model": "github-copilot/claude-haiku-4.5",
+      "model": "github-copilot/claude-opus-4.7",
       "permission": {
         "write": "deny",
         "edit": "deny",
         "delegate": "allow",
         "plan_read": "deny",
         "todoread": "deny",
+        "playwright_*": "allow",
         // Bash: inherits global read-only tools, add docker inspect
         "bash": {
           "docker inspect*": "allow",
@@ -414,7 +444,7 @@
 
     // WoW addon reference agent (read-only + external APIs)
     "wow-addon": {
-      "model": "github-copilot/claude-sonnet-4.6",
+      "model": "github-copilot/claude-opus-4.7",
       "permission": {
         "write": "deny",
         "edit": "deny",
