@@ -2,9 +2,8 @@
 description: Reviews code for correctness, security, performance, and maintainability. Identifies refactoring opportunities that reduce complexity with minimal risk.
 mode: subagent
 temperature: 0.1
-tools:
-  write: false
-  edit: false
+permission:
+  edit: deny
 ---
 
 # Code Review Agent

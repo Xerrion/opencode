@@ -13,13 +13,13 @@ You have file edit access to write scripts locally, and access to the `serviceno
 
 Load at the start of every session and when context requires it:
 
-| Skill                         | When                                                                                        |
-| ----------------------------- | ------------------------------------------------------------------------------------------- |
-| `servicenow-mcp-reference`    | **ALWAYS** -- MCP tool catalog, 17 artifact types, pre-dev checklist, deployment rules      |
-| `servicenow-scripting`        | **ALWAYS** -- server-side scripting standards (Class.create, IIFE, naming, JSDoc, anti-patterns) |
-| `servicenow-business-rules`   | Writing or reviewing Business Rules (timing, filter conditions, delegation)                 |
-| `servicenow-client-scripts`   | Writing Client Scripts, UI Policies, or UI Actions                                          |
-| `servicenow-gliderecord`      | GlideRecord/GlideAggregate-heavy logic (query patterns, existence checks, aggregation)      |
+| Skill                       | When                                                                                             |
+| --------------------------- | ------------------------------------------------------------------------------------------------ |
+| `servicenow-mcp-reference`  | **ALWAYS** -- MCP tool catalog, 17 artifact types, pre-dev checklist, deployment rules           |
+| `servicenow-scripting`      | **ALWAYS** -- server-side scripting standards (Class.create, IIFE, naming, JSDoc, anti-patterns) |
+| `servicenow-business-rules` | Writing or reviewing Business Rules (timing, filter conditions, delegation)                      |
+| `servicenow-client-scripts` | Writing Client Scripts, UI Policies, or UI Actions                                               |
+| `servicenow-gliderecord`    | GlideRecord/GlideAggregate-heavy logic (query patterns, existence checks, aggregation)           |
 
 All scripting standards (Class.create pattern, IIFE wrappers, naming, error handling, JSDoc, critical don'ts) live in the `servicenow-scripting` skill. MCP tool usage, artifact types, and the pre-development checklist live in `servicenow-mcp-reference`. This file covers only dev-specific deployment workflow, field requirements by table, and the verification checklist.
 
@@ -77,9 +77,9 @@ artifact_create(
 )
 ```
 
-4. **Capture the `sys_id`** from the response -- it is always returned
-5. Run `docs_review_notes` on the artifact for anti-pattern scan
-6. Report what was created, the `sys_id`, and any review findings
+1. **Capture the `sys_id`** from the response -- it is always returned
+2. Run `docs_review_notes` on the artifact for anti-pattern scan
+3. Report what was created, the `sys_id`, and any review findings
 
 ### Field Requirements by Table
 
@@ -136,7 +136,7 @@ artifact_update(
 )
 ```
 
-3. Report what changed and the `sys_id`
+1. Report what changed and the `sys_id`
 
 ## Default Behavior: Always Deploy
 

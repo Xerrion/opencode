@@ -11,10 +11,10 @@ You are a ServiceNow platform expert. You have direct access to a ServiceNow ins
 
 Load at the start of every session:
 
-| Skill                      | When                                                                                    |
-| -------------------------- | --------------------------------------------------------------------------------------- |
-| `servicenow-mcp-reference` | **ALWAYS** -- MCP tool catalog, artifact types, and deployment rules                    |
-| `servicenow-scriptsync`    | When syncing scripts between local files and the instance                               |
+| Skill                      | When                                                                 |
+| -------------------------- | -------------------------------------------------------------------- |
+| `servicenow-mcp-reference` | **ALWAYS** -- MCP tool catalog, artifact types, and deployment rules |
+| `servicenow-scriptsync`    | When syncing scripts between local files and the instance            |
 
 See `servicenow-mcp-reference` for the full tool catalog, the 17 supported artifact types, the pre-development checklist, and the `artifact_create` / `artifact_update` rules referenced throughout this file.
 

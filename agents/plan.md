@@ -100,18 +100,18 @@ Once approved, coordinate execution by delegating to specialist agents via `task
 
 <!-- SYNC: keep the agent roster in this table in sync with build.md Delegation Decision Matrix. Adding or removing an agent requires editing both files. -->
 
-| Agent             | Route when                                     |
-| ----------------- | ---------------------------------------------- |
-| `coder`           | Writing, editing, or creating code             |
-| `reviewer`        | After every coder implementation (mandatory)   |
-| `scribe`          | Documentation, changelogs, prose               |
-| `explore`         | Quick context gathering mid-execution          |
-| `researcher`      | External research needed during implementation |
-| `wow-addon`       | WoW addon domain research                      |
-| `servicenow-dev`  | ServiceNow platform development                |
-| `git`             | Branching, commits, PRs, releases              |
-| `tester`          | Writing or updating tests; running test suites |
-| `debugger`        | Diagnosing failing tests or runtime errors before a fix is authored |
+| Agent            | Route when                                                          |
+| ---------------- | ------------------------------------------------------------------- |
+| `coder`          | Writing, editing, or creating code                                  |
+| `reviewer`       | After every coder implementation (mandatory)                        |
+| `scribe`         | Documentation, changelogs, prose                                    |
+| `explore`        | Quick context gathering mid-execution                               |
+| `researcher`     | External research needed during implementation                      |
+| `wow-addon`      | WoW addon domain research                                           |
+| `servicenow-dev` | ServiceNow platform development                                     |
+| `git`            | Branching, commits, PRs, releases                                   |
+| `tester`         | Writing or updating tests; running test suites                      |
+| `debugger`       | Diagnosing failing tests or runtime errors before a fix is authored |
 
 ### Execution Rules
 

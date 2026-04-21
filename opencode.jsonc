@@ -34,7 +34,7 @@
       },
       "enabled": true,
     },
-    /*"servicenow": {
+    "servicenow": {
       // Requires: /Users/lasn/Projects/servicenow-platform-mcp to exist (local clone)
       "type": "local",
       "command": [
@@ -50,10 +50,10 @@
         "SERVICENOW_PASSWORD": "{env:SERVICENOW_MCP_DEV_PASSWORD}",
         "MCP_TOOL_PACKAGE": "{env:SERVICENOW_MCP_TOOL_PACKAGE}",
         "SERVICENOW_ENV": "{env:SERVICENOW_MCP_DEV_ENV}",
-        "SCRIPT_ALLOWED_ROOT": "/Users/lasn/Projects/ServiceNow",
+        "SCRIPT_ALLOWED_ROOT": "/Users/lasn/Projects/servicenow-development/",
       },
       "enabled": true,
-    }, */
+    },
     "context7": {
       "type": "remote",
       "url": "https://mcp.context7.com/mcp",
@@ -91,19 +91,19 @@
       ],
       "enabled": true,
     },
-    /*"atlassian": {
+    "atlassian": {
       "type": "local",
       "command": ["uvx", "mcp-atlassian"],
       "environment": {
-        "JIRA_URL": "{env:JIRA_URL_BASE}",
+        "JIRA_URL": "{env:ATLASSIAN_URL_BASE}",
         "JIRA_USERNAME": "{env:ATLASSIAN_USERNAME}",
         "JIRA_API_TOKEN": "{env:ATLASSIAN_API_TOKEN}",
-        "CONFLUENCE_URL": "{env:JIRA_URL_BASE}/wiki",
+        "CONFLUENCE_URL": "{env:ATLASSIAN_URL_BASE}/wiki",
         "CONFLUENCE_USERNAME": "{env:ATLASSIAN_USERNAME}",
         "CONFLUENCE_API_TOKEN": "{env:ATLASSIAN_API_TOKEN}",
       },
       "enabled": true,
-    },*/
+    },
   },
   "lsp": {
     "pyright": {
@@ -462,7 +462,7 @@
 
     // Git & GitHub operations
     "git": {
-      "model": "github-copilot/gpt-5.4-mini",
+      "model": "github-copilot/claude-opus-4.7",
       "prompt": "./agents/git.md",
       "permission": {
         "read": "allow",
@@ -478,7 +478,7 @@
 
     // ServiceNow platform API agent
     "servicenow": {
-      "model": "github-copilot/claude-sonnet-4.6",
+      "model": "github-copilot/claude-opus-4.7",
       "permission": {
         "write": "deny",
         "edit": "deny",
@@ -491,7 +491,7 @@
 
     // ServiceNow development agent (file access + API)
     "servicenow-dev": {
-      "model": "github-copilot/claude-sonnet-4.6",
+      "model": "github-copilot/claude-opus-4.7",
       "permission": {
         "write": "allow",
         "edit": "allow",

@@ -2,9 +2,8 @@
 description: Read-only diagnostician for failing tests, runtime errors, and hard-to-reproduce bugs. Produces a reproduction and root-cause report; does not patch.
 mode: subagent
 temperature: 0.1
-tools:
-  write: false
-  edit: false
+permission:
+  edit: deny
 ---
 
 # Debugger Agent
