@@ -1,0 +1,61 @@
+# Annotated .rev/config.yaml example
+# Copy to .rev/config.yaml and edit for your engagement.
+
+engagement:
+  # Short slug for this engagement. Used in report filenames.
+  name: malware-triage-q2
+
+  # ISO-8601 date the engagement started.
+  started: 2026-04-21
+
+  # Written authorization reference. Required.
+  # Point to a file path, ticket URL, or direct quote from the owner.
+  authorization_ref: "User-owned firmware sample, authorization on file at docs/legal/2026-04-21-re.md"
+
+  # Primary goal of this engagement.
+  # One of: malware-triage | interop | capability-audit | firmware-audit | drm-analysis
+  goal: malware-triage
+
+  # Risk class of the targets. Drives sandbox strictness.
+  # One of: unknown | trusted | suspected-malware | confirmed-malware
+  risk_class: suspected-malware
+
+targets:
+  # One entry per artifact under analysis.
+  # `kind` is one of: native-elf | native-pe | native-macho | android-apk | ios-ipa |
+  # jvm-jar | dotnet-dll | js-bundle | wasm | firmware | protocol-capture
+  - kind: native-pe
+    path: samples/a3f2e17c8b9d2e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f
+    sha256: a3f2e17c8b9d2e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f
+
+  - kind: firmware
+    path: samples/firmware-v2.bin
+    sha256: 9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c
+
+sandbox:
+  # Docker image used for all dynamic analysis.
+  image: re-toolkit
+
+  # Digest of the built image. Fill after `docker build` returns the sha256.
+  # Replays assert this matches the currently-available image.
+  digest: "sha256:REPLACE_WITH_BUILT_DIGEST"
+
+  # Network mode. `none` is the only supported default.
+  # `tap` routes through a local capture-only bridge. Requires tap_justification.
+  network: none
+
+  # Required when network: tap. Explain why direct-to-canary capture is needed
+  # and what the capture boundary is. Leave empty when network: none.
+  tap_justification: ""
+
+tools:
+  # Record every tool invoked during the engagement with its version.
+  # Replays compare recorded versions to the current toolkit.
+  - { name: ghidra, version: "11.0.3" }
+  - { name: rizin,  version: "0.7.2" }
+  - { name: frida,  version: "16.4.8" }
+  - { name: yara,   version: "4.5.1" }
+
+output:
+  # One of: markdown | issues | inline
+  format: markdown

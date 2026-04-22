@@ -91,9 +91,10 @@
       ],
       "enabled": true,
     },
+    // Fail-loud guard: aborts with a clear error if ATLASSIAN_* env vars are unset/empty (prevents silent zero-tools registration).
     "atlassian": {
       "type": "local",
-      "command": ["uvx", "mcp-atlassian"],
+      "command": ["sh", "-c", ": \"${ATLASSIAN_URL_BASE:?ATLASSIAN_URL_BASE must be set}\"; : \"${ATLASSIAN_USERNAME:?ATLASSIAN_USERNAME must be set}\"; : \"${ATLASSIAN_API_TOKEN:?ATLASSIAN_API_TOKEN must be set}\"; exec uvx mcp-atlassian"],
       "environment": {
         "JIRA_URL": "{env:ATLASSIAN_URL_BASE}",
         "JIRA_USERNAME": "{env:ATLASSIAN_USERNAME}",
@@ -209,7 +210,7 @@
     "context7_*": "deny",
     "exa_*": "deny",
     "gh_grep*": "deny",
-    "atlassian*": "allow",
+    "atlassian*": "deny",
     "sonarqube_*": "deny",
     "servicenow_*": "deny",
     "playwright_*": "deny",
@@ -486,6 +487,19 @@
         "bash": { "*": "deny" },
         "task": "allow",
         "servicenow_*": "allow",
+      },
+    },
+
+    // Jira backlog authoring agent (Atlassian MCP access)
+    "jira-coach": {
+      "model": "github-copilot/claude-opus-4.7",
+      "permission": {
+        "write": "deny",
+        "edit": "deny",
+        "bash": { "*": "deny" },
+        "task": "allow",
+        "webfetch": "deny",
+        "atlassian*": "allow",
       },
     },
 

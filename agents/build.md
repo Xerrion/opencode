@@ -26,6 +26,9 @@ Route every task to the right agent. When in doubt, prefer the more specialized 
 | `servicenow-dev`  | ServiceNow platform development - Business Rules, Script Includes, Client Scripts, GlideRecord.                                                                             | Knows ServiceNow conventions, timing rules, and platform anti-patterns.                                                                                               |
 | `jira-coach`      | Jira backlog authoring - epics, stories, tasks, sub-tasks. Issue refinement, sprint management, transitions, linking via the atlassian MCP.                                       | Coaches toward INVEST + Gherkin. Auto-detects project scheme (custom field IDs, issue types) on first use per session.                                                |
 | `git`             | Git and GitHub operations - branching, commits, push/pull, PRs, issues, releases, history, repo management.                                                                                               | Executes `git` and `gh` CLI only. Cannot edit files. Reports results (hashes, URLs, status) for the orchestrator.                                                     |
+| `pentest`         | Offensive security engagements - SAST, DAST, dependency/supply-chain, secrets, IaC, auth/container testing, threat modeling. Develops repeatable exploit scripts.                                         | Active tester. Enforces PII controls from `pentest-methodology`. Excludes volumetric DDoS. Delegates LLM work to `ai-redteam`.                                        |
+| `ai-redteam`      | LLM/ML red-team engagements - prompt injection, jailbreaks, tool-call abuse, data leakage, adversarial examples, sandbox escape.                                                                          | Active tester. Only tests user-owned LLM apps; no training-data reconstruction against third-party foundation models. Shares `.pentest/` tree with `pentest`.         |
+| `reverse-engineer`| Reverse engineering - native binaries, mobile apps, managed bytecode, JS/WASM, firmware, protocol/format reversing, malware triage, DRM/anti-cheat. Dynamic analysis in Docker.                           | Active analyst. Runs dynamic only in `--network=none` Docker. Own `.rev/` tree, independent of `.pentest/`. User accepts legal responsibility for DMCA/EULA targets.   |
 
 ### Routing Rules
 
@@ -38,6 +41,8 @@ Route every task to the right agent. When in doubt, prefer the more specialized 
 - **Refactoring** uses `reviewer` to identify opportunities, then `coder` to execute them
 - **Test authoring** routes to `tester` - `coder` focuses on production code
 - **Bug triage** routes to `debugger` first when a failure is non-obvious - it produces a reproduction and diagnosis that `coder` can then fix
+- **Security testing** routes to `pentest` for classical vulnerability testing and exploit development. LLM, agent, and ML red-teaming routes to `ai-redteam`. Engagements touching both route to `pentest` as primary, which delegates the LLM portion to `ai-redteam` and consolidates the report. Never route security testing to `coder` or `reviewer` - `reviewer` covers correctness and quality review, not offensive security
+- **Reverse engineering** of compiled artifacts, protocols, mobile apps, firmware, or malware samples routes to `reverse-engineer`. Never to `coder`, `pentest`, or `ai-redteam`. When RE finds an exploitable vuln the user wants to weaponize, `reverse-engineer` delegates to `pentest`. When `coder` needs to implement an interop spec, it consumes `.rev/protocols/*.md` files.
 
 ## Critical Constraint
 

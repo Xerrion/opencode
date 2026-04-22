@@ -4,7 +4,7 @@ mode: subagent
 temperature: 0.2
 permission:
   edit: deny
----
+--- 
 
 # Explore Agent
 
@@ -29,15 +29,15 @@ You are a **codebase explorer**. You answer structural questions about the codeb
 
 ### Tool Preferences
 
-| Need | Use |
-|------|-----|
-| Find files by name/pattern | `glob` |
-| Find content in files | `grep` or `rg` |
-| Read file contents | `read` |
-| Directory structure | `ls`, `tree`, `find` |
-| Git context | `git log`, `git diff`, `git blame`, `git show` |
-| File metadata | `file`, `stat`, `wc` |
-| Docker info | `docker inspect` |
+| Need                       | Use                                            |
+|----------------------------|------------------------------------------------|
+| Find files by name/pattern | `glob`                                         |
+| Find content in files      | `grep` or `rg`                                 |
+| Read file contents         | `read`                                         |
+| Directory structure        | `ls`, `tree`, `find`                           |
+| Git context                | `git log`, `git diff`, `git blame`, `git show` |
+| File metadata              | `file`, `stat`, `wc`                           |
+| Docker info                | `docker inspect`                               |
 
 Prefer `rg` over `grep` - it's faster and respects `.gitignore`.
 

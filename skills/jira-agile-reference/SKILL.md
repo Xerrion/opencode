@@ -24,6 +24,8 @@ Rules:
 - An Epic may roll up to an Initiative or directly to an Objective. Ask the user which when authoring a new Epic, but do not block if they say no.
 - Bugs follow the same authoring rules as Stories (summary, AC) unless the project treats them as lightweight.
 
+The coach creates Epic, Story, Task, Spike, Bug, and Sub-task. Objective and Initiative are read-only - owned by other functions; the coach links to existing ones but does not create them.
+
 ## Pre-Development Checklist
 
 Before creating or modifying any Jira item, run these tools to build context:
@@ -32,7 +34,7 @@ Before creating or modifying any Jira item, run these tools to build context:
 2. `atlassian_jira_search_fields(keyword="epic link")` -- and similar for "sprint". Custom field IDs (like `customfield_10016`) vary per instance and must be resolved before writes. Acceptance criteria is not a custom field on this team - it lives in the issue description body, so do not resolve a field ID for it.
 3. `atlassian_jira_search(jql="project=<KEY> AND created > -30d ORDER BY created DESC", limit=5)` -- sample recent issues to learn summary style and component usage.
 4. `atlassian_jira_get_transitions(issue_key)` -- before any `atlassian_jira_transition_issue` call. Transition IDs are workflow-specific.
-5. Detect OKR framing. If the parent issue's summary starts with `C<N>-<YEAR>` (Objective pattern), or the user's intent mentions Key Result / KR / OKR / objective, switch the authoring to English section headers even when the rest of the body is Danish. Non-OKR delivery work uses Danish headers when the user writes Danish.
+5. Detect OKR framing. If the parent issue's summary starts with `C<N>-<YEAR>` (Objective pattern), or the user's intent mentions Key Result / KR / OKR / objective, switch the authoring to English section headers even when the rest of the body is Danish. Non-OKR delivery work uses Danish headers when the user writes Danish. Detection only - never create an Objective. If the user wants a new OKR, tell them to route it through the OKR owner.
 
 Run applicable tools in parallel. Skip steps where the user supplied the info.
 
@@ -40,6 +42,7 @@ If a write later fails with "field not found" or "invalid field", re-run `atlass
 
 ## Write Rules
 
+- Never call `atlassian_jira_create_issue` or `atlassian_jira_batch_create_issues` with `issue_type: "Objective"`. Objective creation is out of scope - route new OKR requests to the OKR owner. Initiative creation is also out of scope by default; confirm with the user before creating one.
 - `fields` and `additional_fields` on `atlassian_jira_create_issue` / `atlassian_jira_update_issue` must be **JSON strings**, not objects. Escape accordingly.
 - Custom fields are referenced by ID (`customfield_10001`), never by display name.
 - Descriptions, comments, and AC bodies accept Markdown, but this tenant's house style is plain text with label lines. Do NOT emit markdown headings (`#`, `##`) or bold (`**...**`) in issue bodies - use plain-text label lines like `Formål / baggrund` or `Acceptance Criteria`. Do NOT emit `[text](url)` markdown links in issue bodies - use bare URLs. Jira ADF renders bare URLs as smart inline cards.
@@ -207,6 +210,8 @@ https://example.com/ritm-or-confluence-or-ticket
 
 ### OKR/KR Epic (English, Template B)
 
+Template B produces an Epic under an existing Objective; never create the Objective itself.
+
 ```
 summary: KR1 – Tidsbesparelse fastlagt for alle bestillingstyper
 
@@ -348,6 +353,7 @@ project = <KEY> AND issuetype = Story AND statusCategory = Done ORDER BY resolve
 - **Sub-tasks without parents** - orphaned sub-tasks are workflow rot. Attach or delete.
 - **Using labels** - this team does not use Jira labels. Do not set the `labels` field on create or update. Do not suggest labels as a categorization mechanism.
 - **Story points** - this team does not size in points. Do not set a story points custom field. Do not ask the user "how many points?"
+- **Creating Objectives** - the coach never creates Objective issues or new `C<N>-<YEAR>` OKR entries. Link Epics to existing Objectives; route new OKR requests to the OKR owner.
 
 ## Danish Template Glossary
 
@@ -362,8 +368,8 @@ Mapping between Danish and English section labels so the agent reads both fluent
 - Forslag til nedbrydning (temaer) = Breakdown suggestions (themes)
 - Interessenter = Stakeholders
 - Baggrund = Background
-- Effektmål = Impact goals
-- Succeskriterier = Success criteria
+- Effektmål = Impact goals (read-only, Objective scope, owned by OKR function)
+- Succeskriterier = Success criteria (read-only, Objective scope, owned by OKR function)
 - Kilder / Referencer = Sources / References
 - Definition of Done = (no Danish equivalent in the corpus - English used verbatim)
 - Measurement principles = (English; used on OKR/KR Epics)

@@ -29,7 +29,7 @@ This is non-negotiable. The philosophy defines the quality standards your code m
 ## Tools Available
 
 | Tool    | Purpose                                   |
-| ------- | ----------------------------------------- |
+|---------|-------------------------------------------|
 | `read`  | Understand existing code before modifying |
 | `write` | Create new files                          |
 | `edit`  | Modify existing files                     |
