@@ -94,7 +94,11 @@
     // Fail-loud guard: aborts with a clear error if ATLASSIAN_* env vars are unset/empty (prevents silent zero-tools registration).
     "atlassian": {
       "type": "local",
-      "command": ["sh", "-c", ": \"${ATLASSIAN_URL_BASE:?ATLASSIAN_URL_BASE must be set}\"; : \"${ATLASSIAN_USERNAME:?ATLASSIAN_USERNAME must be set}\"; : \"${ATLASSIAN_API_TOKEN:?ATLASSIAN_API_TOKEN must be set}\"; exec uvx mcp-atlassian"],
+      "command": [
+        "sh",
+        "-c",
+        ": \"${ATLASSIAN_URL_BASE:?ATLASSIAN_URL_BASE must be set}\"; : \"${ATLASSIAN_USERNAME:?ATLASSIAN_USERNAME must be set}\"; : \"${ATLASSIAN_API_TOKEN:?ATLASSIAN_API_TOKEN must be set}\"; exec uvx mcp-atlassian",
+      ],
       "environment": {
         "JIRA_URL": "{env:ATLASSIAN_URL_BASE}",
         "JIRA_USERNAME": "{env:ATLASSIAN_USERNAME}",
@@ -306,6 +310,7 @@
         // Reasoning for this is that the coder should not be stopped by missing permissions
         "bash": {
           "*": "allow",
+          "git *": "deny",
         },
       },
     },
