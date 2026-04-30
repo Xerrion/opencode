@@ -23,7 +23,7 @@ Run ALL applicable MCP tools simultaneously:
 
 1. **`table_describe(table="<target>")`** — Always. Get the full schema.
 2. **`docs_logic_map(table="<target>")`** — Always. See existing automations to avoid conflicts.
-3. **`meta_what_writes(table="<target>", field="<field>")`** — If a specific field is targeted. Find what already writes to it.
+3. **`meta_business_rules_for_table(table="<target>", field="<field>")`** — If a specific field is targeted. Find what already writes to it.
 4. **`meta_list_artifacts(artifact_type="<type>")`** + **`meta_get_artifact`** — If modifying an existing artifact. Get the current script body.
 
 ### Step 3: Delegate to servicenow-dev
@@ -45,7 +45,7 @@ EXISTING AUTOMATIONS ON THIS TABLE:
 <docs_logic_map results>
 
 FIELD WRITERS (if applicable):
-<meta_what_writes results>
+<meta_business_rules_for_table results>
 
 CURRENT SCRIPT (if modifying existing):
 <full script body from meta_get_artifact>

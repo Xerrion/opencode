@@ -10,7 +10,7 @@ This repository contains the global configuration, agent definitions, and specia
 - **`dcp.jsonc`**: Schema stub for the Development Communication Protocol plugin.
 - **`package.json`**: JS toolchain definitions for custom plugins and tools.
 - **`.markdownlint.json`**: Rules for maintaining consistent documentation style.
-- **`agents/`**: 17 specialized agent declarations defining modes, roles, and tool access.
+- **`agents/`**: 19 specialized agent declarations defining modes, roles, and tool access.
 - **`skills/`**: 28 on-demand knowledge packs for domains like ServiceNow, WoW, and Security.
 - **`command/`**: 12 slash command definitions for automated pipelines and interactive UIs.
 - **`philosophy/`**: Discipline enforcement requiring philosophy loading before any code changes.
@@ -34,11 +34,13 @@ Agents operate as either primary orchestrators or specialized subagents. Primary
 | `git` | subagent | Git/GitHub operations via `git` and `gh` |
 | `jira-coach` | subagent | Jira authoring via atlassian MCP (TV2 style) |
 | `pentest` | subagent | Offensive security - SAST, DAST, supply-chain, IaC |
+| `product` | subagent | Upstream Product/PM advisor producing structured product briefs |
 | `researcher` | subagent | External knowledge gathering |
 | `reverse-engineer` | subagent | RE across binaries, mobile, JS/WASM, firmware, malware |
 | `reviewer` | subagent | Read-only code review plus safe refactors |
 | `scribe` | subagent | Technical writer - READMEs, guides, API refs, changelogs |
 | `servicenow-dev` | subagent | ServiceNow script developer (Business Rules, Script Includes) |
+| `tech-lead` | subagent | Upstream Tech Lead/Architect advisor producing ADR-style briefs |
 | `tester` | subagent | Writes/maintains tests, runs suites |
 | `wow-addon` | subagent | WoW addon domain expert, read-only research |
 
@@ -62,7 +64,6 @@ Skills provide deep domain context and are grouped by theme for scannability. Th
 - **`servicenow-business-rules`**: Business Rule timing selection and anti-patterns.
 - **`servicenow-client-scripts`**: onChange guards, GlideAjax, and UI Policy patterns.
 - **`servicenow-mcp-reference`**: Catalog of 17 supported ServiceNow artifact types.
-- **`servicenow-scriptsync`**: Integration for managing local ServiceNow script files.
 
 ### World of Warcraft
 - **`wow-addon-dev`**: Addon development with LuaLS API annotations.

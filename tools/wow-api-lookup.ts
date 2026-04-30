@@ -2,10 +2,7 @@ import { tool } from "@opencode-ai/plugin";
 import os from "node:os";
 import path from "node:path";
 
-const ANNOTATIONS_ROOT = path.join(
-  os.homedir(),
-  ".local/share/wow-annotations/Annotations",
-);
+const ANNOTATIONS_ROOT = path.join(os.homedir(), ".local/share/wow-annotations/Annotations");
 
 const CATEGORY_PATHS: Record<string, string> = {
   api: "Core/Blizzard_APIDocumentationGenerated",
@@ -23,17 +20,13 @@ const VALID_CATEGORIES = Object.keys(CATEGORY_PATHS);
 function resolveSearchPath(category: string): string {
   const subpath = CATEGORY_PATHS[category];
   if (subpath === undefined) {
-    throw new Error(
-      `Invalid category "${category}". Valid: ${VALID_CATEGORIES.join(", ")}`,
-    );
+    throw new Error(`Invalid category "${category}". Valid: ${VALID_CATEGORIES.join(", ")}`);
   }
   return subpath ? path.join(ANNOTATIONS_ROOT, subpath) : ANNOTATIONS_ROOT;
 }
 
 function relativePath(absolutePath: string): string {
-  return absolutePath.startsWith(ANNOTATIONS_ROOT) ?
-      absolutePath.slice(ANNOTATIONS_ROOT.length + 1)
-    : absolutePath;
+  return absolutePath.startsWith(ANNOTATIONS_ROOT) ? absolutePath.slice(ANNOTATIONS_ROOT.length + 1) : absolutePath;
 }
 
 function formatRgOutput(raw: string): string {
@@ -99,32 +92,20 @@ async function searchWithContext(
   return await runRg(args);
 }
 
-async function findMatchingFiles(
-  simplified: string,
-  searchPath: string,
-): Promise<string[]> {
-  const raw = await runRg([
-    "--files",
-    "--glob",
-    `*${simplified}*.lua`,
-    searchPath,
-  ]);
+async function findMatchingFiles(simplified: string, searchPath: string): Promise<string[]> {
+  const raw = await runRg(["--files", "--glob", `*${simplified}*.lua`, searchPath]);
   if (!raw) return [];
   return raw.split("\n").filter(Boolean);
 }
 
-async function readFileHead(
-  filePath: string,
-  maxLines: number,
-): Promise<string> {
+async function readFileHead(filePath: string, maxLines: number): Promise<string> {
   const file = Bun.file(filePath);
   const text = await file.text();
   const lines = text.split("\n");
   const truncated = lines.length > maxLines;
   const content = lines.slice(0, maxLines).join("\n");
   const header = `--- ${relativePath(filePath)} (${lines.length} lines total) ---`;
-  const footer =
-    truncated ? `\n... truncated at ${maxLines} of ${lines.length} lines` : "";
+  const footer = truncated ? `\n... truncated at ${maxLines} of ${lines.length} lines` : "";
   return `${header}\n${content}${footer}`;
 }
 
@@ -140,16 +121,7 @@ export default tool({
         'The API name, namespace, widget type, enum, or keyword to search for. Examples: "C_LootHistory", "GetLootSlotInfo", "StatusBar", "Enum.ItemQuality", "CreateFrame"',
       ),
     category: tool.schema
-      .enum([
-        "api",
-        "widget",
-        "type",
-        "data",
-        "library",
-        "lua",
-        "framexml",
-        "all",
-      ])
+      .enum(["api", "widget", "type", "data", "library", "lua", "framexml", "all"])
       .optional()
       .default("all")
       .describe(
@@ -171,9 +143,9 @@ export default tool({
       const formatted = formatRgOutput(results);
       const lineCount = formatted.split("\n").length;
       const note =
-        lineCount >= 200 ?
-          "\n\n> Showing partial results (max 50 matches per file). Narrow your query or category for more focused results."
-        : "";
+        lineCount >= 200
+          ? "\n\n> Showing partial results (max 50 matches per file). Narrow your query or category for more focused results."
+          : "";
       return `# WoW API Annotations\n\nQuery: \`${query}\` | Category: ${category}\n\n\`\`\`lua\n${formatted}\n\`\`\`${note}`;
     }
 
@@ -190,13 +162,11 @@ export default tool({
 
     if (matchingFiles.length > 0) {
       const filesToRead = matchingFiles.slice(0, 3);
-      const fileContents = await Promise.all(
-        filesToRead.map((f) => readFileHead(f, 200)),
-      );
+      const fileContents = await Promise.all(filesToRead.map((f) => readFileHead(f, 200)));
       const extra =
-        matchingFiles.length > 3 ?
-          `\n\n> ${matchingFiles.length - 3} more file(s) matched. Refine your query to see them.`
-        : "";
+        matchingFiles.length > 3
+          ? `\n\n> ${matchingFiles.length - 3} more file(s) matched. Refine your query to see them.`
+          : "";
       return (
         `# WoW API Annotations (file match)\n\n` +
         `No content matches for \`${query}\`, but found file(s) with "${simplified}" in the name:\n\n` +

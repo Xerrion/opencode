@@ -45,11 +45,11 @@
         "servicenow-platform-mcp",
       ],
       "environment": {
-        "SERVICENOW_INSTANCE_URL": "{env:SERVICENOW_MCP_DEV_INSTANCE_URL}",
+        "SERVICENOW_INSTANCE_URL": "{env:SERVICENOW_MCP_PROD_INSTANCE_URL}",
         "SERVICENOW_USERNAME": "{env:SERVICENOW_MCP_USERNAME}",
-        "SERVICENOW_PASSWORD": "{env:SERVICENOW_MCP_DEV_PASSWORD}",
+        "SERVICENOW_PASSWORD": "{env:SERVICENOW_MCP_PROD_PASSWORD}",
         "MCP_TOOL_PACKAGE": "{env:SERVICENOW_MCP_TOOL_PACKAGE}",
-        "SERVICENOW_ENV": "{env:SERVICENOW_MCP_DEV_ENV}",
+        "SERVICENOW_ENV": "{env:SERVICENOW_MCP_PROD_ENV}",
         "SCRIPT_ALLOWED_ROOT": "/Users/lasn/Projects/servicenow-development/",
       },
       "enabled": true,
@@ -225,6 +225,12 @@
     "wow-blizzard-source": "deny",
     "wow-addon-lint": "deny",
 
+    // Skills - deny by default. Each agent opts in to the specific skills it owns.
+    // Skill ownership is per-agent; the build orchestrator does not route skills.
+    "skill": {
+      "*": "deny",
+    },
+
     "external_directory": {
       "/Users/lasn/.plannotator/**": "allow",
       "/Users/lasn/.local/share/wow-annotations/**": "allow",
@@ -306,6 +312,13 @@
         "plan_read": "deny",
         "todoread": "deny",
         "playwright_*": "allow",
+        // Skills the coder is allowed to load. Domain skills (WoW, ServiceNow) are
+        // intentionally excluded - those live with the domain agents.
+        "skill": {
+          "code-philosophy": "allow",
+          "frontend-philosophy": "allow",
+          "architecture-philosophy": "allow",
+        },
         // Bash: give the coder full access to bash.
         // Reasoning for this is that the coder should not be stopped by missing permissions
         "bash": {
@@ -380,6 +393,12 @@
         "plan_read": "allow",
         "delegation_read": "allow",
         "delegation_list": "allow",
+        "skill": {
+          "code-philosophy": "allow",
+          "frontend-philosophy": "allow",
+          "architecture-philosophy": "allow",
+          "code-review": "allow",
+        },
 
         // Bash: inherits global read-only tools (no additions needed)
       },
@@ -412,13 +431,17 @@
         "worktree_create": "allow",
         "worktree_list": "allow",
         "worktree_remove": "allow",
+        "skill": {
+          "plan-protocol": "allow",
+          "plan-review": "allow",
+          "architecture-philosophy": "allow",
+        },
       },
     },
 
     // Build orchestrator
     "build": {
       "model": "github-copilot/claude-opus-4.7",
-      "prompt": "./agents/build.md",
       "permission": {
         "read": "deny",
         "write": "deny",
@@ -463,21 +486,26 @@
         "wow-blizzard-source": "allow",
         "wow-addon-lint": "allow",
         "task": { "*": "deny" },
+        "skill": {
+          "wow-addon-dev": "allow",
+          "wow-lua-patterns": "allow",
+          "wow-frame-api": "allow",
+          "wow-event-handling": "allow",
+        },
       },
     },
 
     // Git & GitHub operations
     "git": {
       "model": "github-copilot/claude-opus-4.7",
-      "prompt": "./agents/git.md",
       "permission": {
         "read": "allow",
         "write": "deny",
         "edit": "deny",
         "bash": {
-          "git": "allow",
-          "gh": "allow",
-          "cat": "allow",
+          "git *": "allow",
+          "gh *": "allow",
+          "cat *": "allow",
         },
       },
     },
@@ -492,6 +520,9 @@
         "bash": { "*": "deny" },
         "task": "allow",
         "servicenow_*": "allow",
+        "skill": {
+          "servicenow-mcp-reference": "allow",
+        },
       },
     },
 
@@ -505,6 +536,75 @@
         "task": "allow",
         "webfetch": "deny",
         "atlassian*": "allow",
+        "skill": {
+          "jira-agile-reference": "allow",
+          "plan-protocol": "allow",
+        },
+      },
+    },
+
+    // Product/PM advisor (read-only, upstream framing)
+    "product": {
+      "model": "github-copilot/claude-opus-4.7",
+      "temperature": 0.3,
+      "permission": {
+        "write": "deny",
+        "edit": "deny",
+        "delegate": "allow",
+        "plan_read": "deny",
+        "todoread": "deny",
+        "bash": { "*": "deny" },
+        "webfetch": "deny",
+        // Atlassian: read-only access for product discovery. Backlog authoring belongs to `jira-coach`.
+        // Unlisted Atlassian tools (including all writes) are denied by the global `atlassian*: deny` at the agent root.
+        "atlassian_jira_get_all_projects": "allow",
+        "atlassian_jira_get_project_components": "allow",
+        "atlassian_jira_get_project_versions": "allow",
+        "atlassian_jira_get_project_issues": "allow",
+        "atlassian_jira_get_issue": "allow",
+        "atlassian_jira_get_issue_dates": "allow",
+        "atlassian_jira_get_issue_images": "allow",
+        "atlassian_jira_get_issue_sla": "allow",
+        "atlassian_jira_get_issue_watchers": "allow",
+        "atlassian_jira_get_issue_proforma_forms": "allow",
+        "atlassian_jira_get_issue_development_info": "allow",
+        "atlassian_jira_get_issues_development_info": "allow",
+        "atlassian_jira_get_proforma_form_details": "allow",
+        "atlassian_jira_get_field_options": "allow",
+        "atlassian_jira_get_link_types": "allow",
+        "atlassian_jira_get_transitions": "allow",
+        "atlassian_jira_get_worklog": "allow",
+        "atlassian_jira_get_user_profile": "allow",
+        "atlassian_jira_get_agile_boards": "allow",
+        "atlassian_jira_get_board_issues": "allow",
+        "atlassian_jira_get_sprints_from_board": "allow",
+        "atlassian_jira_get_sprint_issues": "allow",
+        "atlassian_jira_get_service_desk_for_project": "allow",
+        "atlassian_jira_get_service_desk_queues": "allow",
+        "atlassian_jira_get_queue_issues": "allow",
+        "atlassian_jira_search": "allow",
+        "atlassian_jira_search_fields": "allow",
+        "atlassian_jira_batch_get_changelogs": "allow",
+        "atlassian_jira_download_attachments": "allow",
+      },
+    },
+
+    // Tech Lead/Architect advisor (read-only, upstream design direction)
+    "tech-lead": {
+      "model": "github-copilot/claude-opus-4.7",
+      "temperature": 0.2,
+      "permission": {
+        "write": "deny",
+        "edit": "deny",
+        "delegate": "allow",
+        "plan_read": "allow",
+        "delegation_read": "allow",
+        "delegation_list": "allow",
+        "skill": {
+          "architecture-philosophy": "allow",
+          "code-philosophy": "allow",
+        },
+        // Bash: inherits global read-only tools (no additions needed)
       },
     },
 
@@ -518,6 +618,49 @@
         "task": "allow",
         "webfetch": "deny",
         "servicenow_*": "allow",
+        "skill": {
+          "servicenow-mcp-reference": "allow",
+          "servicenow-scripting": "allow",
+          "servicenow-business-rules": "allow",
+          "servicenow-client-scripts": "allow",
+          "servicenow-gliderecord": "allow",
+        },
+      },
+    },
+
+    // Offensive security specialist (classical pentest)
+    // Delegates LLM/ML work to `ai-redteam`, so does not load `pentest-ai-redteam`.
+    "pentest": {
+      "permission": {
+        "skill": {
+          "pentest-methodology": "allow",
+          "pentest-sast": "allow",
+          "pentest-dast": "allow",
+        },
+      },
+    },
+
+    // AI/LLM red-team specialist
+    "ai-redteam": {
+      "permission": {
+        "skill": {
+          "pentest-methodology": "allow",
+          "pentest-ai-redteam": "allow",
+        },
+      },
+    },
+
+    // Reverse engineering specialist
+    "reverse-engineer": {
+      "permission": {
+        "skill": {
+          "rev-methodology": "allow",
+          "rev-static": "allow",
+          "rev-dynamic": "allow",
+          "rev-mobile": "allow",
+          "rev-firmware": "allow",
+          "rev-malware": "allow",
+        },
       },
     },
   },

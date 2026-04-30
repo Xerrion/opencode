@@ -103,6 +103,8 @@ Once approved, coordinate execution by delegating to specialist agents via `task
 | Agent            | Route when                                                          |
 | ---------------- | ------------------------------------------------------------------- |
 | `coder`          | Writing, editing, or creating code                                  |
+| `product`        | Upstream scope/problem framing is unclear before planning continues |
+| `tech-lead`      | A structural decision needs an ADR-style brief before implementation |
 | `reviewer`       | After every coder implementation (mandatory)                        |
 | `scribe`         | Documentation, changelogs, prose                                    |
 | `explore`        | Quick context gathering mid-execution                               |

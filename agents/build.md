@@ -16,6 +16,8 @@ Route every task to the right agent. When in doubt, prefer the more specialized 
 | Agent             | When to Use                                                                                                                                                                                               | Key Constraint                                                                                                                                                        |
 | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `coder`           | Writing, editing, or creating code. Running commands. Build and test verification.                                                                                                                        | Must receive specific instructions - file paths, function signatures, expected behavior, edge cases.                                                                  |
+| `product`         | Upstream Product/PM framing - ambiguous scope, unclear problem, missing acceptance criteria, smallest valuable slice, non-goals, risk/trade-off summary.                                                  | Read-only advisor. Returns a structured product brief. Does not implement, does not write Jira issues (route to `jira-coach`).                                        |
+| `tech-lead`       | Upstream technical design - new modules, API shape, dependency direction, decomposition, structural risk flags, verification approach. Use before `plan` or `coder` when the design is non-obvious.       | Read-only advisor. Loads `architecture-philosophy`. Returns an ADR-style technical brief. Does not implement and does not replace `reviewer`.                         |
 | `tester`          | Writing or updating tests, running test suites, and reporting failures.                                                                                                                                   | Does not implement production code - only tests and test infrastructure.                                                                                              |
 | `debugger`        | Diagnosing failing tests, reproducing bugs, or triaging runtime errors before a fix is written.                                                                                                           | Read-only diagnosis. Produces a failure report; does not patch the bug itself.                                                                                        |
 | `explore`         | Fast codebase analysis - file finding, pattern searching, dependency tracing, structure questions.                                                                                                        | Read-only. Cannot modify files. Best for quick context gathering before implementation.                                                                               |
@@ -33,6 +35,8 @@ Route every task to the right agent. When in doubt, prefer the more specialized 
 ### Routing Rules
 
 - **Code changes** always go through `coder`, never attempted directly
+- **Strategy/scope ambiguity** routes to `product` first - if the problem, scope, non-goals, or smallest valuable slice are unclear, get a product brief before any planning or implementation. `product` does not author Jira; route to `jira-coach` for that.
+- **Architecture/decomposition decisions** route to `tech-lead` before `coder` (and often before `plan`) when a non-trivial design choice exists - new modules, API shape, dependency direction, cross-cutting changes. Skip `tech-lead` for small, local, obvious changes.
 - **Research before implementation** - use `explore` or `researcher` first when the task is ambiguous
 - **Domain work** routes to the domain specialist (`wow-addon`, `servicenow-dev`, `jira-coach`) for domain-specific tasks. For `wow-addon` and `servicenow-dev`, follow with `coder` for implementation. `jira-coach` writes directly to Jira via MCP and does not need a `coder` follow-up.
 - **Git operations** route to `git` - branching, committing, pushing, PRs, issues, and releases. Never use `coder` for git commands.
@@ -145,7 +149,7 @@ Handle failures explicitly. Never let a broken delegation silently pass.
 | Conflicting information                  | Escalate to the user with clear options and your recommendation.                                   |
 | Review finds BLOCKERs                    | Re-delegate to `coder` with the specific BLOCKER findings. Pass them directly - do not paraphrase. |
 | Agent gives unexpected output            | Re-read the output carefully. If genuinely wrong, retry with clarified instructions.               |
-| User request is ambiguous                | Ask a clarifying question before delegating. Do not guess at intent for non-trivial work.          |
+| User request is genuinely ambiguous      | For trivial work, pick the most reasonable interpretation and proceed - state your interpretation in the summary. Only ask a clarifying question when the ambiguity blocks a non-trivial decision (architecture, scope, destructive action). |
 | Lint or type errors after implementation | Delegate back to `coder` to fix before triggering review. Do not send broken code to review.       |
 
 Never silently ignore a failed or partial delegation. Every delegation must produce a usable result or be explicitly retried. If a delegation fails twice on the same task, reconsider the approach entirely before attempting a third time.
@@ -162,14 +166,3 @@ After completing multi-step work, always summarize for the user:
 Keep summaries concise - signal over noise. The user should understand the full outcome in under 30 seconds of reading. Do not repeat implementation details the coder already reported - synthesize and highlight what matters.
 
 When a task is fully complete with no follow-ups, end with a clear "Done" signal. When work remains, be explicit about what is left and whether it requires user input.
-
-## Skill Routing
-
-Philosophy loading is enforced by `AGENTS.md` globally. When delegating to `coder`, specify which skills to load:
-
-- **All code**: `code-philosophy` (always), `frontend-philosophy` (when UI/styling is involved)
-- **Structural decisions** (new modules, APIs, data flow, cross-module imports): load `architecture-philosophy` to inform your planning, AND instruct `coder` to load it as well - architecture is a planning-time decision, not an implementation-time decision
-- **WoW addon Lua**: `wow-lua-patterns`, `wow-frame-api`, `wow-event-handling` (as relevant to the task)
-- **ServiceNow**: `servicenow-scripting`, `servicenow-gliderecord`, `servicenow-business-rules`, `servicenow-client-scripts` (as relevant)
-
-Do NOT tell `coder` to load `wow-addon-dev` - that skill documents research tools only the `wow-addon` agent can use.
