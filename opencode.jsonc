@@ -45,11 +45,11 @@
         "servicenow-platform-mcp",
       ],
       "environment": {
-        "SERVICENOW_INSTANCE_URL": "{env:SERVICENOW_MCP_PROD_INSTANCE_URL}",
+        "SERVICENOW_INSTANCE_URL": "{env:SERVICENOW_MCP_DEV_INSTANCE_URL}",
         "SERVICENOW_USERNAME": "{env:SERVICENOW_MCP_USERNAME}",
-        "SERVICENOW_PASSWORD": "{env:SERVICENOW_MCP_PROD_PASSWORD}",
+        "SERVICENOW_PASSWORD": "{env:SERVICENOW_MCP_DEV_PASSWORD}",
         "MCP_TOOL_PACKAGE": "{env:SERVICENOW_MCP_TOOL_PACKAGE}",
-        "SERVICENOW_ENV": "{env:SERVICENOW_MCP_PROD_ENV}",
+        "SERVICENOW_ENV": "{env:SERVICENOW_MCP_DEV_ENV}",
         "SCRIPT_ALLOWED_ROOT": "/Users/lasn/Projects/servicenow-development/",
       },
       "enabled": true,
@@ -121,9 +121,9 @@
     },
   },
   "plugin": [
+    "@plannotator/opencode@latest",
     "@tarquinen/opencode-dcp@latest",
     "@franlol/opencode-md-table-formatter@latest",
-    "@plannotator/opencode@latest",
   ],
 
   // ---------------------------------------------------------------------------
@@ -303,8 +303,9 @@
     },
 
     // Full-featured coding agent
-    "coder": {
-      "model": "github-copilot/claude-opus-4.7",
+    "software-engineer": {
+      "model": "github-copilot/gpt-5.5",
+      "variant": "medium",
       "temperature": 0.3,
       "permission": {
         "write": "allow",
@@ -312,15 +313,15 @@
         "plan_read": "deny",
         "todoread": "deny",
         "playwright_*": "allow",
-        // Skills the coder is allowed to load. Domain skills (WoW, ServiceNow) are
+        // Skills the software-engineer is allowed to load. Domain skills (WoW, ServiceNow) are
         // intentionally excluded - those live with the domain agents.
         "skill": {
           "code-philosophy": "allow",
           "frontend-philosophy": "allow",
           "architecture-philosophy": "allow",
         },
-        // Bash: give the coder full access to bash.
-        // Reasoning for this is that the coder should not be stopped by missing permissions
+        // Bash: give the software-engineer full access to bash.
+        // Reasoning for this is that the software-engineer should not be stopped by missing permissions
         "bash": {
           "*": "allow",
           "git *": "deny",
@@ -421,7 +422,7 @@
 
     // Task orchestrator / planner
     "plan": {
-      "model": "github-copilot/claude-opus-4.7",
+      "model": "github-copilot/gpt-5.5",
       "permission": {
         "write": "deny",
         "edit": "deny",
@@ -431,6 +432,9 @@
         "worktree_create": "allow",
         "worktree_list": "allow",
         "worktree_remove": "allow",
+        "plan_write": "allow",
+        "plan_save": "allow",
+        "plan_submit": "allow",
         "skill": {
           "plan-protocol": "allow",
           "plan-review": "allow",
@@ -442,6 +446,7 @@
     // Build orchestrator
     "build": {
       "model": "github-copilot/claude-opus-4.7",
+      "variant": "xhigh",
       "permission": {
         "read": "deny",
         "write": "deny",
@@ -480,6 +485,7 @@
         "delegate": "allow",
         "bash": { "*": "deny" },
         "webfetch": "allow",
+        "playwright_*": "allow",
         "wow-api-lookup": "allow",
         "wow-wiki-fetch": "allow",
         "wow-event-info": "allow",
@@ -524,6 +530,10 @@
           "servicenow-mcp-reference": "allow",
         },
       },
+    },
+
+    "general": {
+      "disable": true,
     },
 
     // Jira backlog authoring agent (Atlassian MCP access)
@@ -600,6 +610,7 @@
         "plan_read": "allow",
         "delegation_read": "allow",
         "delegation_list": "allow",
+        "webfetch": "allow",
         "skill": {
           "architecture-philosophy": "allow",
           "code-philosophy": "allow",
@@ -632,6 +643,7 @@
     // Delegates LLM/ML work to `ai-redteam`, so does not load `pentest-ai-redteam`.
     "pentest": {
       "permission": {
+        "playwright_*": "allow",
         "skill": {
           "pentest-methodology": "allow",
           "pentest-sast": "allow",

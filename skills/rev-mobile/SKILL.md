@@ -1,6 +1,6 @@
 ---
 name: rev-mobile
-description: Mobile reverse engineering - Android APK/AAB and iOS IPA. Load for any mobile app analysis. Covers apktool/jadx/androguard workflows, iOS class-dump/ipsw/frida-ios-dump, SSL-pinning and root-detection bypasses, entitlements and manifest review, and output conventions under .rev/decompiled/.
+description: Mobile reverse engineering for Android APK/AAB and iOS IPA. Covers apktool/jadx/androguard workflows, iOS class-dump/ipsw/frida-ios-dump, SSL-pinning and root-detection bypasses, entitlements and manifest review, and output conventions under .rev/decompiled/.
 ---
 
 # Mobile Reverse Engineering

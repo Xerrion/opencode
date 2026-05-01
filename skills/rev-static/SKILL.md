@@ -1,6 +1,6 @@
 ---
 name: rev-static
-description: Static reverse engineering across native, managed, JavaScript, and WebAssembly targets. Load for any disassembly, decompilation, string/xref analysis, compiler fingerprinting, packer detection, or capability-ID work. Covers Ghidra headless, rizin/radare2, language fingerprints, and JS/WASM/managed specifics.
+description: Static reverse engineering across native, managed, JavaScript, and WebAssembly targets - disassembly, decompilation, string/xref analysis, compiler fingerprinting, packer detection, and capability-ID work. Covers Ghidra headless, rizin/radare2, language fingerprints, and JS/WASM/managed specifics.
 ---
 
 # Static Reverse Engineering

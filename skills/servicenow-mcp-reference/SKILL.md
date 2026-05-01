@@ -1,6 +1,6 @@
 ---
 name: servicenow-mcp-reference
-description: ServiceNow MCP tool catalog, safety workflows, and artifact deployment reference. Load when using the servicenow MCP server from the servicenow or servicenow-dev agents. Covers supported artifact types, artifact_create/artifact_update rules, pre-development checks, write safety, query safety, and implementation lookup guidance.
+description: ServiceNow MCP tool catalog, safety workflows, and artifact deployment reference. Covers supported artifact types, artifact_create/artifact_update rules, pre-development checks, write safety, query safety, and implementation lookup guidance.
 ---
 
 # ServiceNow MCP Tool Reference

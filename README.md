@@ -28,7 +28,7 @@ Agents operate as either primary orchestrators or specialized subagents. Primary
 | `plan` | primary | Planning orchestrator coordinating review via Plannotator |
 | `servicenow` | primary | ServiceNow platform expert with full MCP access |
 | `ai-redteam` | subagent | AI/LLM red-team - prompt injection, jailbreaks, tool-call abuse |
-| `coder` | subagent | Technical implementation specialist |
+| `software-engineer` | subagent | Technical implementation specialist |
 | `debugger` | subagent | Read-only diagnostician producing repro + root-cause reports |
 | `explore` | subagent | Fast read-only codebase navigator |
 | `git` | subagent | Git/GitHub operations via `git` and `gh` |

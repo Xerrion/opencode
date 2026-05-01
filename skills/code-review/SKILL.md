@@ -8,11 +8,6 @@ description: Comprehensive code review methodology with severity classification 
 ## TL;DR
 Systematic code review across 4 layers with severity classification. Only report findings with ≥80% confidence. Include file:line references for all issues.
 
-## When to Use This Skill
-- Before reporting implementation completion
-- When explicitly asked to review code
-- When using the `/review` command
-- As an independent audit after code changes
 
 ## The 4 Review Layers
 

@@ -1,6 +1,6 @@
 ---
 name: servicenow-client-scripts
-description: ServiceNow client-side scripting standards. Load when writing Client Scripts, UI Policies, UI Actions, or any browser-side ServiceNow code. Covers onChange guards, GlideAjax patterns, g_scratchpad, and when to use UI Policies vs Client Scripts.
+description: ServiceNow client-side scripting standards. Covers onChange guards, GlideAjax patterns, g_scratchpad, and when to use UI Policies vs Client Scripts.
 ---
 
 # ServiceNow Client-Side Scripting Standards

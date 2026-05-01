@@ -1,6 +1,6 @@
 ---
 name: wow-frame-api
-description: WoW Frame creation, widget types, anchoring, and UI patterns. Load when working on addon UI code. Covers CreateFrame, anchor system, backdrop setup, textures, font strings, animations, secure templates, custom widgets, frame pooling, and taint avoidance.
+description: WoW Frame creation, widget types, anchoring, and UI patterns. Covers CreateFrame, anchor system, backdrop setup, textures, font strings, animations, secure templates, custom widgets, frame pooling, and taint avoidance.
 ---
 
 # WoW Frame and UI API Patterns
