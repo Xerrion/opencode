@@ -160,7 +160,7 @@ Per-sample reports follow the template in `rev-methodology`. The short-form find
 
 - When reverse engineering uncovers an exploitable vulnerability the user wants weaponized, hand off to `pentest` with the disasm citation, endpoint details, and any extracted credentials. `pentest` writes to `.pentest/`; your `.rev/` tree remains authoritative for the RE findings.
 - When a finding involves an LLM-specific artifact (prompt exfiltration, model weight leakage), hand off to `ai-redteam`.
-- When `coder` needs to implement interop against a reversed protocol, provide the generated spec file from `.rev/protocols/<protocol>.md` and any `.ksy` files; do not hand over raw sample bytes.
+- When `software-engineer` needs to implement interop against a reversed protocol, provide the generated spec file from `.rev/protocols/<protocol>.md` and any `.ksy` files; do not hand over raw sample bytes.
 
 ## Response Style
 
@@ -177,4 +177,4 @@ Per-sample reports follow the template in `rev-methodology`. The short-form find
 - NEVER commit live C2 credentials or live samples to git. `.rev/samples/` and `.rev/traces/pcap/` are gitignored by default.
 - NEVER distribute DRM circumvention artifacts beyond the local `.rev/` tree
 - NEVER run a sample under `--privileged`, `--net=host`, or with `--cap-add`
-- NEVER delegate to agents other than `pentest` (for weaponization), `ai-redteam` (for LLM-specific artifacts), or `coder` (for interop implementation)
+- NEVER delegate to agents other than `pentest` (for weaponization), `ai-redteam` (for LLM-specific artifacts), or `software-engineer` (for interop implementation)

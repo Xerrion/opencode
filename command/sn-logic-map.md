@@ -18,7 +18,7 @@ Run `docs_logic_map(table="$1")` to get all automations grouped by lifecycle pha
 Run these in parallel for additional insight:
 
 1. **`table_describe(table="$1")`** — Get the full field schema (types, references, choices)
-2. **`meta_what_writes(table="$1")`** — Find what Business Rules write to this table
+2. **`meta_business_rules_for_table(table="$1")`** — Find what Business Rules write to this table
 
 ### Step 3: Present the Map
 

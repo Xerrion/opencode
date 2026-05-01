@@ -1,6 +1,6 @@
 ---
 name: servicenow-business-rules
-description: ServiceNow Business Rule development patterns. Load when writing, reviewing, or debugging Business Rules. Covers timing selection (before/after/async/display), filter conditions, anti-patterns, and delegation to Script Includes.
+description: ServiceNow Business Rule development patterns. Covers timing selection (before/after/async/display), filter conditions, anti-patterns, and delegation to Script Includes.
 ---
 
 # ServiceNow Business Rule Standards

@@ -100,23 +100,25 @@ Once approved, coordinate execution by delegating to specialist agents via `task
 
 <!-- SYNC: keep the agent roster in this table in sync with build.md Delegation Decision Matrix. Adding or removing an agent requires editing both files. -->
 
-| Agent            | Route when                                                          |
-| ---------------- | ------------------------------------------------------------------- |
-| `coder`          | Writing, editing, or creating code                                  |
-| `reviewer`       | After every coder implementation (mandatory)                        |
-| `scribe`         | Documentation, changelogs, prose                                    |
-| `explore`        | Quick context gathering mid-execution                               |
-| `researcher`     | External research needed during implementation                      |
-| `wow-addon`      | WoW addon domain research                                           |
-| `servicenow-dev` | ServiceNow platform development                                     |
-| `git`            | Branching, commits, PRs, releases                                   |
-| `tester`         | Writing or updating tests; running test suites                      |
-| `debugger`       | Diagnosing failing tests or runtime errors before a fix is authored |
+| Agent            | Route when                                                           |
+| ---------------- | -------------------------------------------------------------------- |
+| `software-engineer`          | Writing, editing, or creating code                                   |
+| `product`        | Upstream scope/problem framing is unclear before planning continues  |
+| `tech-lead`      | A structural decision needs an ADR-style brief before implementation |
+| `reviewer`       | After every software-engineer implementation (mandatory)                         |
+| `scribe`         | Documentation, changelogs, prose                                     |
+| `explore`        | Quick context gathering mid-execution                                |
+| `researcher`     | External research needed during implementation                       |
+| `wow-addon`      | WoW addon domain research                                            |
+| `servicenow-dev` | ServiceNow platform development                                      |
+| `git`            | Branching, commits, PRs, releases                                    |
+| `tester`         | Writing or updating tests; running test suites                       |
+| `debugger`       | Diagnosing failing tests or runtime errors before a fix is authored  |
 
 ### Execution Rules
 
 - Update the plan after each completed task: mark `[x]`, move `← CURRENT`
-- Follow the mandatory review protocol: every `coder` delegation is followed by `reviewer`
+- Follow the mandatory review protocol: every `software-engineer` delegation is followed by `reviewer`
 - If a task fails or reveals new complexity, update the plan before continuing
 - If scope changes significantly, re-submit the plan for user annotation
 
@@ -155,7 +157,7 @@ You are AUTONOMOUS for:
 
 ## Forbidden
 
-- NEVER write or edit files directly - delegate to `coder` or `scribe`
+- NEVER write or edit files directly - delegate to `software-engineer` or `scribe`
 - NEVER run bash commands - delegate to the appropriate agent
 - NEVER skip user approval - always submit the plan for annotation before executing
 - NEVER execute without a saved plan - ad-hoc delegation bypasses the review cycle

@@ -5,7 +5,6 @@ description: Guidelines for creating and managing implementation plans with cita
 
 # Plan Protocol
 
-> **Load this skill** when creating or updating implementation plans.
 
 ## TL;DR Checklist
 
@@ -21,21 +20,6 @@ When creating or updating a plan, ensure:
 
 ---
 
-## When to Use
-
-1. Starting a multi-step implementation
-2. After receiving a complex user request
-3. When tracking progress across phases
-4. After research that informs architectural decisions
-
-## When NOT to Use
-
-1. Simple one-off tasks → use built-in todos instead
-2. Pure research/exploration → use delegations only
-3. Quick fixes that don't need tracking
-4. Single-file changes with no dependencies
-
----
 
 ## Plan Format
 

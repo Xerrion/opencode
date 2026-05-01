@@ -1,6 +1,6 @@
 ---
 name: rev-dynamic
-description: Dynamic reverse engineering - sandbox execution, debugging, tracing, emulation, and Frida instrumentation. Load for any work that runs or instruments a sample. Covers the Docker sandbox protocol, gdb/lldb recipes, strace/ltrace/frida usage, qemu-user and qemu-system emulation, network-capture discipline, and anti-debug bypass.
+description: Dynamic reverse engineering - sandbox execution, debugging, tracing, emulation, and Frida instrumentation. Covers the Docker sandbox protocol, gdb/lldb recipes, strace/ltrace/frida usage, qemu-user and qemu-system emulation, network-capture discipline, and anti-debug bypass.
 ---
 
 # Dynamic Reverse Engineering

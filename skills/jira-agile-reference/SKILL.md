@@ -1,6 +1,6 @@
 ---
 name: jira-agile-reference
-description: Jira MCP tool catalog and agile authoring reference for the TV2 tenant style. Load when using the atlassian MCP server to create, refine, or manage Jira work items. Covers the atlassian_jira_* tool catalog (issues, fields, comments, transitions, agile, links, worklog, attachments, users, watchers, metrics, development), project scheme pre-flight, INVEST checklist, flat declarative acceptance criteria, Danish/English Epic templates, story-splitting patterns, no personas, no Gherkin.
+description: Jira MCP tool catalog and agile authoring reference for the TV2 tenant style. Covers the atlassian_jira_* tool catalog (issues, fields, comments, transitions, agile, links, worklog, attachments, users, watchers, metrics, development), project scheme pre-flight, INVEST checklist, flat declarative acceptance criteria, Danish/English Epic templates, story-splitting patterns, no personas, no Gherkin.
 ---
 
 # Jira Agile Reference
@@ -330,7 +330,7 @@ project = <KEY> AND issueFunction in linkedIssuesOf("resolution = Unresolved", "
 project = <KEY> AND issuetype = Story AND statusCategory = Done ORDER BY resolved DESC
 
 -- Epic progress
-"Epic Link" = <KEY>-123 ORDER BY rank
+"Epic Link" = <EPIC-KEY> ORDER BY rank
 ```
 
 ## Common Anti-Patterns

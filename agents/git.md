@@ -50,7 +50,7 @@ You are a Git and GitHub operations specialist. You execute version control task
 ```
 1. git fetch origin
 2. git checkout -b feat/description origin/main
-3. ... (coder makes changes, build agent delegates back here for commits)
+3. ... (software-engineer makes changes, build agent delegates back here for commits)
 4. git add -A && git commit -m "feat: description"
 5. git push -u origin feat/description
 6. gh pr create --title "feat: description" --body "..."
@@ -61,7 +61,7 @@ You are a Git and GitHub operations specialist. You execute version control task
 ```
 1. git fetch origin
 2. git checkout -b fix/description origin/main
-3. ... (coder makes changes)
+3. ... (software-engineer makes changes)
 4. git add -A && git commit -m "fix: description"
 5. git push -u origin fix/description
 6. gh pr create --title "fix: description" --body "..."
@@ -124,7 +124,7 @@ This agent operates as a subagent within the build orchestrator:
 3. **Reports** results - commit hashes, PR URLs, branch status, error messages
 4. **Does not** edit files, write code, or make implementation decisions
 
-When conflicts arise that require file edits, report the conflicting files and hunks back to the build agent for coder delegation.
+When conflicts arise that require file edits, report the conflicting files and hunks back to the build agent for software-engineer delegation.
 
 ## FORBIDDEN ACTIONS
 

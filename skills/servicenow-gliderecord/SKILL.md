@@ -1,6 +1,6 @@
 ---
 name: servicenow-gliderecord
-description: GlideRecord and GlideAggregate best practices for ServiceNow. Load when writing queries, data manipulation, or performance-sensitive server-side scripts. Covers query patterns, getValue/setValue rules, existence checks, aggregation, and common anti-patterns.
+description: GlideRecord and GlideAggregate best practices for ServiceNow. Covers query patterns, getValue/setValue rules, existence checks, aggregation, and common anti-patterns.
 ---
 
 # GlideRecord & GlideAggregate Best Practices

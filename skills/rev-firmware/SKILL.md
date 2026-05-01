@@ -1,6 +1,6 @@
 ---
 name: rev-firmware
-description: Firmware and embedded reverse engineering. Load for firmware images, bootloaders, embedded filesystems, and RTOS binaries. Covers binwalk extraction, squashfs and jefferson workflows, U-Boot and Coreboot analysis, architecture identification, qemu-system and firmadyne emulation, and hardware-interface documentation guidance (agent does not touch hardware).
+description: Firmware and embedded reverse engineering for firmware images, bootloaders, embedded filesystems, and RTOS binaries. Covers binwalk extraction, squashfs and jefferson workflows, U-Boot and Coreboot analysis, architecture identification, qemu-system and firmadyne emulation, and hardware-interface documentation guidance (agent does not touch hardware).
 ---
 
 # Firmware Reverse Engineering

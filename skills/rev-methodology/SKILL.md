@@ -1,6 +1,6 @@
 ---
 name: rev-methodology
-description: Reverse engineering engagement methodology. Load at the start of every reverse-engineer engagement. Covers the .rev/ directory layout, engagement lifecycle, config.yaml schema, triage checklist, per-sample report template, confidence levels, sample classifications, and replay workflow.
+description: Reverse engineering engagement methodology. Covers the .rev/ directory layout, engagement lifecycle, config.yaml schema, triage checklist, per-sample report template, confidence levels, sample classifications, and replay workflow.
 ---
 
 # Reverse Engineering Methodology

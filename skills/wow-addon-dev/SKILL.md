@@ -1,6 +1,6 @@
 ---
 name: wow-addon-dev
-description: World of Warcraft addon development with LuaLS API annotations. Load when writing, reviewing, or debugging WoW addon Lua code. Provides accurate API signatures via wow-api-lookup, behavioral docs via wow-wiki-fetch, event payload info via wow-event-info, Blizzard source browsing via wow-blizzard-source, and static analysis via wow-addon-lint.
+description: World of Warcraft addon development with LuaLS API annotations. Provides accurate API signatures via wow-api-lookup, behavioral docs via wow-wiki-fetch, event payload info via wow-event-info, Blizzard source browsing via wow-blizzard-source, and static analysis via wow-addon-lint.
 ---
 
 # World of Warcraft Addon Development

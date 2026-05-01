@@ -1,6 +1,6 @@
 ---
 name: wow-lua-patterns
-description: WoW-specific Lua patterns and idioms. Load when writing addon Lua code. Covers the namespace pattern, global caching, SavedVariables, metatables for OOP, mixins, version guards, string patterns, table management, coroutines, secure hooks, and slash commands.
+description: WoW-specific Lua patterns and idioms. Covers the namespace pattern, global caching, SavedVariables, metatables for OOP, mixins, version guards, string patterns, table management, coroutines, secure hooks, and slash commands.
 ---
 
 # WoW Lua Patterns and Idioms

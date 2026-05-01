@@ -1,6 +1,6 @@
 ---
 name: wow-event-handling
-description: WoW event registration, dispatching, and lifecycle patterns. Load when working with events, listeners, or combat-sensitive code. Covers raw events, AceEvent, OnEvent dispatch, ADDON_LOADED bootstrapping, combat lockdown guards, event throttling, listener factories, and common event sequences.
+description: WoW event registration, dispatching, and lifecycle patterns. Covers raw events, AceEvent, OnEvent dispatch, ADDON_LOADED bootstrapping, combat lockdown guards, event throttling, listener factories, and common event sequences.
 ---
 
 # WoW Event Handling Patterns

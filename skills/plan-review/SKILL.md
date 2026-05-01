@@ -5,18 +5,10 @@ description: Criteria for reviewing implementation plans against quality standar
 
 # Plan Review
 
-> **Load this skill** when reviewing implementation plans (not code).
 
 ## TL;DR
 Systematic plan review focused on 3 quality categories: Citation Quality, Completeness, and Actionability. Structure is pre-validated by `plan_save`—focus on whether the plan provides actionable implementation guidance.
 
-## When to Use This Skill
-- When reviewing implementation plans before execution
-- When auditing plan quality after creation
-- When verifying plans meet documentation standards
-- As part of the plan validation workflow
-
----
 
 ## Plan Review Checklist
 

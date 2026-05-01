@@ -1,6 +1,6 @@
 ---
 name: servicenow-scripting
-description: ServiceNow server-side scripting standards. Load when writing or reviewing Script Includes, Business Rules, Scheduled Jobs, Fix Scripts, or any server-side ServiceNow code. Covers class patterns, naming conventions, error handling, JSDoc, and critical anti-patterns.
+description: ServiceNow server-side scripting standards. Covers class patterns, naming conventions, error handling, JSDoc, and critical anti-patterns.
 ---
 
 # ServiceNow Server-Side Scripting Standards
