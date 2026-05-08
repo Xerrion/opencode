@@ -1,4 +1,11 @@
 import { tool } from "@opencode-ai/plugin";
+import {
+  renderError,
+  renderReport,
+  stripHtml,
+  TITLES,
+  type MetadataPair,
+} from "./_shared";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -135,24 +142,6 @@ function resolveQueryType(query: string, explicit: QueryType): QueryType {
 // HTML parsing helpers - no external dependencies
 // ---------------------------------------------------------------------------
 
-function stripTags(html: string): string {
-  return html
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/li>/gi, "\n")
-    .replace(/<\/p>/gi, "\n\n")
-    .replace(/<\/tr>/gi, "\n")
-    .replace(/<\/div>/gi, "\n")
-    .replace(/<\/h[1-6]>/gi, "\n")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&#\d+;/g, "");
-}
-
 function extractMainContent(html: string): string {
   // MediaWiki stores content inside <div id="mw-content-text">...</div>
   // We grab from that div to the end, then strip a reasonable boundary
@@ -205,7 +194,7 @@ function extractSections(
   if (headings.length === 0) {
     const simpleHeadingPattern = /<h([2-3])[^>]*>(.*?)<\/h\1>/gi;
     while ((match = simpleHeadingPattern.exec(contentHtml)) !== null) {
-      const name = stripTags(match[2]).trim();
+      const name = stripHtml(match[2]).trim();
       if (name) {
         headings.push({ name, index: match.index });
       }
@@ -215,13 +204,13 @@ function extractSections(
   // Extract description (everything before first heading)
   if (headings.length > 0) {
     const descriptionHtml = contentHtml.slice(0, headings[0].index);
-    const descriptionText = stripTags(descriptionHtml).trim();
+    const descriptionText = stripHtml(descriptionHtml).trim();
     if (descriptionText) {
       sections.set("Description", descriptionText);
     }
   } else {
     // No headings found - entire content is description
-    const descriptionText = stripTags(contentHtml).trim();
+    const descriptionText = stripHtml(contentHtml).trim();
     if (descriptionText) {
       sections.set("Description", descriptionText);
     }
@@ -234,7 +223,7 @@ function extractSections(
     const nextStart =
       i + 1 < headings.length ? headings[i + 1].index : contentHtml.length;
     const sectionHtml = contentHtml.slice(heading.index, nextStart);
-    const sectionText = stripTags(sectionHtml).trim();
+    const sectionText = stripHtml(sectionHtml).trim();
 
     // Remove the heading text itself from the section body
     const headingText = heading.name.replace(/_/g, " ");
@@ -257,6 +246,194 @@ function escapeRegex(str: string): string {
 function normalizeHeadingName(raw: string): string {
   // Wiki section IDs use underscores: "Patch_changes" -> "Patch changes"
   return raw.replace(/_/g, " ");
+}
+
+// ---------------------------------------------------------------------------
+// Signature extraction - structured block for API/event/widget-method pages
+// ---------------------------------------------------------------------------
+
+type SignatureParam = {
+  name: string;
+  type: string;
+  nilable: boolean;
+  description: string;
+};
+
+type SignatureBlock = {
+  signatureLines: string[];
+  parameters: SignatureParam[];
+  returns: SignatureParam[];
+  payload: SignatureParam[] | "none" | null;
+};
+
+/**
+ * Parse the `class` attribute of a tag's attribute string into a token list.
+ * Returns an empty array if no `class` attribute is present. Supports both
+ * double- and single-quoted forms.
+ */
+function parseClassTokens(tagAttrs: string): string[] {
+  const match =
+    /\bclass\s*=\s*"([^"]*)"/i.exec(tagAttrs) ??
+    /\bclass\s*=\s*'([^']*)'/i.exec(tagAttrs);
+  if (!match) return [];
+  return match[1].split(/\s+/).filter((token) => token.length > 0);
+}
+
+/**
+ * The wiki marks the canonical signature with a `<div>` wrapping a
+ * Pygments-tokenised `<pre>`. The discriminator is the `class` attribute
+ * (parsed as a token list): it MUST contain both `mw-highlight` and
+ * `mw-highlight-lang-lua`, and MUST NOT contain `mw-highlight-copy` (that
+ * marker tags the inline copy-button block). A multi-line `<pre>` represents
+ * overloads (e.g. `UnitClass`).
+ */
+function isCanonicalSignatureDiv(tagAttrs: string): boolean {
+  const classes = parseClassTokens(tagAttrs);
+  return (
+    classes.includes("mw-highlight") &&
+    classes.includes("mw-highlight-lang-lua") &&
+    !classes.includes("mw-highlight-copy")
+  );
+}
+
+function extractSignatureLines(contentHtml: string): string[] | null {
+  const divPattern =
+    /<div\b([^>]*)>\s*<pre\b[^>]*>([\s\S]*?)<\/pre>\s*<\/div>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = divPattern.exec(contentHtml)) !== null) {
+    if (!isCanonicalSignatureDiv(match[1])) continue;
+    const lines = stripHtml(match[2])
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+    if (lines.length === 0) return null;
+    return lines;
+  }
+  return null;
+}
+
+/** Capture the HTML between an `<h2 id="anchor">` and the next `<h2>` (or EOF). */
+function extractSectionByAnchor(
+  contentHtml: string,
+  anchorId: string,
+): string | null {
+  const headingPattern = new RegExp(
+    `<h2\\b[^>]*>[\\s\\S]*?\\bid="${escapeRegex(anchorId)}"[\\s\\S]*?<\\/h2>`,
+    "i",
+  );
+  const headingMatch = headingPattern.exec(contentHtml);
+  if (!headingMatch) return null;
+  const startIdx = headingMatch.index + headingMatch[0].length;
+  const tail = contentHtml.slice(startIdx);
+  const nextH2 = tail.search(/<h2\b/i);
+  return nextH2 === -1 ? tail : tail.slice(0, nextH2);
+}
+
+/**
+ * Within an Arguments/Returns/Payload section the wiki uses a `<dt>NAME</dt>`
+ * + `<dd>TYPE [- description]</dd>` skeleton. We trust the first
+ * type-coloured span as the canonical type and detect nilability from the
+ * `title="nilable"` marker.
+ *
+ * Implementation note: we split on `<dt` boundaries and parse each chunk
+ * independently. If one chunk has malformed nesting (e.g. an unclosed inner
+ * tag), the failure stays localised to that single param rather than
+ * derailing the whole regex sweep.
+ */
+function extractParamsFromSection(sectionHtml: string): SignatureParam[] {
+  const params: SignatureParam[] = [];
+  // First chunk is preamble before any <dt>; skip it.
+  const chunks = sectionHtml.split(/<dt\b/i).slice(1);
+
+  for (const rawChunk of chunks) {
+    // rawChunk starts immediately after `<dt` - i.e. with the rest of the
+    // <dt> opening tag (attributes + `>`), then dt content, then </dt>, then
+    // optional whitespace, then the matching <dd>...</dd>.
+    const dtOpenClose = rawChunk.indexOf(">");
+    if (dtOpenClose === -1) continue;
+    const dtEnd = rawChunk.indexOf("</dt>", dtOpenClose);
+    if (dtEnd === -1) continue;
+
+    const dtInner = rawChunk.slice(dtOpenClose + 1, dtEnd);
+    const name = stripHtml(dtInner).trim();
+    if (!name) continue;
+
+    const afterDt = rawChunk.slice(dtEnd + "</dt>".length);
+    const ddMatch = /^\s*<dd\b[^>]*>([\s\S]*?)<\/dd>/i.exec(afterDt);
+    if (!ddMatch) continue;
+    const ddHtml = ddMatch[1];
+
+    const typeMatch = ddHtml.match(
+      /<span[^>]*color:\s*#ecbc2a[^>]*>([\s\S]*?)<\/span>/i,
+    );
+    const type = typeMatch ? stripHtml(typeMatch[1]).trim() : "unknown";
+    const nilable = /title="nilable"/i.test(ddHtml);
+
+    const ddText = stripHtml(ddHtml).trim();
+    const sepIdx = ddText.indexOf(" - ");
+    const description = sepIdx === -1 ? "" : ddText.slice(sepIdx + 3).trim();
+
+    params.push({ name, type, nilable, description });
+  }
+  return params;
+}
+
+function extractSignature(contentHtml: string): SignatureBlock | null {
+  try {
+    const signatureLines = extractSignatureLines(contentHtml);
+    if (!signatureLines) return null;
+
+    const argsHtml = extractSectionByAnchor(contentHtml, "Arguments");
+    const returnsHtml = extractSectionByAnchor(contentHtml, "Returns");
+    const payloadHtml = extractSectionByAnchor(contentHtml, "Payload");
+
+    const parameters = argsHtml ? extractParamsFromSection(argsHtml) : [];
+    const returns = returnsHtml ? extractParamsFromSection(returnsHtml) : [];
+
+    let payload: SignatureParam[] | "none" | null;
+    if (payloadHtml === null) {
+      payload = null;
+    } else {
+      const payloadText = stripHtml(payloadHtml).trim();
+      payload =
+        payloadText === "None" ? "none" : extractParamsFromSection(payloadHtml);
+    }
+
+    return { signatureLines, parameters, returns, payload };
+  } catch {
+    return null;
+  }
+}
+
+function formatParamList(params: readonly SignatureParam[]): string {
+  return params
+    .map((param) => {
+      const typeText = param.nilable
+        ? `\`${param.type}\`, nilable`
+        : `\`${param.type}\``;
+      const descSuffix = param.description ? ` — ${param.description}` : "";
+      return `- **\`${param.name}\`** (${typeText})${descSuffix}`;
+    })
+    .join("\n");
+}
+
+function formatSignatureBlock(block: SignatureBlock): string {
+  const parts: string[] = [];
+  parts.push("```lua\n" + block.signatureLines.join("\n") + "\n```");
+
+  if (block.parameters.length > 0) {
+    parts.push(`**Parameters:**\n\n${formatParamList(block.parameters)}`);
+  }
+  if (block.returns.length > 0) {
+    parts.push(`**Returns:**\n\n${formatParamList(block.returns)}`);
+  }
+  if (block.payload === "none") {
+    parts.push("**Payload:**\n\n- (none)");
+  } else if (Array.isArray(block.payload) && block.payload.length > 0) {
+    parts.push(`**Payload:**\n\n${formatParamList(block.payload)}`);
+  }
+
+  return parts.join("\n\n");
 }
 
 // ---------------------------------------------------------------------------
@@ -321,18 +498,47 @@ function findSectionKey(
 // Output formatting
 // ---------------------------------------------------------------------------
 
+function buildWikiMetadata(
+  query: string,
+  type: string,
+  url: string,
+): MetadataPair[] {
+  return [
+    ["Query", `\`${query}\``],
+    ["Type", type],
+    ["Source", url],
+  ];
+}
+
+function resolveTypeLabel(query: string, resolvedType: QueryType): string {
+  // Distinguish raw paths/URLs from auto-detected types in the metadata
+  if (query.includes("/") || query.startsWith("https://")) return "path";
+  return resolvedType;
+}
+
 function formatOutput(
   query: string,
   url: string,
+  resolvedType: QueryType,
   sections: Map<string, string>,
+  signatureMarkdown: string | null,
 ): string {
-  const lines: string[] = [`# WoW Wiki: ${query}`, "", `**Source:** ${url}`];
-
-  for (const [heading, body] of sections) {
-    lines.push("", `## ${heading}`, "", truncateSection(body));
+  const sectionBlocks: string[] = [];
+  if (signatureMarkdown) {
+    sectionBlocks.push(`### Signature\n\n${signatureMarkdown}`);
   }
-
-  return lines.join("\n");
+  for (const [heading, body] of sections) {
+    sectionBlocks.push(`### ${heading}\n\n${truncateSection(body)}`);
+  }
+  return renderReport({
+    title: TITLES.wikiFetch,
+    metadata: buildWikiMetadata(
+      query,
+      resolveTypeLabel(query, resolvedType),
+      url,
+    ),
+    body: { outcome: "result", body: sectionBlocks.join("\n\n") },
+  });
 }
 
 function truncateSection(text: string): string {
@@ -345,53 +551,61 @@ function truncateSection(text: string): string {
   );
 }
 
-function formatError(
+function buildFetchErrorReport(
   query: string,
   url: string,
   status: number,
   resolvedType: QueryType,
 ): string {
-  const lines = [
-    `# WoW Wiki: ${query}`,
-    "",
-    `**Error:** HTTP ${status} fetching ${url}`,
-    "",
-    "## Suggestions",
-    "",
-  ];
+  const reason =
+    status === 0
+      ? "Network or server error fetching the wiki."
+      : `HTTP ${status} fetching ${url}.`;
+  const cause =
+    status === 404
+      ? `Page \`${url}\` does not exist on the wiki.`
+      : status === 0
+        ? "Unreachable host or DNS failure."
+        : `Wiki responded with HTTP ${status}.`;
+
+  const suggestions: string[] = [];
 
   if (status === 404) {
-    lines.push(`The page \`${url}\` does not exist on the wiki.`);
-    lines.push("");
-    lines.push("Try:");
-
     if (resolvedType === "widget") {
-      lines.push(
-        `- Function URL instead: ${buildUrlForFunction(query)}`,
+      suggestions.push(
+        `Try the function URL instead: ${buildUrlForFunction(query)}`,
       );
     }
     if (resolvedType === "function") {
-      lines.push(
-        `- Widget URL instead: ${buildUrlForWidget(query)}`,
+      suggestions.push(
+        `Try the widget URL instead: ${buildUrlForWidget(query)}`,
       );
     }
-    lines.push(
-      `- Search the wiki directly: https://warcraft.wiki.gg/index.php?search=${encodeURIComponent(query)}`,
+    suggestions.push(
+      `Search the wiki directly: https://warcraft.wiki.gg/index.php?search=${encodeURIComponent(query)}`,
     );
-    lines.push(
-      '- Use the `wow-api-lookup` tool for local annotation signatures',
+    suggestions.push(
+      "Use the `wow-api-lookup` tool for local annotation signatures.",
     );
   } else {
-    lines.push(
-      `Network or server error. The wiki may be temporarily unavailable.`,
-    );
-    lines.push(`- Retry in a moment`);
-    lines.push(
-      `- Check the URL manually: ${url}`,
-    );
+    suggestions.push("Retry in a moment - the wiki may be temporarily unavailable.");
+    suggestions.push(`Check the URL manually: ${url}`);
   }
 
-  return lines.join("\n");
+  // Suggestions is non-empty by construction (always at least 2 pushes for
+  // 404 widget/function/search, and 2 pushes for non-404).
+  const [first, ...rest] = suggestions;
+  return renderError({
+    title: TITLES.wikiFetch,
+    metadata: buildWikiMetadata(
+      query,
+      resolveTypeLabel(query, resolvedType),
+      url,
+    ),
+    reason,
+    cause,
+    suggestions: [first, ...rest] as readonly [string, ...string[]],
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -425,9 +639,17 @@ async function fetchWikiPage(
 
 export default tool({
   description:
-    "Fetch detailed documentation from warcraft.wiki.gg for any WoW API function, event, widget, or topic. " +
-    "Returns behavioral details, caveats, parameters, return values, and examples that local annotation files lack. " +
-    "Auto-detects URL pattern from the query name (C_ namespace, ALL_CAPS events, PascalCase widgets, or global functions).",
+    "Fetch detailed documentation from warcraft.wiki.gg for any WoW API function, event, widget, or topic. Returns behavioural details, caveats, parameters, return values, and examples that local annotation files do not carry.\n\n" +
+    "Usage:\n" +
+    "- The query name is mapped to a wiki URL by auto-detection:\n" +
+    "  - `C_*` (e.g. `C_Item.GetItemInfo`) → CAPI URL (`API_C_X.Y`).\n" +
+    "  - `ALL_CAPS` with underscores (e.g. `LOOT_OPENED`) → event URL (`EVENT_NAME`).\n" +
+    "  - `PascalCase` without verb prefix (e.g. `Frame`, `StatusBar`) → widget URL (`UIOBJECT_X`).\n" +
+    "  - Otherwise (e.g. `GetLootSlotInfo`) → global function URL (`API_X`).\n" +
+    "- Pass `type` to override the auto-detected pattern explicitly.\n" +
+    "- Raw paths (containing `/`) and full URLs are accepted as-is.\n\n" +
+    "For events, prefer `wow-event-info` with `wiki: true` (it pre-resolves the canonical event URL and merges with local payload data).\n" +
+    "For documented C_ API signatures, prefer `wow-api-lookup` (local search, faster).",
   args: {
     query: tool.schema
       .string()
@@ -448,56 +670,85 @@ export default tool({
 
     // --- Guard clauses ---
     if (!query.trim()) {
-      return "Error: query must not be empty. Provide an API name, event, widget, or wiki path.";
+      return renderError({
+        title: TITLES.wikiFetch,
+        metadata: [["Query", "`(empty)`"]],
+        reason: "`query` must not be empty.",
+        cause: "(no query provided)",
+        suggestions: [
+          "Pass an API name, event, widget, or wiki path.",
+          "Examples: `GetLootSlotInfo`, `C_Item.GetItemInfo`, `LOOT_OPENED`, `Frame`, `Professions/Recipes`.",
+        ],
+      });
     }
 
     // --- Parse query type at boundary ---
-    const resolvedType = resolveQueryType(query.trim(), type);
-    const url = buildWikiUrl(query.trim(), resolvedType);
+    const trimmedQuery = query.trim();
+    const resolvedType = resolveQueryType(trimmedQuery, type);
+    const url = buildWikiUrl(trimmedQuery, resolvedType);
 
     // --- Fetch ---
     const { ok, status, html } = await fetchWikiPage(url);
 
     if (!ok) {
-      return formatError(query, url, status, resolvedType);
+      return buildFetchErrorReport(trimmedQuery, url, status, resolvedType);
     }
 
     // --- Parse HTML into sections ---
     const contentHtml = extractMainContent(html);
+    const typeLabel = resolveTypeLabel(trimmedQuery, resolvedType);
 
     if (!contentHtml) {
-      return (
-        `# WoW Wiki: ${query}\n\n` +
-        `**Source:** ${url}\n\n` +
-        `## Note\n\n` +
-        `Page fetched successfully but content extraction failed. ` +
-        `The page structure may be non-standard.\n\n` +
-        `Visit the page directly: ${url}`
-      );
+      return renderReport({
+        title: TITLES.wikiFetch,
+        metadata: buildWikiMetadata(trimmedQuery, typeLabel, url),
+        body: {
+          outcome: "result",
+          body:
+            `### Content\n\n` +
+            `Page fetched successfully but content extraction failed - the page structure may be non-standard. ` +
+            `Visit the page directly: ${url}`,
+        },
+      });
     }
 
     const allSections = extractSections(contentHtml);
 
     if (allSections.size === 0) {
       // Fallback: return raw stripped text
-      const rawText = stripTags(contentHtml).trim();
+      const rawText = stripHtml(contentHtml).trim();
       if (!rawText) {
-        return (
-          `# WoW Wiki: ${query}\n\n` +
-          `**Source:** ${url}\n\n` +
-          `Page appears to have no text content. Visit: ${url}`
-        );
+        return renderReport({
+          title: TITLES.wikiFetch,
+          metadata: buildWikiMetadata(trimmedQuery, typeLabel, url),
+          body: {
+            outcome: "result",
+            body: `### Content\n\nPage appears to have no text content. Visit: ${url}`,
+          },
+        });
       }
 
-      return (
-        `# WoW Wiki: ${query}\n\n` +
-        `**Source:** ${url}\n\n` +
-        `## Content\n\n` +
-        truncateSection(rawText)
-      );
+      return renderReport({
+        title: TITLES.wikiFetch,
+        metadata: buildWikiMetadata(trimmedQuery, typeLabel, url),
+        body: {
+          outcome: "result",
+          body: `### Content\n\n${truncateSection(rawText)}`,
+        },
+      });
     }
 
     const relevantSections = selectRelevantSections(allSections);
-    return formatOutput(query, url, relevantSections);
+    const signatureBlock = extractSignature(contentHtml);
+    const signatureMarkdown = signatureBlock
+      ? formatSignatureBlock(signatureBlock) || null
+      : null;
+    return formatOutput(
+      trimmedQuery,
+      url,
+      resolvedType,
+      relevantSections,
+      signatureMarkdown,
+    );
   },
 });
