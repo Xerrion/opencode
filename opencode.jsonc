@@ -441,13 +441,14 @@
       "disable": true,
     },
 
-    // Tech Lead/Architect advisor (read-only, upstream design direction)
+    // Tech Lead/Architect advisor (writes ADR briefs to .deliverables/tech-lead/)
     "tech-lead": {
       "model": "github-copilot/claude-opus-4.7",
       "temperature": 0.2,
       "permission": {
-        "write": "deny",
-        "edit": "deny",
+        // Write/edit allowed; prompt restricts scope to .deliverables/tech-lead/ only.
+        "write": "allow",
+        "edit": "allow",
         "delegate": "allow",
         "plan_read": "allow",
         "delegation_read": "allow",
