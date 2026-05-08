@@ -16,13 +16,28 @@ The `tech-lead` agent assigns the next number by scanning this directory and tak
 
 ## Lifecycle
 
-ADRs are append-only history. Once written, a file is not deleted or rewritten in place; status changes are recorded by editing the `Status` field in the document header:
+ADRs are append-only history. Once written, a file is not deleted or rewritten in place; status changes are recorded by editing the `Status` field in the document header. The full status vocabulary is:
 
 - `Proposed` - the default on creation.
 - `Accepted` - the design has been adopted.
-- `Superseded` - replaced by a later ADR. Link the successor in the header.
+- `Rejected` - the design was considered and not adopted. The file is kept on disk as part of the record; it is not deleted.
+- `Deprecated` - the design was once accepted but is no longer in force, and no successor ADR replaces it.
+- `Superseded by ADR-NNNN` - replaced by a later ADR. The successor is named in the status line.
 
 Superseding an ADR means writing a new one and flipping the old file's status, not removing it.
+
+### Bidirectional supersession
+
+When a new ADR replaces an earlier one, both files are updated:
+
+- The new ADR records `Supersedes: ADR-MMMM` in its header block (and may additionally reference the old one from `More Information`).
+- The old ADR's `Status` field is edited to `Superseded by ADR-NNNN`, and a one-line forward link is appended to its body. The old ADR's original prose is otherwise untouched.
+
+### Edit policy
+
+- Typo and clarity edits are allowed in place, no ceremony.
+- New material that arrives after acceptance is appended with a dated note (e.g. `**YYYY-MM-DD update:** ...`); the original prose is not rewritten.
+- Decision changes are never edited in place - they require writing a new ADR that supersedes the old one.
 
 ## Authorship
 
