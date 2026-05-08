@@ -1,15 +1,17 @@
 ---
 name: code-philosophy
-description: Internal logic and data flow philosophy (The 5 Laws of Elegant Defense). Understand deeply to ensure code guides data naturally and prevents errors.
+description: Internal logic and data flow philosophy (The 4 Laws of Elegant Defense). Understand deeply to ensure code guides data naturally and prevents errors.
 ---
 
-# Internal Logic Philosophy: The 5 Laws of Elegant Defense
+# Internal Logic Philosophy: The 4 Laws of Elegant Defense
 
 **Role:** Principal Engineer for all **Internal Logic & Data Flow** - backend, components, async handlers, state, and any code where functionality matters.
 
 **Philosophy:** Code MUST guide data so naturally that errors become impossible. Core logic stays flat, readable, and pristine.
 
-## The 5 Laws
+> Structural concerns (where state lives, where side effects belong, who owns a module) are governed by `architecture-philosophy`. This skill governs the inside of a function and the shape of a single call site.
+
+## The 4 Laws
 
 ### 1. Early Exit (Guard Clauses)
 - MUST handle edge cases, nulls, and errors at the top of every function. Indentation hides bugs.
@@ -17,23 +19,20 @@ description: Internal logic and data flow philosophy (The 5 Laws of Elegant Defe
 - Bad: `if user: data = fetch_data(...)` - Good: `if not user: return None` then `data = fetch_data(...)`
 
 ### 2. Parse, Don't Validate (Illegal States Unrepresentable)
-- MUST parse inputs into trusted, typed state at the boundary. Once inside business logic, data is never re-checked.
+- MUST parse inputs into trusted, typed state at the boundary using a constructor, factory, or schema (e.g. Pydantic, Zod, a typed `from_dict`, an explicit parser function). Casting (`as User`, `<User>raw`, `# type: ignore`) is NOT parsing - it asserts a type without proving it and re-opens the boundary.
+- The boundary parser must be the only place that touches the raw shape. Once inside business logic, data is trusted by type and never re-checked.
 - NEVER pass raw untyped/unvalidated data into business logic. Parse it into a known shape first or reject it.
-- Bad: `charge(raw_data)` - Good: `charge(parse_invoice(raw_data))` where parsing happens at the edge.
+- Bad: `charge(raw_data as Invoice)` - Good: `charge(Invoice.parse(raw_data))` where `Invoice.parse` is a real constructor/schema that fails loudly on bad input.
 
-### 3. Atomic Predictability
-- Functions MUST be pure where possible. Same input = same output. No hidden mutations.
-- NEVER write fire-and-forget side effects. Functions MUST return results - let the caller decide what to do with them.
-- Bad: `function save(user) { db.write(user); }` - Good: `function save(user) { return db.write(user); }`
-
-### 4. Fail Fast, Fail Loud
+### 3. Fail Fast, Fail Loud
 - If a state is invalid, MUST halt immediately with a descriptive error. NEVER patch bad data and continue.
 - NEVER silently swallow errors - no empty handlers, no returning `None`/`null`/`nil` to hide failures.
 - Bad: `except: return None` - Good: `except PaymentError as e: raise InvoiceError("charge failed") from e`
 
-### 5. Intentional Naming
+### 4. Intentional Naming & Interfaces
 - Variables and functions MUST read so clearly that comments become unnecessary.
 - Booleans MUST use `is`/`has`/`can`/`should` prefix (snake_case or camelCase per language convention). NEVER name a boolean `check`, `flag`, `ok`, or `status`.
+- MUST avoid Boolean Blindness at call sites. A call like `createUser("ada", true, false, true)` tells the reader nothing. Use a named options object, keyword arguments, or a small enum so each argument is self-describing at the call site: `createUser("ada", { isAdmin: true, sendInvite: false, requireMFA: true })` or `createUser("ada", Role.Admin, Invite.Skip, MFA.Required)`.
 - Bad: `valid = check(u)` - Good: `is_eligible = has_active_subscription(user)`
 
 ---
@@ -41,7 +40,6 @@ description: Internal logic and data flow philosophy (The 5 Laws of Elegant Defe
 ## Adherence Checklist
 Before completing your task, verify each with a hard yes/no:
 - [ ] Does every function handle its failure modes before its first meaningful line of work?
-- [ ] Can any raw, unvalidated external data reach business logic without being parsed into a known shape?
-- [ ] Could any function return a different result given the same input due to hidden state?
+- [ ] Can any raw, unvalidated external data reach business logic without being parsed by a constructor, factory, or schema?
 - [ ] Is there any error handler that swallows the error, returns a silent sentinel, or does nothing?
-- [ ] Can you read every conditional aloud as an English sentence and have it make sense?
+- [ ] Can you read every conditional AND function call site aloud and understand what every argument does without looking at the definition?

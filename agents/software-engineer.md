@@ -165,7 +165,7 @@ Return to the orchestrator using this exact Markdown structure.
 ## Philosophy Compliance
 
 - Loaded: list every skill you actually loaded (e.g. `code-philosophy`, `frontend-philosophy`)
-- Laws / pillars satisfied: name them explicitly (e.g. Early Exit, Parse Don't Validate, Atomic Predictability)
+- Laws / pillars satisfied: name them explicitly (e.g. Early Exit, Parse Don't Validate, Honest Contracts)
 
 ## Verification
 

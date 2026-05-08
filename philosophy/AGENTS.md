@@ -24,9 +24,9 @@ Not beside it. Not after it. The philosophy defines what correct code looks like
 
 Before marking done, explicitly list which laws/pillars your code satisfies. Not "checklist passed" - name them:
 
-- **Code**: Early Exit, Parse Don't Validate, Atomic Predictability, Fail Fast, Intentional Naming
+- **Code**: Early Exit, Parse Don't Validate, Fail Fast, Intentional Naming & Interfaces
 - **Frontend**: Typography, Color, Motion, Composition, Atmosphere
-- **Architecture**: Follow the Grain, Layer Direction, Caller-Designed API, Single State Owner, Explicit Failures
+- **Architecture**: Follow the Grain, Strict Layer Direction, Justifiable Indirection, Caller-Designed API, Atomic Predictability, Honest Contracts
 - **WoW Addon**: API Lookup Before Use, Event Payload Verification, Taint Avoidance, Nil-Safety on Returns, Lint Before Finalize
 - **WoW Frame**: Anchor Hygiene, Strata/Layer Correctness, Secure Frame Guards, Frame Pooling, Backdrop Template Usage
 

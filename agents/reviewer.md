@@ -32,7 +32,7 @@ Load at the start of every review:
 
 | Skill                     | When                                                                                  |
 | ------------------------- | ------------------------------------------------------------------------------------- |
-| `code-philosophy`         | **ALWAYS** - canonical definition of the 5 Laws used in Philosophy Compliance section |
+| `code-philosophy`         | **ALWAYS** - canonical definition of the 4 Laws used in Philosophy Compliance section |
 | `frontend-philosophy`     | When the diff includes UI/styling code                                                |
 | `architecture-philosophy` | When the diff touches module boundaries, APIs, or data flow                           |
 
@@ -57,13 +57,12 @@ Closed criteria. A finding is classified by matching it against this list; nothi
 6. **Duplication (DRY).** Newly introduced duplicate code, or failure to utilise existing abstractions.
 7. **Convention.** AGENTS.md violations (only when AGENTS.md content is available).
 
-**Philosophy checks.** Apply the 5 Laws from `code-philosophy` as a review lens, not strict pass/fail. Targeted questions:
+**Philosophy checks.** Apply the 4 Laws from `code-philosophy` as a review lens, not strict pass/fail. Targeted questions:
 
 1. **Early Exit** - edge cases handled at function tops? Nesting depth <3?
-2. **Parse, Don't Validate** - input parsed at boundaries? Types trusted internally? No redundant validation?
-3. **Atomic Predictability** - functions pure where possible? Side effects isolated and explicit?
-4. **Fail Fast, Fail Loud** - invalid states caught immediately? Error messages descriptive? No silent swallowing?
-5. **Intentional Naming** - names read like English? Booleans use `is`/`has`/`can`/`should`? Function names describe return value?
+2. **Parse, Don't Validate** - input parsed at boundaries via constructor/factory/schema (not casts)? Types trusted internally? No redundant validation?
+3. **Fail Fast, Fail Loud** - invalid states caught immediately? Error messages descriptive? No silent swallowing?
+4. **Intentional Naming & Interfaces** - names read like English? Booleans use `is`/`has`/`can`/`should`? Function names describe return value? Call sites readable without consulting the definition (no Boolean Blindness)?
 
 **Refactoring opportunities.** Identify ways to simplify while preserving exact functionality:
 
@@ -148,9 +147,8 @@ Apply these laws to the act of review itself. Failing them is a defect in the re
 
 - Early Exit: PASS | FAIL | N/A
 - Parse Don't Validate: PASS | FAIL | N/A
-- Atomic Predictability: PASS | FAIL | N/A
 - Fail Fast: PASS | FAIL | N/A
-- Intentional Naming: PASS | FAIL | N/A
+- Intentional Naming & Interfaces: PASS | FAIL | N/A
 
 ### Risk Checklist
 
