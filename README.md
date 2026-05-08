@@ -43,8 +43,8 @@ Skills provide deep domain context and are grouped by theme for scannability. Th
 
 ### Philosophy
 
-- **`architecture-philosophy`**: The 5 Laws of Intentional Architecture.
-- **`code-philosophy`**: The 5 Laws of Elegant Defense.
+- **`architecture-philosophy`**: The Pillars of Intentional Architecture.
+- **`code-philosophy`**: The 4 Laws of Elegant Defense.
 - **`frontend-philosophy`**: The 5 Pillars of Intentional UI.
 
 ### Planning & Review
@@ -172,5 +172,5 @@ To adapt this configuration:
 1. **Initialization**: You ask an agent to implement a new UI component.
 2. **Context Inheritance**: The agent reads the root `AGENTS.md` and its specific mode in `agents/`.
 3. **Philosophy Load**: The agent follows the Prime Directive and loads `code-philosophy` and `frontend-philosophy`.
-4. **Execution**: The agent writes the component, applying "Atomic Predictability" for state and the "Atmosphere" pillar for visual style.
-5. **Verification**: The agent reports completion, listing the principles followed (e.g., "Satisfies: Atomic Predictability, Typography, Atmosphere").
+4. **Execution**: The agent writes the component, applying "Early Exit" for control flow and the "Atmosphere" pillar for visual style.
+5. **Verification**: The agent reports completion, listing the principles followed (e.g., "Satisfies: Early Exit, Typography, Atmosphere").
