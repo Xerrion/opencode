@@ -28,7 +28,7 @@ Agents operate as either primary orchestrators or specialized subagents. Primary
 | `plan`              | primary  | Planning orchestrator coordinating review via Plannotator       |
 | `servicenow`        | primary  | ServiceNow platform expert with full MCP access                 |
 | `software-engineer` | subagent | Technical implementation specialist                             |
-| `explore`           | subagent | Fast read-only codebase navigator                               |
+| `explore`           | subagent | Codebase navigator; pointers in chat by default, persists large inventories to `.deliverables/explore/` |
 | `git`               | subagent | Git/GitHub operations via `git` and `gh`                        |
 | `researcher`        | subagent | External knowledge gathering                                    |
 | `reviewer`          | subagent | Read-only code review plus safe refactors                       |

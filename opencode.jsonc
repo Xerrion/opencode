@@ -364,12 +364,13 @@
       },
     },
 
-    // Filesystem & repo explorer (read-only)
+    // Filesystem & repo explorer (read-only source; persists scout reports to .deliverables/explore/)
     "explore": {
       "model": "github-copilot/claude-opus-4.7",
       "permission": {
-        "write": "deny",
-        "edit": "deny",
+        // Write/edit allowed; prompt restricts scope to .deliverables/explore/ only.
+        "write": "allow",
+        "edit": "allow",
         "delegate": "allow",
         "plan_read": "deny",
         "todoread": "deny",
