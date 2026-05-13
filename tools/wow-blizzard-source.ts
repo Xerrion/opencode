@@ -1,477 +1,298 @@
-import { tool } from "@opencode-ai/plugin";
-import os from "node:os";
-import path from "node:path";
-import { readdirSync, existsSync, statSync } from "node:fs";
-import {
-  formatRgLines,
-  renderError,
-  renderNoMatch,
-  renderReport,
-  runRg,
-  stripBasePath,
-  TITLES,
-  type MetadataPair,
-} from "./_shared";
-
-const LEGACY_FRAMEXML_BASE = path.join(
-  os.homedir(),
-  ".local/share/wow-annotations/Annotations/FrameXML/Annotations",
-);
-
-const FRAMEXML_DIR = path.join(
-  os.homedir(),
-  ".local/share/wow-framexml",
-);
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+import { tool } from "@opencode-ai/plugin/tool";
+import { z } from "zod";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import { existsSync } from "node:fs";
 
 /**
- * Resolve the FrameXML base directory for a given WoW version.
+ * wow-blizzard-source: ripgrep over the per-flavour FrameXML annotated
+ * source tree at `~/.local/share/wow-framexml/<flavor>/Annotations/`,
+ * returning matched lines with bounded context.
  *
- * - Explicit version: use multi-flavor path, throw if missing.
- * - No version: try multi-flavor "live" first, fall back to legacy Ketho path.
+ * Contract per ADR-0001 `.deliverables/tech-lead/ADR-0001-rebuild-tool-surface.md`:
+ *   - three args (`pattern`, `flavor`, `scope`)
+ *   - `flavor` accepts `retail` as an alias for `live` (orchestrator amendment)
+ *   - returns { output, metadata: { flavor, matchCount, selfTruncated } }
+ *   - 40 KB self-cap with explicit truncation tail
+ *   - throw only on invalid input or missing flavor directory; "no matches"
+ *     returns a populated body with matchCount: 0
+ *   - paths in output are anchor-relative (AddOns/Blizzard_X/...), never absolute
  */
-export function resolveFrameXMLBase(version?: string): string {
-  if (version !== undefined) {
-    const multiFlavorPath = path.join(FRAMEXML_DIR, version, "Annotations");
-    if (!existsSync(multiFlavorPath)) {
-      throw new Error(
-        "FrameXML annotation source not available at expected location; verify wow-annotations / wow-framexml are installed (run maintain-annotations.sh).",
-      );
+
+const FRAMEXML_ROOT = join(homedir(), ".local/share/wow-framexml");
+const BUDGET = 40_000;
+const MAX_PATTERN_LEN = 500;
+const RG_CONTEXT = 3;
+const RG_MAX_COUNT_PER_FILE = 5;
+
+const FLAVOR_ENUM = ["live", "retail", "classic", "classic_anniversary", "classic_era"] as const;
+type FlavorArg = (typeof FLAVOR_ENUM)[number];
+type ResolvedFlavor = "live" | "classic" | "classic_anniversary" | "classic_era";
+
+const SCOPE_ENUM = ["lua", "xml", "all"] as const;
+type Scope = (typeof SCOPE_ENUM)[number];
+
+function resolveFlavor(f: FlavorArg): ResolvedFlavor {
+  return f === "retail" ? "live" : f;
+}
+
+function globsFor(scope: Scope): string[] {
+  if (scope === "lua") return ["-g", "*.lua.annotated.lua"];
+  if (scope === "xml") return ["-g", "*.xml.annotated.lua"];
+  // all: include both, exclude others defensively
+  return ["-g", "*.lua.annotated.lua", "-g", "*.xml.annotated.lua"];
+}
+
+/** Fence wider than any backtick run in `content`, min 3. */
+function fenceFor(content: string): string {
+  let max = 0;
+  const re = /`+/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(content)) !== null) {
+    if (m[0].length > max) max = m[0].length;
+  }
+  return "`".repeat(Math.max(3, max + 1));
+}
+
+type RgLine = { path: string; line: number; text: string; isMatch: boolean };
+
+/**
+ * Strip an absolute prefix if rg ever emits one. With cwd set to
+ * `Annotations/`, rg uses relative paths - but defence in depth, never
+ * leak `/Users/...` to the caller. Also strip a leading `./`.
+ */
+function stripPathPrefix(p: string, absRoot: string): string {
+  const withSlash = absRoot.endsWith("/") ? absRoot : absRoot + "/";
+  if (p.startsWith(withSlash)) return p.slice(withSlash.length);
+  if (p.startsWith("./")) return p.slice(2);
+  return p;
+}
+
+/**
+ * Parse a single rg line. Match lines use `path:line:text`; context lines
+ * use `path-line-text`. Both forms must have the absolute prefix stripped
+ * (the previous bug-class was leaking `/Users/...` on context lines).
+ */
+function parseRgLine(raw: string, absRoot: string): RgLine | null {
+  // Anchor on the LAST occurrence of `:<digits>:` or `-<digits>-` that
+  // splits the line into (path)(sep)(line)(sep)(rest). Using a lazy head
+  // is fine because annotated paths do not contain `:` or `-` followed by
+  // digits in their leading segments on disk.
+  const reMatch = /^(.+?):(\d+):(.*)$/;
+  const reCtx = /^(.+?)-(\d+)-(.*)$/;
+  let m = reMatch.exec(raw);
+  if (m) {
+    return {
+      path: stripPathPrefix(m[1]!, absRoot),
+      line: Number(m[2]!),
+      text: m[3]!,
+      isMatch: true,
+    };
+  }
+  m = reCtx.exec(raw);
+  if (m) {
+    return {
+      path: stripPathPrefix(m[1]!, absRoot),
+      line: Number(m[2]!),
+      text: m[3]!,
+      isMatch: false,
+    };
+  }
+  return null;
+}
+
+type FileGroup = {
+  path: string;
+  lines: RgLine[];
+  matchCount: number;
+};
+
+/**
+ * Group rg output into per-file blocks preserving rg's ordering. File
+ * boundaries are explicit (path change); rg's `--` separators between
+ * match groups inside the same file are preserved as gap markers so the
+ * rendered block reads naturally.
+ */
+function groupByFile(lines: RgLine[]): FileGroup[] {
+  const groups: FileGroup[] = [];
+  let current: FileGroup | null = null;
+  for (const l of lines) {
+    if (current === null || current.path !== l.path) {
+      current = { path: l.path, lines: [], matchCount: 0 };
+      groups.push(current);
     }
-    return multiFlavorPath;
+    current.lines.push(l);
+    if (l.isMatch) current.matchCount += 1;
   }
+  return groups;
+}
 
-  // No version specified - try multi-flavor "live" first for seamless upgrade
-  const liveMultiFlavorPath = path.join(FRAMEXML_DIR, "live", "Annotations");
-  if (existsSync(liveMultiFlavorPath)) {
-    return liveMultiFlavorPath;
+/**
+ * Render a single file block: header + fenced body. Body uses rg's
+ * standard `123:` (match) / `123-` (context) gutter, and `--` separators
+ * between non-contiguous chunks within the same file.
+ */
+function renderFileBlock(group: FileGroup): string {
+  const bodyLines: string[] = [];
+  let prev: RgLine | null = null;
+  for (const l of group.lines) {
+    if (prev !== null && l.line - prev.line > 1) {
+      bodyLines.push("--");
+    }
+    const gutter = l.isMatch ? `${l.line}:` : `${l.line}-`;
+    bodyLines.push(`${gutter}${l.text}`);
+    prev = l;
   }
-
-  // Fall back to legacy Ketho submodule path
-  return LEGACY_FRAMEXML_BASE;
+  const body = bodyLines.join("\n");
+  const fence = fenceFor(body);
+  return `## ${group.path}\n${fence}lua\n${body}\n${fence}\n\n`;
 }
 
-function assertFrameXMLExists(framexmlBase: string): void {
-  if (!existsSync(framexmlBase)) {
-    throw new Error(
-      "FrameXML annotation source not available at expected location; verify wow-annotations / wow-framexml are installed (run maintain-annotations.sh).",
-    );
-  }
-}
-
-type FileType = "lua" | "xml" | "all";
-
-function resolveSearchRoot(
-  framexmlBase: string,
-  addonsDir: string,
-  addon: string | undefined,
-): string {
-  if (!addon) return framexmlBase;
-
-  const addonPath = path.join(addonsDir, addon);
-  if (!existsSync(addonPath) || !statSync(addonPath).isDirectory()) {
-    throw new Error(
-      `\`${addon}\` is not an addon directory in the FrameXML tree.`,
-    );
-  }
-  return addonPath;
-}
-
-function globForFileType(fileType: FileType): string {
-  if (fileType === "lua") return "*.lua.annotated.lua";
-  if (fileType === "xml") return "*.xml.annotated.lua";
-  return "*.lua";
-}
-
-function formatSourceOutput(framexmlBase: string, raw: string): string {
-  return formatRgLines(framexmlBase, raw);
-}
-
-async function searchBlizzardSource(
-  query: string,
-  searchPath: string,
-  caseSensitive: boolean,
-  glob: string,
-  context: number,
-  maxCount: number,
-): Promise<string> {
+async function runRg(
+  pattern: string,
+  scope: Scope,
+  absRoot: string,
+): Promise<{ lines: RgLine[]; exitCode: number; stderr: string }> {
   const args = [
-    ...(caseSensitive ? [] : ["-i"]),
+    "--color",
+    "never",
     "--no-heading",
-    "--with-filename",
-    "-n",
-    "--context",
-    String(context),
+    "--line-number",
+    "-C",
+    String(RG_CONTEXT),
     "--max-count",
-    String(maxCount),
-    "--glob",
-    glob,
-    query,
-    searchPath,
+    String(RG_MAX_COUNT_PER_FILE),
+    "--max-filesize",
+    "5M",
+    ...globsFor(scope),
+    "-e",
+    pattern,
+    ".",
   ];
-  return await runRg(args);
-}
 
-interface AddonInfo {
-  name: string;
-  luaCount: number;
-  xmlCount: number;
-}
-
-function countFilesByPattern(dirPath: string, suffix: string): number {
-  try {
-    const raw = Bun.spawnSync(
-      ["rg", "--files", "--glob", `*${suffix}`, dirPath],
-      { stdout: "pipe", stderr: "pipe" },
-    );
-    const out = new TextDecoder().decode(raw.stdout).trim();
-    if (!out) return 0;
-    return out.split("\n").length;
-  } catch {
-    return 0;
+  const proc = Bun.spawn(["rg", ...args], {
+    cwd: absRoot,
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  const stdout = await new Response(proc.stdout).text();
+  const stderr = await new Response(proc.stderr).text();
+  const exitCode = await proc.exited;
+  const lines: RgLine[] = [];
+  for (const raw of stdout.split("\n")) {
+    if (raw === "" || raw === "--") continue;
+    const parsed = parseRgLine(raw, absRoot);
+    if (parsed) lines.push(parsed);
   }
+  return { lines, exitCode, stderr };
 }
 
-function listAddons(addonsDir: string): AddonInfo[] {
-  if (!existsSync(addonsDir)) return [];
-
-  const entries = readdirSync(addonsDir, { withFileTypes: true });
-  return entries
-    .filter((e) => e.isDirectory())
-    .map((e) => {
-      const addonPath = path.join(addonsDir, e.name);
-      return {
-        name: e.name,
-        luaCount: countFilesByPattern(addonPath, ".lua.annotated.lua"),
-        xmlCount: countFilesByPattern(addonPath, ".xml.annotated.lua"),
-      };
-    })
-    .sort((a, b) => a.name.localeCompare(b.name));
-}
-
-function filterAddons(addons: AddonInfo[], query: string): AddonInfo[] {
-  const lower = query.toLowerCase();
-  return addons.filter((a) => a.name.toLowerCase().includes(lower));
-}
-
-function formatAddonTable(addons: AddonInfo[]): string {
-  const rows = addons.map(
-    (a) => `| ${a.name} | ${a.luaCount} | ${a.xmlCount} |`,
-  );
-  return (
-    "| Addon | Lua Files | XML Stubs |\n" +
-    "|-------|-----------|----------|\n" +
-    rows.join("\n")
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Tool definition
-// ---------------------------------------------------------------------------
-
-interface SourceMetadataOpts {
-  query: string;
-  mode: "search" | "list";
-  addon?: string;
-  fileType: FileType;
-  version?: string;
-  match:
-    | "case-sensitive"
-    | "case-insensitive"
-    | "filename"
-    | "list"
-    | "none";
-}
-
-function buildSourceMetadata(opts: SourceMetadataOpts): MetadataPair[] {
-  const metadata: MetadataPair[] = [
-    ["Query", `\`${opts.query || "(empty)"}\``],
-    ["Mode", opts.mode],
-  ];
-  if (opts.addon) metadata.push(["Addon", opts.addon]);
-  metadata.push(["File-Type", opts.fileType]);
-  if (opts.version) metadata.push(["Version", opts.version]);
-  metadata.push(["Match", opts.match]);
-  return metadata;
-}
-
-function buildSourceErrorMetadata(
-  query: string,
-  mode: "search" | "list",
-  version: string | undefined,
-): MetadataPair[] {
-  const metadata: MetadataPair[] = [
-    ["Query", `\`${query || "(empty)"}\``],
-    ["Mode", mode],
-  ];
-  if (version) metadata.push(["Version", version]);
-  return metadata;
+function renderNoMatch(
+  pattern: string,
+  flavor: ResolvedFlavor,
+  scope: Scope,
+): string {
+  const relRoot = `~/.local/share/wow-framexml/${flavor}/Annotations/`;
+  return [
+    `# ${pattern} (flavor: ${flavor}, scope: ${scope})`,
+    "",
+    `No matches in ${relRoot} (scope: ${scope}).`,
+    "",
+    "Try a different flavor (live | classic | classic_anniversary | classic_era),",
+    'broaden scope to "all", or check the pattern syntax (ripgrep regex).',
+    "",
+  ].join("\n");
 }
 
 export default tool({
   description:
-    "Search Blizzard's FrameXML source (the annotated subset of Gethe/wow-ui-source via NumyAddon/FramexmlAnnotations) for implementation patterns, mixin definitions, template usage, and real-world examples of how Blizzard builds its own UI.\n\n" +
-    "Usage:\n" +
-    "- `query` is a search term (function name, mixin, template, keyword) in `mode: 'search'`, and a filter (substring of addon directory name) in `mode: 'list'`.\n" +
-    "- `mode`: `search` (default) greps file contents; `list` enumerates addon directories.\n" +
-    "- `addon`: narrow to a single addon directory (e.g. `Blizzard_ActionBar`, `Blizzard_AuctionHouseUI`, `Blizzard_ChatFrame`, `Blizzard_Communities`, `Blizzard_CompactRaidFrames`, `Blizzard_EditMode`, `Blizzard_ObjectiveTracker`, `Blizzard_Professions`, `Blizzard_Settings`, `SharedXML`).\n" +
-    "- `file_type`: filter by file type - `lua` (only `*.lua.annotated.lua`), `xml` (only `*.xml.annotated.lua`), or `all` (default).\n" +
-    "- `addon` and `file_type` can be combined (e.g. `addon: 'Blizzard_ActionBar', file_type: 'lua'`).\n" +
-    "- `version`: annotation flavor (`live`, `classic`, `classic_era`, `classic_anniversary`); when omitted, falls back to the legacy single-flavor submodule.\n\n" +
-    "DO NOT use this for documented C_ API — use `wow-api-lookup`.",
+    "Ripgrep over the per-flavor WoW FrameXML annotated source tree (~/.local/share/wow-framexml/<flavor>/Annotations/). Returns matched lines with 3 lines of context, capped at 5 matches per file and 40 KB total. Scope filters by *.lua.annotated.lua, *.xml.annotated.lua, or both.",
   args: {
-    query: tool.schema
-      .string()
-      .describe(
-        'Search term or filter. In `mode: "search"` (default) it is REQUIRED and is grepped against file contents. ' +
-          'In `mode: "list"` it is OPTIONAL and acts as a substring filter on addon directory names; omit or pass an empty string to list all addons. ' +
-          'Examples (search): "FramerateFrameMixin", "ObjectiveTracker", "SetAttribute", "RegisterEvent". ' +
-          'Examples (list): "ActionBar" (filter), "" (list all).',
-      ),
-    mode: tool.schema
-      .enum(["search", "list"])
-      .optional()
-      .default("search")
-      .describe(
-        '"search" (default) greps file contents inside the resolved tree (`query` REQUIRED). "list" enumerates addon directories under AddOns/ (`query` OPTIONAL, used as a substring filter). The semantics of `query` flip between the two modes - choose mode first, then `query` accordingly.',
-      ),
-    addon: tool.schema
-      .string()
-      .optional()
-      .describe(
-        'Narrow the search to a single addon directory under AddOns/ (e.g. "Blizzard_ActionBar", "SharedXML"). Omit to search the entire FrameXML tree. Has no effect in `mode: "list"`.',
-      ),
-    file_type: tool.schema
-      .enum(["lua", "xml", "all"])
-      .optional()
-      .default("all")
-      .describe(
-        'Filter files by suffix: "lua" matches only `*.lua.annotated.lua`, "xml" matches only `*.xml.annotated.lua`, "all" (default) matches every `*.lua` annotation file. Has no effect in `mode: "list"`.',
-      ),
-    version: tool.schema
-      .enum(["live", "classic", "classic_era", "classic_anniversary"])
-      .optional()
-      .describe(
-        'WoW annotation flavor to search. One of the four checked-out flavors: "live" (retail), "classic" (current Classic/MoP cycle), "classic_era", "classic_anniversary". Omit to fall back to the legacy single-flavor submodule (used when multi-flavor annotations are not installed).',
-      ),
+    pattern: z.string().min(1),
+    flavor: z.enum(FLAVOR_ENUM).default("live"),
+    scope: z.enum(SCOPE_ENUM).default("lua"),
   },
-  async execute(args) {
-    const { query, addon, mode = "search", version, file_type = "all" } = args;
-
-    let framexmlBase: string;
-    try {
-      framexmlBase = resolveFrameXMLBase(version);
-      assertFrameXMLExists(framexmlBase);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      return renderError({
-        title: TITLES.blizzardSource,
-        metadata: buildSourceErrorMetadata(query, mode, version),
-        reason: "Failed to resolve FrameXML annotation source.",
-        cause: message,
-        suggestions: [
-          "Verify wow-annotations / wow-framexml are installed (run maintain-annotations.sh).",
-          "Try a different `version` flavor or omit `version` to use the legacy submodule.",
-        ],
-      });
+  async execute({ pattern, flavor, scope }) {
+    const p = pattern.trim();
+    if (p.length === 0) {
+      throw new Error("wow-blizzard-source: pattern must be non-empty");
     }
-    const addonsDir = path.join(framexmlBase, "AddOns");
+    if (p.length > MAX_PATTERN_LEN) {
+      throw new Error(
+        `wow-blizzard-source: pattern exceeds ${MAX_PATTERN_LEN} characters`,
+      );
+    }
+    if (/[\r\n]/.test(p)) {
+      throw new Error("wow-blizzard-source: pattern must not contain newlines");
+    }
 
-    // ---- List mode --------------------------------------------------------
-    if (mode === "list") {
-      const addons = listAddons(addonsDir);
-      const listMetadata = buildSourceMetadata({
-        query,
-        mode: "list",
-        fileType: "all",
-        version,
-        match: "list",
-      });
+    const resolved = resolveFlavor(flavor);
+    const absRoot = join(FRAMEXML_ROOT, resolved, "Annotations");
 
-      if (addons.length === 0) {
-        return renderNoMatch({
-          title: TITLES.blizzardSource,
-          metadata: listMetadata,
-          paragraph: "No addon directories were found under AddOns/.",
-          suggestions: [
-            "Verify wow-framexml is installed (run maintain-annotations.sh).",
-            "Try a different `version` flavor.",
-          ],
-        });
+    if (!existsSync(absRoot)) {
+      throw new Error(
+        `wow-blizzard-source: flavor '${resolved}' not available at ${absRoot}`,
+      );
+    }
+
+    const { lines, exitCode, stderr } = await runRg(p, scope, absRoot);
+
+    if (exitCode === 2) {
+      throw new Error(
+        `wow-blizzard-source: invalid regex: ${stderr.trim().slice(0, 200)}`,
+      );
+    }
+    // exitCode 1 = no matches; exitCode 0 = matches.
+
+    const groups = groupByFile(lines);
+    const totalMatches = groups.reduce((sum, g) => sum + g.matchCount, 0);
+
+    if (groups.length === 0 || totalMatches === 0) {
+      return {
+        output: renderNoMatch(p, resolved, scope),
+        metadata: { flavor: resolved, matchCount: 0, selfTruncated: false },
+      };
+    }
+
+    const header = `# ${p} (flavor: ${resolved}, scope: ${scope})\n\n`;
+    const renderedBlocks: string[] = [];
+    let used = Buffer.byteLength(header, "utf8");
+    let filesRendered = 0;
+    let matchesRendered = 0;
+    let selfTruncated = false;
+
+    for (const group of groups) {
+      const block = renderFileBlock(group);
+      const blockSize = Buffer.byteLength(block, "utf8");
+      // Reserve ~300 bytes for the tail line / footer in case this is
+      // the last block we can fit.
+      if (used + blockSize > BUDGET - 300) {
+        selfTruncated = true;
+        break;
       }
-
-      const filtered = query.trim() ? filterAddons(addons, query) : addons;
-
-      if (filtered.length === 0) {
-        return renderNoMatch({
-          title: TITLES.blizzardSource,
-          metadata: listMetadata,
-          paragraph: `No addon directories matched the filter \`${query}\` (${addons.length} directories searched).`,
-          suggestions: [
-            "Try a broader filter or omit `query` to list every directory.",
-            "Common addons: `Blizzard_ActionBar`, `Blizzard_ChatFrame`, `SharedXML`.",
-          ],
-        });
-      }
-
-      const intro = query.trim()
-        ? `${filtered.length} addon(s) matching \`${query}\`:`
-        : `${filtered.length} addon directories available:`;
-
-      return renderReport({
-        title: TITLES.blizzardSource,
-        metadata: listMetadata,
-        body: {
-          outcome: "result",
-          body: `${intro}\n\n${formatAddonTable(filtered)}`,
-        },
-      });
+      renderedBlocks.push(block);
+      used += blockSize;
+      filesRendered += 1;
+      matchesRendered += group.matchCount;
     }
 
-    // ---- Search mode ------------------------------------------------------
-    if (!query.trim()) {
-      return renderError({
-        title: TITLES.blizzardSource,
-        metadata: buildSourceErrorMetadata(query, "search", version),
-        reason: "`query` must not be empty in search mode.",
-        cause: "(no query provided)",
-        suggestions: [
-          "Pass a search term (function name, mixin, template, keyword).",
-          'Or use `mode: "list"` to browse addon directories.',
-        ],
-      });
+    let body = header + renderedBlocks.join("");
+
+    if (selfTruncated) {
+      const remainingFiles = groups.length - filesRendered;
+      const remainingMatches = totalMatches - matchesRendered;
+      body += `... output truncated at 40 KB; ${remainingMatches} more matches across ${remainingFiles} more files not shown. Narrow your pattern, or restrict scope to lua/xml only.\n`;
+    } else {
+      body += `---\nMatched ${totalMatches} line(s) across ${groups.length} file(s). Searched ~/.local/share/wow-framexml/${resolved}/Annotations/ (scope: ${scope}).\n`;
     }
 
-    let searchPath: string;
-    try {
-      searchPath = resolveSearchRoot(framexmlBase, addonsDir, addon);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      return renderError({
-        title: TITLES.blizzardSource,
-        metadata: buildSourceErrorMetadata(query, "search", version),
-        reason: "Addon directory not found.",
-        cause: message,
-        suggestions: [
-          'Use `mode: "list"` to see available addon directories.',
-          "Check spelling - addon names are case-sensitive (e.g. `Blizzard_ActionBar`, not `blizzard_actionbar`).",
-        ],
-      });
-    }
-
-    const fileGlob = globForFileType(file_type);
-
-    // Step 1: Case-sensitive search with generous context
-    let results = await searchBlizzardSource(
-      query,
-      searchPath,
-      true,
-      fileGlob,
-      5,
-      30,
-    );
-    if (results) {
-      const formatted = formatSourceOutput(framexmlBase, results);
-      const lineCount = formatted.split("\n").length;
-      return renderReport({
-        title: TITLES.blizzardSource,
-        metadata: buildSourceMetadata({
-          query,
-          mode: "search",
-          addon,
-          fileType: file_type,
-          version,
-          match: "case-sensitive",
-        }),
-        body: { outcome: "result", body: "```lua\n" + formatted + "\n```" },
-        notes:
-          lineCount >= 200
-            ? "- Showing partial results (max 30 matches per file). Narrow your query, addon, or file_type for more focused results."
-            : undefined,
-      });
-    }
-
-    // Step 2: Case-insensitive fallback with smaller context
-    results = await searchBlizzardSource(
-      query,
-      searchPath,
-      false,
-      fileGlob,
-      3,
-      20,
-    );
-    if (results) {
-      const formatted = formatSourceOutput(framexmlBase, results);
-      return renderReport({
-        title: TITLES.blizzardSource,
-        metadata: buildSourceMetadata({
-          query,
-          mode: "search",
-          addon,
-          fileType: file_type,
-          version,
-          match: "case-insensitive",
-        }),
-        body: { outcome: "result", body: "```lua\n" + formatted + "\n```" },
-      });
-    }
-
-    // Step 3: Filename-based fallback
-    const fileResults = await runRg([
-      "--files",
-      "--glob",
-      `*${query}*.lua`,
-      searchPath,
-    ]);
-    if (fileResults) {
-      const files = fileResults.split("\n").filter(Boolean);
-      const listed = files
-        .slice(0, 20)
-        .map((f) => `- ${stripBasePath(framexmlBase, f)}`)
-        .join("\n");
-      const body =
-        `No content matches for \`${query}\`, but found ${files.length} file(s) with matching names:\n\n` +
-        listed;
-      return renderReport({
-        title: TITLES.blizzardSource,
-        metadata: buildSourceMetadata({
-          query,
-          mode: "search",
-          addon,
-          fileType: file_type,
-          version,
-          match: "filename",
-        }),
-        body: { outcome: "result", body },
-        notes:
-          files.length > 20
-            ? `- ${files.length - 20} more file(s) matched. Narrow your query.`
-            : undefined,
-      });
-    }
-
-    // Nothing found
-    return renderNoMatch({
-      title: TITLES.blizzardSource,
-      metadata: buildSourceMetadata({
-        query,
-        mode: "search",
-        addon,
-        fileType: file_type,
-        version,
-        match: "none",
-      }),
-      paragraph: `No results for \`${query}\` in the resolved FrameXML tree (tried case-sensitive content search, case-insensitive content search, and filename match).`,
-      suggestions: [
-        "Drop the `addon` parameter to search the whole tree.",
-        'Set `file_type: "all"` to include both Lua and XML annotation files.',
-        "Search for the mixin or function name alone (e.g. `OnLoad` instead of `MyMixin:OnLoad`).",
-        'Use `mode: "list"` with your query to find relevant addon directories.',
-        "Check spelling - Blizzard source names are case-sensitive.",
-      ],
-    });
+    return {
+      output: body,
+      metadata: {
+        flavor: resolved,
+        matchCount: totalMatches,
+        selfTruncated,
+      },
+    };
   },
 });

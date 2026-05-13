@@ -31,7 +31,7 @@ Ask `wow-addon` for:
    `LibStub`, `CallbackHandler-1.0`, `AceAddon-3.0`, `AceDB-3.0`, `AceEvent-3.0`, `AceConsole-3.0`, `AceLocale-3.0`, `AceTimer-3.0`, `LibSharedMedia-3.0`, `LibDataBroker-1.1`, `LibDBIcon-1.0`. Flag any that have been superseded or any commonly-needed addition.
 3. **Current packager directive set.** Confirm the `@retail@ … @end-retail@` / `@classic@` / `@version-cata@` style directives below match the current BigWigs packager docs. Flag any directive that's been renamed.
 4. **`.pkgmeta` `externals:` URLs.** Confirm the WowAce SVN URLs below are still the canonical sources, and whether any library has migrated to a Git mirror that the packager prefers.
-5. **Deprecated APIs in the Core Lua templates.** Run `wow-addon-lint` mentally (or via tool) over the Core/Init.lua, Core/Config.lua, and Locales/enUS.lua templates below; flag any API call that is deprecated or has version-gated behavior.
+5. **Deprecated APIs in the Core Lua templates.** Research (mentally or via tool) the Core/Init.lua, Core/Config.lua, and Locales/enUS.lua templates below; flag any API call that is deprecated or has flavor-gated behavior.
 6. **Reusable workflow versions.** Confirm `Xerrion/wow-workflows/.github/workflows/*.yml@main` is still the right reference (vs a pinned tag).
 
 `wow-addon` returns a research note. `software-engineer` then proceeds to Step 2 with concrete numbers and confirmed names slotted into the templates. If `wow-addon` flags a deprecation or version mismatch, update the template *before* writing files; do not write files first and patch later.

@@ -1,656 +1,523 @@
-import { tool } from "@opencode-ai/plugin";
-import { existsSync } from "node:fs";
-import path from "node:path";
-import {
-  formatRgLines,
-  renderError,
-  renderNoMatch,
-  renderReport,
-  runRg,
-  stripBasePath,
-  TITLES,
-  WOW_ANNOTATIONS_ROOT,
-} from "./_shared";
-import {
-  LIBRARY_SNIPPETS,
-  type LibrarySnippet,
-} from "./data/library-snippets";
-import { resolveFrameXMLBase } from "./wow-blizzard-source";
+import { tool } from "@opencode-ai/plugin/tool";
+import { z } from "zod";
+import { homedir } from "node:os";
+import { join } from "node:path";
 
-const ANNOTATIONS_ROOT = WOW_ANNOTATIONS_ROOT;
+/**
+ * wow-api-lookup: exact-symbol lookup against the curated WoW LuaLS
+ * annotation tree at `~/.local/share/wow-annotations/Annotations/Core/`.
+ *
+ * Contract per ADR-0001 (`.deliverables/tech-lead/ADR-0001-rebuild-tool-surface.md`):
+ *   - one arg (`query`), no mode/category/wiki flags
+ *   - bare-string return
+ *   - 40 KB self-cap with explicit truncation tail
+ *   - throw only on invalid input; "symbol not found" returns a string body
+ *   - paths in output are anchor-relative (`Annotations/Core/...`), never absolute
+ *
+ * Buckets searched (seven; `Lua/` remains out of scope per ADR):
+ *   - Blizzard_APIDocumentationGenerated/   (C_* namespaces, 324 files)
+ *   - Widget/                                (UIObject hierarchy, 59 files)
+ *   - Libraries/                             (Ace3, LibStub, etc., 52 files)
+ *   - Type/                                  (Mixin, Structure, aliases)
+ *   - FrameXML/                              (curated, 6 dirs)
+ *   - Data/Wiki.lua                          (legacy global API stubs)
+ *   - Data/Enum.lua                          (Enum.* constant tables, Enum.X shape only)
+ *   - Data/Classic.lua                       (9-line override addendum)
+ */
 
-const CATEGORY_PATHS: Record<string, string> = {
-  api: "Core/Blizzard_APIDocumentationGenerated",
-  widget: "Core/Widget",
-  type: "Core/Type",
-  data: "Core/Data",
-  library: "Core/Libraries",
-  lua: "Core/Lua",
-  framexml: "FrameXML",
-  all: "",
+const ANCHOR_ROOT = join(homedir(), ".local/share/wow-annotations");
+const REL_CORE = "Annotations/Core";
+const BUDGET = 40_000;
+const MAX_QUERY_LEN = 200;
+const MAX_MATCHES_TOTAL = 8;
+const RG_MAX_COUNT_PER_FILE = 2;
+const RG_CONTEXT_BEFORE = 8;
+const SUGGESTION_CAP = 10;
+
+const BUCKETS = {
+  api: `${REL_CORE}/Blizzard_APIDocumentationGenerated`,
+  widget: `${REL_CORE}/Widget`,
+  libraries: `${REL_CORE}/Libraries`,
+  type: `${REL_CORE}/Type`,
+  framexml: `${REL_CORE}/FrameXML`,
+  wiki: `${REL_CORE}/Data/Wiki.lua`,
+  enum: `${REL_CORE}/Data/Enum.lua`,
+  classic: `${REL_CORE}/Data/Classic.lua`,
+} as const;
+
+type BucketKey = keyof typeof BUCKETS;
+const ALL_BUCKETS: readonly BucketKey[] = [
+  "api",
+  "widget",
+  "libraries",
+  "type",
+  "framexml",
+  "wiki",
+];
+const ABS_ROOT_PREFIX = `${ANCHOR_ROOT}/`;
+
+type Plan = {
+  patterns: string[];
+  roots: BucketKey[];
+  /** Buckets to prefix-scan for suggestions on no-match. */
+  suggestionRoots: BucketKey[];
+  shape: string;
 };
 
-const VALID_CATEGORIES = Object.keys(CATEGORY_PATHS);
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
-function resolveSearchPath(category: string): string {
-  const subpath = CATEGORY_PATHS[category];
-  if (subpath === undefined) {
-    throw new Error(
-      `Invalid category "${category}". Valid: ${VALID_CATEGORIES.join(", ")}`,
-    );
+/** Fence wider than any backtick run in `content`, min 3. */
+function fenceFor(content: string): string {
+  let max = 0;
+  const re = /`+/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(content)) !== null) {
+    if (m[0].length > max) max = m[0].length;
   }
-  return subpath ? path.join(ANNOTATIONS_ROOT, subpath) : ANNOTATIONS_ROOT;
+  return "`".repeat(Math.max(3, max + 1));
 }
 
-function formatRgOutput(raw: string): string {
-  return formatRgLines(ANNOTATIONS_ROOT, raw);
+/**
+ * Classify `query` shape → ordered bucket list + regex patterns.
+ *
+ * Heuristic, not strict: ambiguous shapes (bare PascalCase, bare
+ * camelCase) fan out across multiple buckets so the caller does not
+ * have to know which one the symbol lives in.
+ */
+function classify(query: string): Plan {
+  const e = escapeRegex;
+
+  // C_NS.Method - documented C_ API
+  if (/^C_[A-Za-z]\w*\.[A-Za-z]\w*$/.test(query)) {
+    return {
+      shape: "C_NS.Method",
+      patterns: [`^function\\s+${e(query)}\\s*\\(`],
+      roots: ["api"],
+      suggestionRoots: ["api"],
+    };
+  }
+
+  // Bare C_NS - namespace itself
+  if (/^C_[A-Za-z]\w*$/.test(query)) {
+    return {
+      shape: "C_NS",
+      patterns: [
+        `^${e(query)}\\s*=\\s*\\{`,
+        `^---@class\\s+${e(query)}\\b`,
+      ],
+      roots: ["api", "type"],
+      suggestionRoots: ["api", "type"],
+    };
+  }
+
+  // Enum.X - Enum.* constant tables live in Data/Enum.lua as
+  // `---@enum Enum.X` / `Enum.X = {`. Also probe Type/ for any @alias
+  // coverage carried by the curated tree.
+  if (/^Enum\.[A-Za-z]\w*$/.test(query)) {
+    return {
+      shape: "Enum.X",
+      patterns: [
+        `^---@enum\\s+${e(query)}\\b`,
+        `^${e(query)}\\s*=\\s*\\{`,
+      ],
+      roots: ["enum", "type"],
+      suggestionRoots: ["enum", "type", "api"],
+    };
+  }
+
+  // Class:Method or Lib-X.Y:Method
+  if (/^[A-Za-z][\w.-]*:[A-Za-z]\w*$/.test(query)) {
+    const [cls, method] = query.split(":") as [string, string];
+    const versionless = cls.replace(/-[\d.]+$/, ""); // AceEvent-3.0 -> AceEvent
+    const patterns = [`^function\\s+${e(cls)}:${e(method)}\\s*\\(`];
+    if (versionless !== cls) {
+      patterns.push(`^function\\s+${e(versionless)}:${e(method)}\\s*\\(`);
+    }
+    return {
+      shape: "Class:Method",
+      patterns,
+      roots: ["widget", "libraries", "type", "framexml"],
+      suggestionRoots: ["widget", "libraries", "type"],
+    };
+  }
+
+  // Library with version, e.g. AceAddon-3.0
+  if (/^[A-Za-z]\w*-[\d.]+$/.test(query)) {
+    return {
+      shape: "Library-Version",
+      patterns: [`^---@class\\s+${e(query)}\\b`],
+      roots: ["libraries"],
+      suggestionRoots: ["libraries"],
+    };
+  }
+
+  // Mixin name
+  if (/^[A-Z]\w*Mixin$/.test(query)) {
+    return {
+      shape: "Mixin",
+      patterns: [
+        `^---@class\\s+${e(query)}\\b`,
+        `^${e(query)}\\s*=\\s*\\{`,
+      ],
+      roots: ["type", "framexml", "libraries"],
+      suggestionRoots: ["type", "framexml"],
+    };
+  }
+
+  // Generic NS.Method (non-C_)
+  if (/^[A-Za-z][\w-]*\.[A-Za-z]\w*$/.test(query)) {
+    return {
+      shape: "NS.Method",
+      patterns: [`^function\\s+${e(query)}\\s*\\(`],
+      roots: ["libraries", "framexml", "type", "api"],
+      suggestionRoots: ["libraries", "framexml", "type"],
+    };
+  }
+
+  // PascalCase bare word - widget / class-like / method-name
+  if (/^[A-Z][a-z]\w*$/.test(query)) {
+    return {
+      shape: "PascalCase",
+      patterns: [
+        `^---@class\\s+${e(query)}\\b`,
+        `^${e(query)}\\s*=\\s*\\{`,
+        `^function\\s+${e(query)}\\s*\\(`,
+        // Common method name across many widget/library classes
+        // (e.g. `GetName`, `SetSize`). Surfaces all defining sites so the
+        // 40 KB cap and "narrow with Class:Method" hint kick in.
+        `^function\\s+\\w[\\w.]*[.:]${e(query)}\\s*\\(`,
+      ],
+      roots: ["widget", "type", "libraries", "framexml", "wiki"],
+      suggestionRoots: ["widget", "type", "libraries"],
+    };
+  }
+
+  // Bare identifier (mixed case, global API style)
+  return {
+    shape: "bare-identifier",
+    patterns: [
+      `^function\\s+${e(query)}\\s*\\(`,
+      `^---@class\\s+${e(query)}\\b`,
+    ],
+    roots: ["wiki", "widget", "libraries", "framexml", "type"],
+    suggestionRoots: ["wiki", "widget", "libraries"],
+  };
 }
 
-function simplifyQuery(query: string): string {
-  // Strip common prefixes to find a filename-friendly search term
-  // "C_LootHistory" -> "LootHistory", "Enum.ItemQuality" -> "ItemQuality"
-  return query
-    .replace(/^C_/, "")
-    .replace(/^Enum\./, "")
-    .replace(/^Mixin\./, "")
-    .replaceAll(".", "");
+type RgLine = { path: string; line: number; text: string; isMatch: boolean };
+type Hit = { path: string; matchLine: number; block: string };
+
+/**
+ * Strip the absolute anchor prefix if rg ever emits it. With cwd set to
+ * ANCHOR_ROOT, rg uses the relative paths we pass it - but defence in
+ * depth: never leak `/Users/...` to the caller.
+ */
+function stripAbsPrefix(s: string): string {
+  if (s.startsWith(ABS_ROOT_PREFIX)) return s.slice(ABS_ROOT_PREFIX.length);
+  return s;
 }
 
-async function searchWithContext(
-  query: string,
-  searchPath: string,
-  caseSensitive: boolean,
-  context: number,
-  maxCount: number,
-): Promise<string> {
+/**
+ * Parse a single rg line. Match lines use `path:line:text`, context lines
+ * use `path-line-text`. We accept both; the `--` separator between match
+ * groups is handled by the caller.
+ */
+function parseRgLine(raw: string): RgLine | null {
+  // Match the head greedily up to the first ':<digits>:' or '-<digits>-'.
+  // Avoid scanning past a Windows-drive colon by anchoring on the
+  // first digits-bracketed-by-separators run.
+  const reMatch = /^(.+?):(\d+):(.*)$/;
+  const reCtx = /^(.+?)-(\d+)-(.*)$/;
+  let m = reMatch.exec(raw);
+  if (m) {
+    return {
+      path: stripAbsPrefix(m[1]!),
+      line: Number(m[2]!),
+      text: m[3]!,
+      isMatch: true,
+    };
+  }
+  m = reCtx.exec(raw);
+  if (m) {
+    return {
+      path: stripAbsPrefix(m[1]!),
+      line: Number(m[2]!),
+      text: m[3]!,
+      isMatch: false,
+    };
+  }
+  return null;
+}
+
+async function runRg(
+  patterns: string[],
+  roots: string[],
+): Promise<RgLine[]> {
+  if (patterns.length === 0 || roots.length === 0) return [];
   const args = [
-    ...(caseSensitive ? [] : ["-i"]),
+    "--color",
+    "never",
     "--no-heading",
-    "--with-filename",
-    "-n",
-    "--context",
-    String(context),
+    "--line-number",
+    "-B",
+    String(RG_CONTEXT_BEFORE),
+    "-A",
+    "1",
     "--max-count",
-    String(maxCount),
-    "--glob",
-    "*.lua",
-    query,
-    searchPath,
+    String(RG_MAX_COUNT_PER_FILE),
+    "--max-filesize",
+    "5M",
   ];
-  return await runRg(args);
+  for (const p of patterns) {
+    args.push("-e", p);
+  }
+  args.push(...roots);
+
+  const proc = Bun.spawn(["rg", ...args], {
+    cwd: ANCHOR_ROOT,
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  const stdout = await new Response(proc.stdout).text();
+  const exitCode = await proc.exited;
+  if (exitCode === 2) {
+    const err = await new Response(proc.stderr).text();
+    throw new Error(`wow-api-lookup: rg failed: ${err.trim().slice(0, 200)}`);
+  }
+  // exitCode 1 = no matches.
+  const out: RgLine[] = [];
+  for (const raw of stdout.split("\n")) {
+    if (raw === "" || raw === "--") continue;
+    const parsed = parseRgLine(raw);
+    if (parsed) out.push(parsed);
+  }
+  return out;
 }
 
-async function findMatchingFiles(
-  simplified: string,
-  searchPath: string,
-): Promise<string[]> {
-  const raw = await runRg([
-    "--files",
-    "--glob",
-    `*${simplified}*.lua`,
-    searchPath,
-  ]);
-  if (!raw) return [];
-  return raw.split("\n").filter(Boolean);
+/**
+ * Group rg lines into Hit blocks. Each block: the contiguous run of
+ * lines (context + match + after) for a single match. Boundaries:
+ * change of file OR a non-contiguous line number.
+ */
+function groupHits(lines: RgLine[]): Hit[] {
+  const hits: Hit[] = [];
+  let buf: RgLine[] = [];
+  let matchLine = -1;
+  const flush = () => {
+    if (buf.length === 0 || matchLine === -1) {
+      buf = [];
+      matchLine = -1;
+      return;
+    }
+    const path = buf[0]!.path;
+    const block = buf.map((l) => l.text).join("\n");
+    hits.push({ path, matchLine, block });
+    buf = [];
+    matchLine = -1;
+  };
+  for (const l of lines) {
+    const last = buf[buf.length - 1];
+    const breaks =
+      last !== undefined && (last.path !== l.path || l.line - last.line > 1);
+    if (breaks) flush();
+    buf.push(l);
+    if (l.isMatch && matchLine === -1) matchLine = l.line;
+  }
+  flush();
+  return hits;
 }
 
-async function readFileHead(
-  filePath: string,
-  maxLines: number,
-): Promise<{ relPath: string; body: string }> {
-  const file = Bun.file(filePath);
-  const text = await file.text();
-  const lines = text.split("\n");
-  const truncated = lines.length > maxLines;
-  const content = lines.slice(0, maxLines).join("\n");
-  const relPath = stripBasePath(ANNOTATIONS_ROOT, filePath);
-  const footer = truncated
-    ? `\n... truncated at ${maxLines} of ${lines.length} lines`
-    : "";
-  return { relPath, body: `${content}${footer}` };
+function renderHits(query: string, hits: Hit[], plan: Plan): string {
+  const header = `# ${query}\n\n_Shape: ${plan.shape}; searched buckets: ${plan.roots.join(", ")}._\n\n`;
+  const blocks: string[] = [];
+  let used = Buffer.byteLength(header, "utf8");
+  let rendered = 0;
+  let truncated = false;
+
+  for (const h of hits.slice(0, MAX_MATCHES_TOTAL)) {
+    const fence = fenceFor(h.block);
+    const block =
+      `## ${h.path}:${h.matchLine}\n` +
+      `${fence}lua\n${h.block}\n${fence}\n\n`;
+    const blockSize = Buffer.byteLength(block, "utf8");
+    if (used + blockSize > BUDGET) {
+      truncated = true;
+      break;
+    }
+    blocks.push(block);
+    used += blockSize;
+    rendered += 1;
+  }
+
+  let body = header + blocks.join("");
+  if (truncated || hits.length > rendered) {
+    const remaining = hits.length - rendered;
+    const tail =
+      remaining > 0
+        ? `... output truncated at 40 KB; ${remaining} more match(es) not shown. Query is too generic — qualify with NS.Method or Class:Method, or use the exact namespace prefix.\n`
+        : `... output truncated at 40 KB; narrow the query with a NS.Method or Class:Method qualifier.\n`;
+    body += tail;
+  }
+  return body;
 }
 
-function buildApiMetadata(
-  query: string,
-  category: string,
-  match: string,
-): readonly [string, string][] {
-  return [
-    ["Query", `\`${query}\``],
-    ["Category", category],
-    ["Match", match],
-  ];
-}
-
-// ---------------------------------------------------------------------------
-// "Used by Blizzard in" pivot
-//
-// Best-effort cross-tool lookup: when api-lookup finds a hit, run a bounded
-// ripgrep against the FrameXML source tree to surface up to 3 example call
-// sites. Silent fallback: any failure (no FrameXML installed, rg error,
-// regex syntax in query) returns [] and the api-lookup output is unchanged.
-// ---------------------------------------------------------------------------
-
-const PIVOT_SKIP_CATEGORIES = new Set(["lua", "data", "library"]);
-const PIVOT_MIN_QUERY_LENGTH = 4;
-const PIVOT_MAX_RESULTS = 3;
-
-function shouldRunPivot(query: string, category: string): boolean {
-  if (PIVOT_SKIP_CATEGORIES.has(category)) return false;
-  if (query.trim().length < PIVOT_MIN_QUERY_LENGTH) return false;
-  return true;
-}
-
-function extractPivotSymbol(query: string): string {
-  const lastDot = query.lastIndexOf(".");
-  return lastDot === -1 ? query : query.slice(lastDot + 1);
-}
-
-async function findBlizzardUsages(
-  query: string,
-  category: string,
-): Promise<string[]> {
-  if (!shouldRunPivot(query, category)) return [];
-
-  const symbol = extractPivotSymbol(query);
-  if (symbol.length < PIVOT_MIN_QUERY_LENGTH) return [];
-
+/**
+ * Append a Classic-override section when `Data/Classic.lua` carries a
+ * matching `function <query>(...) end` stub. Best-effort; failures are
+ * swallowed (the file is 9 lines, but we treat it as optional).
+ */
+async function tryClassicOverride(query: string): Promise<string | null> {
+  if (!/^[A-Za-z][\w.:]*$/.test(query)) return null;
   try {
-    const framexmlBase = resolveFrameXMLBase(undefined);
-    if (!existsSync(framexmlBase)) return [];
+    const raw = await Bun.file(
+      join(ANCHOR_ROOT, BUCKETS.classic),
+    ).text();
+    const lines = raw.split("\n");
+    const sigRe = new RegExp(
+      `^function\\s+${escapeRegex(query)}\\s*\\(`,
+    );
+    for (let i = 0; i < lines.length; i++) {
+      if (sigRe.test(lines[i]!)) {
+        // Walk back to gather the annotation block.
+        let lo = i;
+        while (lo > 0 && /^---/.test(lines[lo - 1]!)) lo--;
+        const chunk = lines.slice(lo, i + 1).join("\n");
+        const fence = fenceFor(chunk);
+        return (
+          `## Classic override (${BUCKETS.classic}:${i + 1})\n` +
+          `${fence}lua\n${chunk}\n${fence}\n\n`
+        );
+      }
+    }
+  } catch {
+    /* missing file → skip */
+  }
+  return null;
+}
 
-    // -F treats the symbol as a fixed literal (no regex interpretation),
-    // which is what we want for a function/identifier name and which sidesteps
-    // regex syntax errors when the symbol contains '.', '[', etc.
-    // --max-count 1 caps matches per file; .slice() caps the total.
-    const raw = await runRg([
-      "-F",
-      "--no-heading",
-      "--with-filename",
-      "-n",
-      "--max-count",
-      "1",
-      "--glob",
-      "*.lua",
-      "--glob",
-      "*.xml",
-      symbol,
-      framexmlBase,
-    ]);
-    if (!raw) return [];
+/**
+ * Collect close-prefix suggestions for a no-match response. Uses rg `-l`
+ * across the suggestion buckets and falls back to filename scan when the
+ * query is a single bare token (the file-naming convention catches
+ * `C_Item` → `ItemDocumentation.lua`).
+ */
+async function gatherSuggestions(
+  query: string,
+  plan: Plan,
+): Promise<string[]> {
+  const seed = query.replace(/^Enum\./, "").replace(/[:.].*$/, "");
+  if (seed.length < 3) return [];
+  const head = seed.slice(0, Math.min(seed.length, 6));
+  const headRe = `\\b${escapeRegex(head)}`;
+  const roots = plan.suggestionRoots.map((k) => BUCKETS[k]);
 
-    return raw
-      .split("\n")
-      .slice(0, PIVOT_MAX_RESULTS)
-      .map((line) => {
-        // Format: <abs-path>:<line>:<content>
-        // We want <relative-path>:<line> only.
-        const firstColon = line.indexOf(":");
-        if (firstColon === -1) return line;
-        const secondColon = line.indexOf(":", firstColon + 1);
-        const filePart = line.slice(0, firstColon);
-        const linePart =
-          secondColon === -1
-            ? line.slice(firstColon + 1)
-            : line.slice(firstColon + 1, secondColon);
-        return `${stripBasePath(framexmlBase, filePart)}:${linePart}`;
-      });
+  const args = [
+    "--color",
+    "never",
+    "--no-heading",
+    "--no-line-number",
+    "--only-matching",
+    "--max-count",
+    "20",
+    "-e",
+    `${headRe}\\w*`,
+    ...roots,
+  ];
+  try {
+    const proc = Bun.spawn(["rg", ...args], {
+      cwd: ANCHOR_ROOT,
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const stdout = await new Response(proc.stdout).text();
+    await proc.exited;
+    const tokens = new Set<string>();
+    for (const raw of stdout.split("\n")) {
+      const cleaned = raw.trim();
+      if (cleaned.length === 0) continue;
+      // rg --only-matching with our pattern emits just the matched token,
+      // no path prefix; defensively strip a leading `path:` though.
+      const colon = cleaned.indexOf(":");
+      const token = colon >= 0 ? cleaned.slice(colon + 1) : cleaned;
+      if (token === query) continue;
+      if (token.length > 80) continue;
+      tokens.add(token);
+      if (tokens.size >= SUGGESTION_CAP) break;
+    }
+    return Array.from(tokens).sort();
   } catch {
     return [];
   }
 }
 
-function appendPivotFooter(body: string, usages: readonly string[]): string {
-  if (usages.length === 0) return body;
-  const list = usages.map((u) => `- \`${u}\``).join("\n");
-  return `${body}\n\n### Used by Blizzard in\n\n${list}`;
-}
-
-// ---------------------------------------------------------------------------
-// "Idiomatic Usage" curated-snippet footer
-//
-// For `category: "library"` symbol-mode hits, identify the library from the
-// first rg match's filename and attach a hand-authored usage snippet from the
-// curated dataset. Silent no-op when the snippet record has no matching entry.
-// ---------------------------------------------------------------------------
-
-function findLibrarySnippet(rgOutput: string): LibrarySnippet | null {
-  // formatRgOutput emits per-line `<path><sep><line><sep><text>` where sep is
-  // `:` for match lines and `-` for context lines. Both start with a `.lua`
-  // path; pull the basename of the first such path we see.
-  const firstLuaLine = rgOutput
-    .split("\n")
-    .find((line) => line.includes(".lua"));
-  if (!firstLuaLine) return null;
-
-  const luaIdx = firstLuaLine.indexOf(".lua");
-  const pathPart = firstLuaLine.slice(0, luaIdx);
-  const stem = path.basename(pathPart);
-  if (!stem) return null;
-
-  const direct = LIBRARY_SNIPPETS[stem];
-  if (direct) return direct;
-
-  const stemLower = stem.toLowerCase();
-  for (const [key, snippet] of Object.entries(LIBRARY_SNIPPETS)) {
-    if (key.toLowerCase() === stemLower) return snippet;
-  }
-  return null;
-}
-
-function appendSnippetFooter(
-  body: string,
-  snippet: LibrarySnippet | null,
+function renderNoMatch(
+  query: string,
+  plan: Plan,
+  suggestions: string[],
 ): string {
-  if (!snippet) return body;
-  const sections = [
-    "### Idiomatic Usage",
-    "> Curated example. Not extracted from annotations.",
-    snippet.description,
-    "```lua\n" + snippet.example + "\n```",
-    `**Registration:** \`${snippet.registration}\``,
-    `**Docs:** ${snippet.docsUrl}`,
+  const lines = [
+    `# ${query}`,
+    "",
+    `No symbol found in the curated annotation tree.`,
+    "",
+    `Shape: ${plan.shape}.`,
+    `Searched: ${plan.roots.map((k) => BUCKETS[k]).join(", ")}.`,
+    "",
   ];
-  if (snippet.notes) sections.push(`**Notes:** ${snippet.notes}`);
-  return `${body}\n\n${sections.join("\n\n")}`;
-}
-
-// ---------------------------------------------------------------------------
-// Keyword (reverse-lookup) mode
-// ---------------------------------------------------------------------------
-
-type HitKind = "return" | "param" | "field" | "prose";
-
-interface KeywordHit {
-  readonly symbol: string;
-  readonly description: string;
-  readonly score: number;
-}
-
-const RG_PARSE = /^(?<file>.+?\.lua)(?<sep>[:-])(?<line>\d+)\k<sep>(?<text>.*)$/;
-const FUNCTION_DECL = /^function\s+([\w.:]+)\s*\(/;
-const REGEX_SPECIALS = /[.*+?^${}()|[\]\\]/g;
-
-function escapeRegex(raw: string): string {
-  return raw.replace(REGEX_SPECIALS, "\\$&");
-}
-
-function classifyHit(commentText: string): { kind: HitKind; score: number } {
-  if (/^---@return\b/.test(commentText)) return { kind: "return", score: 3 };
-  if (/^---@param\b/.test(commentText)) return { kind: "param", score: 2 };
-  if (/^---@(field|class|alias)\b/.test(commentText)) {
-    return { kind: "field", score: 1 };
+  if (suggestions.length > 0) {
+    lines.push(`## Close-prefix candidates`);
+    for (const s of suggestions) lines.push(`- ${s}`);
+    lines.push("");
   }
-  return { kind: "prose", score: 1 };
+  lines.push("## Note");
+  lines.push(
+    "This tool does not fuzzy-match. If this is a Blizzard source identifier (not a documented C_ API), try wow-blizzard-source. If this is an event name, try wow-event-info. For free-form concepts, try wow-wiki-fetch.",
+  );
+  lines.push("");
+  return lines.join("\n");
 }
-
-function extractDescription(commentText: string, kind: HitKind): string {
-  // Strip leading `---` and surrounding whitespace.
-  const stripped = commentText.replace(/^---\s?/, "").trim();
-  if (kind === "return") {
-    // `@return type name description` or `@return type description`
-    return stripped.replace(/^@return\s+\S+\s*/, "").trim();
-  }
-  if (kind === "param") {
-    // `@param name type description`
-    return stripped.replace(/^@param\s+\S+\s+\S+\s*/, "").trim();
-  }
-  if (kind === "field") {
-    return stripped.replace(/^@(field|class|alias)\s+\S+\s*\S*\s*/, "").trim();
-  }
-  return stripped;
-}
-
-function buildWikiUrl(symbol: string): string | null {
-  // Wiki uses `API_<symbol>` for global and `C_*` namespaced functions, with
-  // `.` between namespace and method. We only emit URLs for `Word`, `Word.Word`,
-  // and `Word_Word.Word` style symbols — anything with `:` (method-call) is
-  // skipped because the wiki page format differs.
-  if (!/^[A-Za-z][\w]*(?:\.[A-Za-z][\w]*)?$/.test(symbol)) return null;
-  return `https://warcraft.wiki.gg/wiki/API_${symbol}`;
-}
-
-function shortDescription(raw: string, fallback: string): string {
-  const cleaned = raw.replace(/\s+/g, " ").trim();
-  const text = cleaned.length === 0 ? fallback : cleaned;
-  const escaped = text.replace(/\|/g, "\\|");
-  return escaped.length > 100 ? `${escaped.slice(0, 97)}...` : escaped;
-}
-
-interface RawMatch {
-  readonly file: string;
-  readonly line: number;
-  readonly text: string;
-}
-
-interface ParsedBlock {
-  readonly matches: readonly RawMatch[];
-  readonly functionSymbol: string | null;
-}
-
-function parseBlocks(rgOutput: string): ParsedBlock[] {
-  if (!rgOutput) return [];
-  const blocks: ParsedBlock[] = [];
-  for (const rawBlock of rgOutput.split(/\n--\n/)) {
-    const matches: RawMatch[] = [];
-    let functionSymbol: string | null = null;
-    for (const line of rawBlock.split("\n")) {
-      const parsed = RG_PARSE.exec(line);
-      if (!parsed?.groups) continue;
-      const { file, sep, line: lineStr, text } = parsed.groups;
-      if (sep === ":") {
-        // Skip noise: ---[Documentation] URL lines and ---@meta directives.
-        if (/^---\[Documentation\]/.test(text)) continue;
-        if (/^---@meta\b/.test(text)) continue;
-        matches.push({ file, line: Number(lineStr), text });
-        continue;
-      }
-      // Context line — look for the function declaration that owns this block.
-      if (functionSymbol === null) {
-        const fnMatch = FUNCTION_DECL.exec(text);
-        if (fnMatch) functionSymbol = fnMatch[1];
-      }
-    }
-    if (matches.length === 0 || functionSymbol === null) continue;
-    blocks.push({ matches, functionSymbol });
-  }
-  return blocks;
-}
-
-function aggregateHits(
-  blocks: readonly ParsedBlock[],
-  query: string,
-): KeywordHit[] {
-  const queryToken = query.toLowerCase().replace(/[^a-z0-9]/g, "");
-  const bySymbol = new Map<string, KeywordHit>();
-
-  for (const block of blocks) {
-    const symbol = block.functionSymbol;
-    if (symbol === null) continue;
-
-    let blockScore = 0;
-    let bestMatch: RawMatch | null = null;
-    let bestKind: HitKind = "prose";
-    let bestScore = -1;
-
-    for (const m of block.matches) {
-      const { kind, score } = classifyHit(m.text);
-      blockScore += score;
-      if (score > bestScore) {
-        bestScore = score;
-        bestMatch = m;
-        bestKind = kind;
-      }
-    }
-
-    if (bestMatch === null) continue;
-
-    // Multi-hit emphasis: +1 per additional match in the same function.
-    const multiBonus = Math.max(0, block.matches.length - 1);
-    // Function-name affinity: keyword token substring of fn name (case-insensitive).
-    const fnNameLower = symbol.toLowerCase();
-    const nameBonus =
-      queryToken.length >= 3 && fnNameLower.includes(queryToken) ? 2 : 0;
-
-    const totalScore = blockScore + multiBonus + nameBonus;
-    const description = shortDescription(
-      extractDescription(bestMatch.text, bestKind),
-      symbol,
-    );
-
-    const existing = bySymbol.get(symbol);
-    if (existing && existing.score >= totalScore) continue;
-
-    bySymbol.set(symbol, {
-      symbol,
-      description,
-      score: totalScore,
-    });
-  }
-
-  return [...bySymbol.values()].sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
-    return a.symbol.localeCompare(b.symbol);
-  });
-}
-
-function renderKeywordTable(hits: readonly KeywordHit[]): string {
-  const header = "| API | Description | Wiki |\n|---|---|---|";
-  const rows = hits.map((h) => {
-    const url = buildWikiUrl(h.symbol);
-    const wikiCell = url ?? "—";
-    return `| \`${h.symbol}\` | ${h.description} | ${wikiCell} |`;
-  });
-  return [header, ...rows].join("\n");
-}
-
-const KEYWORD_RESULT_LIMIT = 20;
-
-async function keywordSearch(
-  query: string,
-  category: string,
-): Promise<string> {
-  const searchPath = resolveSearchPath(category);
-  const escaped = escapeRegex(query);
-  // Match any LuaLS comment line (`---...`) that contains the keyword. Noise
-  // lines (`---[Documentation]`, `---@meta`) are filtered post-parse so we can
-  // keep the regex simple and avoid PCRE2 lookarounds.
-  const pattern = `^---.*${escaped}`;
-
-  const raw = await runRg([
-    "-i",
-    "--no-heading",
-    "--with-filename",
-    "-n",
-    "-A",
-    "5",
-    "--glob",
-    "*.lua",
-    pattern,
-    searchPath,
-  ]);
-
-  const blocks = parseBlocks(raw);
-  const hits = aggregateHits(blocks, query);
-
-  if (hits.length === 0) {
-    return renderNoMatch({
-      title: TITLES.apiLookup,
-      metadata: buildKeywordMetadata(query, category, "none"),
-      paragraph: `No annotation comments matched the keyword \`${query}\` in category \`${category}\`.`,
-      suggestions: [
-        `Try a broader category (e.g. \`all\` instead of \`${category}\`)`,
-        `Use a single descriptive word (e.g. \`combat\` instead of \`is in combat\`)`,
-        `Try a synonym (e.g. \`reward\` instead of \`prize\`)`,
-        `For exact API names, use \`mode: "symbol"\` (the default)`,
-      ],
-    });
-  }
-
-  const limited = hits.slice(0, KEYWORD_RESULT_LIMIT);
-  const table = renderKeywordTable(limited);
-  const truncatedNote =
-    hits.length > KEYWORD_RESULT_LIMIT
-      ? `- Showing top ${KEYWORD_RESULT_LIMIT} of ${hits.length} ranked matches. Refine the keyword for tighter results.`
-      : undefined;
-
-  return renderReport({
-    title: TITLES.apiLookup,
-    metadata: buildKeywordMetadata(query, category, "ranked"),
-    body: { outcome: "result", body: table },
-    notes: truncatedNote,
-  });
-}
-
-function buildKeywordMetadata(
-  query: string,
-  category: string,
-  match: string,
-): readonly [string, string][] {
-  return [
-    ["Query", `\`${query}\``],
-    ["Mode", "keyword"],
-    ["Category", category],
-    ["Match", match],
-  ];
-}
-
-// ---------------------------------------------------------------------------
-// Tool definition
-// ---------------------------------------------------------------------------
 
 export default tool({
   description:
-    "Search local LuaLS-style WoW API annotations for function signatures, widget definitions, enums, structures, mixins, library APIs, and Lua stdlib symbols.\n\n" +
-    "Usage:\n" +
-    "- Pick a category to narrow the search, or use `all` (default) to search everything.\n" +
-    "- Use `mode: \"symbol\"` (default) to look up a known API name, namespace, or identifier.\n" +
-    "- Use `mode: \"keyword\"` to ask 'what API does X?' with a free-form natural-language phrase; results are a ranked table of function symbols whose annotation comments mention the phrase.\n" +
-    "- Categories:\n" +
-    "  - `api`: Blizzard documented C_/global API (e.g. `C_LootHistory`, `GetLootSlotInfo`).\n" +
-    "  - `widget`: widget types (Frame, Button, StatusBar, Texture, FontString, ScrollFrame, ...).\n" +
-    "  - `type`: Enum, Structure, Mixin, UnitToken, Namespace types.\n" +
-    "  - `data`: CVar definitions, Classic-specific globals, Wiki-sourced data tables.\n" +
-    "  - `library`: bundled libraries (Ace3, LibStub, LibSharedMedia, LibDataBroker, ...) (curated usage snippets attached for common libraries when available).\n" +
-    "  - `lua`: Lua 5.1 stdlib (basic, bit, math, os, string, table).\n" +
-    "  - `framexml`: FrameXML enum and template stubs.\n" +
-    "  - `all`: search every category.\n" +
-    "- Symbol mode runs ripgrep over the annotation files and falls back to filename matches when no content matches.\n" +
-    "- Keyword mode scans `---` annotation comments (param/return/field/prose) and ranks matching function symbols by relevance.\n\n" +
-    "DO NOT use this for events — use `wow-event-info`.\n" +
-    "DO NOT use this for full FrameXML implementation source — use `wow-blizzard-source`.",
+    "Exact-symbol lookup against the curated WoW LuaLS annotation tree at Annotations/Core/. Accepts qualified (C_Item.GetItemInfo, Frame:SetSize, AceEvent-3.0:RegisterEvent) and bare (Frame, AbandonSkill) symbol names. No fuzzy/keyword mode; no wiki fetch.",
   args: {
-    query: tool.schema
-      .string()
-      .describe(
-        'In `symbol` mode: the API name, namespace, widget type, or enum to search for (e.g. "C_LootHistory", "GetLootSlotInfo", "StatusBar", "Enum.ItemQuality"). In `keyword` mode: a free-form natural-language phrase describing the behavior (e.g. "player class", "in combat", "container item").',
-      ),
-    category: tool.schema
-      .enum([
-        "api",
-        "widget",
-        "type",
-        "data",
-        "library",
-        "lua",
-        "framexml",
-        "all",
-      ])
-      .optional()
-      .default("all")
-      .describe(
-        'Narrow search to a single category for precision. Options: "api" (documented C_/global API), "widget" (Frame/StatusBar/Button/...), "type" (Enum/Structure/Mixin/UnitToken/Namespace), "data" (CVar/Classic/Wiki data), "library" (Ace3/LibStub/LSM/LibDataBroker/...), "lua" (Lua 5.1 stdlib), "framexml" (enum and template stubs), or "all". "all" is the broadest path and matches everything; PREFER a specific category when you know roughly where the symbol lives - it produces tighter, more relevant results and avoids cross-category collisions.',
-      ),
-    mode: tool.schema
-      .enum(["symbol", "keyword"])
-      .optional()
-      .default("symbol")
-      .describe(
-        "Search mode. `symbol` (default) searches for API names/identifiers and returns annotation excerpts as a Lua dump; `keyword` searches the human-readable text of annotation comments and returns a ranked table of function symbols whose docs mention the phrase. Use `keyword` when you know the behavior but not the API name.",
-      ),
+    query: z.string().min(1),
   },
-  async execute(args) {
-    const { query, category = "all", mode = "symbol" } = args;
-
-    if (!query.trim()) {
-      return renderError({
-        title: TITLES.apiLookup,
-        metadata: [["Query", "`(empty)`"]],
-        reason: "`query` must not be empty.",
-        cause: "(no query provided)",
-        suggestions: [
-          "Pass an API name, namespace, widget type, enum, or keyword.",
-          "Examples: `C_LootHistory`, `GetLootSlotInfo`, `StatusBar`, `Enum.ItemQuality`.",
-        ],
-      });
+  async execute({ query }) {
+    const q = query.trim();
+    if (q.length === 0) {
+      throw new Error("wow-api-lookup: query must be non-empty");
     }
-
-    if (mode === "keyword") {
-      return await keywordSearch(query, category);
-    }
-
-    const searchPath = resolveSearchPath(category);
-
-    // Step 1: Case-sensitive search with generous context
-    let results = await searchWithContext(query, searchPath, true, 5, 50);
-    if (results) {
-      const formatted = formatRgOutput(results);
-      const lineCount = formatted.split("\n").length;
-      const usages = await findBlizzardUsages(query, category);
-      let body = "```lua\n" + formatted + "\n```";
-      if (category === "library") {
-        body = appendSnippetFooter(body, findLibrarySnippet(formatted));
-      }
-      body = appendPivotFooter(body, usages);
-      return renderReport({
-        title: TITLES.apiLookup,
-        metadata: buildApiMetadata(query, category, "case-sensitive"),
-        body: { outcome: "result", body },
-        notes:
-          lineCount >= 200
-            ? "- Showing partial results (max 50 matches per file). Narrow your query or category for more focused results."
-            : undefined,
-      });
-    }
-
-    // Step 2: Case-insensitive fallback with smaller context
-    results = await searchWithContext(query, searchPath, false, 3, 30);
-    if (results) {
-      const formatted = formatRgOutput(results);
-      const usages = await findBlizzardUsages(query, category);
-      let body = "```lua\n" + formatted + "\n```";
-      if (category === "library") {
-        body = appendSnippetFooter(body, findLibrarySnippet(formatted));
-      }
-      body = appendPivotFooter(body, usages);
-      return renderReport({
-        title: TITLES.apiLookup,
-        metadata: buildApiMetadata(query, category, "case-insensitive"),
-        body: { outcome: "result", body },
-      });
-    }
-
-    // Step 3: Filename-based fallback
-    const simplified = simplifyQuery(query);
-    const matchingFiles = await findMatchingFiles(simplified, searchPath);
-
-    if (matchingFiles.length > 0) {
-      const filesToRead = matchingFiles.slice(0, 3);
-      const fileContents = await Promise.all(
-        filesToRead.map((f) => readFileHead(f, 200)),
+    if (q.length > MAX_QUERY_LEN) {
+      throw new Error(
+        `wow-api-lookup: query exceeds ${MAX_QUERY_LEN} characters`,
       );
-      const fileBlocks = fileContents
-        .map(
-          ({ relPath, body }) =>
-            `### ${relPath}\n\n\`\`\`lua\n${body}\n\`\`\``,
-        )
-        .join("\n\n");
-
-      const intro = `No content matches for \`${query}\`, but found file(s) with \`${simplified}\` in the name:\n\n`;
-      const usages = await findBlizzardUsages(query, category);
-      const body = appendPivotFooter(intro + fileBlocks, usages);
-      return renderReport({
-        title: TITLES.apiLookup,
-        metadata: buildApiMetadata(query, category, "filename"),
-        body: { outcome: "result", body },
-        notes:
-          matchingFiles.length > 3
-            ? `- ${matchingFiles.length - 3} more file(s) matched. Refine your query to see them.`
-            : undefined,
-      });
+    }
+    if (/[\r\n]/.test(q)) {
+      throw new Error("wow-api-lookup: query must not contain newlines");
     }
 
-    // Nothing found
-    return renderNoMatch({
-      title: TITLES.apiLookup,
-      metadata: buildApiMetadata(query, category, "none"),
-      paragraph: `No annotation entries matched the query \`${query}\` in category \`${category}\` (tried case-sensitive content search, case-insensitive content search, and filename match).`,
-      suggestions: [
-        `Try a broader category (e.g. \`all\` instead of \`${category}\`)`,
-        `Search for the namespace prefix (e.g. \`C_Loot\` instead of \`C_Loot.GetLootSlotInfo\`)`,
-        `Search for the function name alone (e.g. \`GetLootSlotInfo\`)`,
-        `Check spelling - WoW API names are case-sensitive`,
-      ],
-    });
+    const plan = classify(q);
+    const roots = plan.roots.map((k) => BUCKETS[k]);
+
+    const rgLines = await runRg(plan.patterns, roots);
+    const hits = groupHits(rgLines);
+
+    if (hits.length > 0) {
+      let out = renderHits(q, hits, plan);
+      const classic = await tryClassicOverride(q);
+      if (classic !== null) {
+        const candidate = out + classic;
+        if (Buffer.byteLength(candidate, "utf8") <= BUDGET) {
+          out = candidate;
+        }
+      }
+      return out;
+    }
+
+    const suggestions = await gatherSuggestions(q, plan);
+    return renderNoMatch(q, plan, suggestions);
   },
 });

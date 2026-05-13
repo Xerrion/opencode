@@ -1,39 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "sonarqube": {
-      // Requires: docker pull mcp/sonarqube (image must be pre-pulled)
-      "type": "local",
-      "command": [
-        "docker",
-        "run",
-        "-i",
-        "--rm",
-        "--read-only",
-        "--tmpfs",
-        "/tmp:rw,noexec,nosuid,size=64m",
-        "--tmpfs",
-        "/app/storage:rw,noexec,nosuid,size=64m",
-        "--tmpfs",
-        "/etc/ssl/certs:rw,noexec,nosuid,size=8m",
-        "-e",
-        "SONARQUBE_TOKEN",
-        "-e",
-        "SONARQUBE_ORG",
-        "-e",
-        "SONARQUBE_CLOUD_URL",
-        "-e",
-        "SONARQUBE_IDE_PORT",
-        "mcp/sonarqube",
-      ],
-      "environment": {
-        "SONARQUBE_ORG": "{env:SONARQUBE_ORG}",
-        "SONARQUBE_CLOUD_URL": "{env:SONARQUBE_CLOUD_URL}",
-        "SONARQUBE_TOKEN": "{env:SONARQUBE_TOKEN}",
-        "SONARQUBE_IDE_PORT": "{env:SONARQUBE_IDE_PORT}",
-      },
-      "enabled": true,
-    },
     "servicenow": {
       // Requires: /Users/lasn/Projects/servicenow-platform-mcp to exist (local clone)
       "type": "local",
@@ -45,11 +12,11 @@
         "servicenow-platform-mcp",
       ],
       "environment": {
-        "SERVICENOW_INSTANCE_URL": "{env:SERVICENOW_MCP_PROD_INSTANCE_URL}",
+        "SERVICENOW_INSTANCE_URL": "{env:SERVICENOW_MCP_DEV_INSTANCE_URL}",
         "SERVICENOW_USERNAME": "{env:SERVICENOW_MCP_USERNAME}",
-        "SERVICENOW_PASSWORD": "{env:SERVICENOW_MCP_PROD_PASSWORD}",
+        "SERVICENOW_PASSWORD": "{env:SERVICENOW_MCP_DEV_PASSWORD}",
         "MCP_TOOL_PACKAGE": "{env:SERVICENOW_MCP_TOOL_PACKAGE}",
-        "SERVICENOW_ENV": "{env:SERVICENOW_MCP_PROD_ENV}",
+        "SERVICENOW_ENV": "{env:SERVICENOW_MCP_DEV_ENV}",
         "SCRIPT_ALLOWED_ROOT": "/Users/lasn/Projects/servicenow-development/",
       },
       "enabled": true,
@@ -180,6 +147,12 @@
       "reboot*": "deny",
     },
 
+    // WoW addon development
+    "wow-api-lookup": "deny",
+    "wow-wiki-fetch": "deny",
+    "wow-event-info": "deny",
+    "wow-blizzard-source": "deny",
+
     // Orchestration & networking
     "task": "deny",
     "webfetch": "deny",
@@ -299,7 +272,6 @@
         // Reasoning for this is that the software-engineer should not be stopped by missing permissions
         "bash": {
           "*": "allow",
-          "git *": "deny",
         },
       },
     },
@@ -396,13 +368,13 @@
         "wow-wiki-fetch": "allow",
         "wow-event-info": "allow",
         "wow-blizzard-source": "allow",
-        "wow-addon-lint": "allow",
         "task": { "*": "deny" },
         "skill": {
-          "wow-addon-dev": "allow",
-          "wow-lua-patterns": "allow",
+          "wow-addon-design": "allow",
+          "wow-addon-toolkit": "allow",
           "wow-frame-api": "allow",
           "wow-event-handling": "allow",
+          "wow-lua-patterns": "allow",
         },
       },
     },

@@ -13,7 +13,6 @@ A short reference for picking the right research tool and reading the annotation
 - **Event names, payloads, related events** → `wow-event-info`. Parses the events catalog, supports exact / prefix / substring queries, and can fetch the wiki page for a single event.
 - **Behavioral details not encoded in annotations** (caveats, edge cases, patch history, async/cache semantics) → `wow-wiki-fetch`. Prefer this when a signature alone does not explain how the API behaves.
 - **Blizzard's own implementation** (mixins, FrameXML templates, real usage of obscure APIs) → `wow-blizzard-source`. Useful for studying patterns; the annotated source is read-only reference, not copy-paste material.
-- **Static analysis of existing addon code** (taint risks, global pollution, deprecated APIs, OnUpdate allocations) → `wow-addon-lint`.
 
 `wow-api-lookup` answers "what is the shape?". `wow-wiki-fetch` answers "how does it behave?". `wow-event-info` answers "what fires this and what does it carry?".
 

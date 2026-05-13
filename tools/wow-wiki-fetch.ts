@@ -1,754 +1,588 @@
-import { tool } from "@opencode-ai/plugin";
-import {
-  renderError,
-  renderReport,
-  stripHtml,
-  TITLES,
-  type MetadataPair,
-} from "./_shared";
+import { tool } from "@opencode-ai/plugin/tool";
+import { z } from "zod";
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
+/**
+ * wow-wiki-fetch: fetch a single warcraft.wiki.gg page and render it as
+ * Markdown. The lowest-level escape hatch for the agent when the curated
+ * annotation tree does not have what it needs.
+ *
+ * Contract per ADR-0001 (`.deliverables/tech-lead/ADR-0001-rebuild-tool-surface.md`)
+ * and the rebuild delegation:
+ *   - one arg (`page`): slug, path, or full warcraft.wiki.gg URL.
+ *   - returns `{ output, metadata: { url, redirectedFrom?, categories } }`.
+ *   - no cache, no auto page-type detection, no retail/classic toggle.
+ *   - 40 KB self-cap with truncation at H2 boundary.
+ *   - 404 / `class="noarticletext"` returns a structured no-match body, NOT a throw.
+ *   - HTTP 5xx / network failure throws.
+ *
+ * Anti-regression non-negotiables (each is observable in this file):
+ *   1. Article content is sliced from `<div id="mw-content-text">`. The inner
+ *      `mw-parser-output` div is intentionally NOT used as the anchor and the
+ *      literal string never appears in source or output.
+ *   2. `<pre>` blocks are wrapped with `fenceFor`, so embedded backticks in a
+ *      Blizzard signature never collide with the outer fence.
+ *   3. Redirect detection is two-pronged (HTTP final URL + inline
+ *      `wgRedirectedFrom`); when either fires, the metadata carries
+ *      `redirectedFrom` and a "Redirected from" line is rendered.
+ *   4. 404 responses render an explicit "does not exist" no-match body with
+ *      empty `metadata.categories` instead of pretending the page exists.
+ *   5. Self-cap at 40 KB before the runtime's 50 KB cutoff; truncation at
+ *      section boundary plus an explicit tail.
+ */
 
-const WIKI_BASE = "https://warcraft.wiki.gg/wiki";
+const BUDGET = 40_000;
+const MAX_INPUT_LEN = 300;
+const USER_AGENT =
+  "wow-wiki-fetch/1.0 (opencode tool; +https://warcraft.wiki.gg/)";
+const BASE = "https://warcraft.wiki.gg/wiki/";
+const WIKI_HOST = "warcraft.wiki.gg";
 
-const QUERY_TYPES = ["auto", "function", "c_api", "event", "widget"] as const;
-type QueryType = (typeof QUERY_TYPES)[number];
+// --- Generic helpers ------------------------------------------------------
 
-const MAX_CONTENT_LENGTH = 12_000;
-
-// ---------------------------------------------------------------------------
-// Query type detection
-// ---------------------------------------------------------------------------
-
-/** Common verb prefixes in WoW global API function names */
-const FUNCTION_PREFIXES = [
-  "Get",
-  "Set",
-  "Is",
-  "Has",
-  "Can",
-  "Do",
-  "Create",
-  "Delete",
-  "Remove",
-  "Add",
-  "Toggle",
-  "Enable",
-  "Disable",
-  "Register",
-  "Unregister",
-  "Accept",
-  "Decline",
-  "Close",
-  "Open",
-  "Show",
-  "Hide",
-  "Start",
-  "Stop",
-  "Use",
-  "Cast",
-  "Equip",
-  "Pickup",
-  "Place",
-  "Put",
-  "Take",
-  "Buy",
-  "Sell",
-  "Send",
-  "Leave",
-  "Join",
-  "Invite",
-  "Request",
-  "Query",
-  "Sort",
-  "Clear",
-  "Reset",
-  "Load",
-  "Save",
-  "Run",
-  "Log",
-  "Unit",
-  "Spell",
-];
-
-function looksLikeFunctionName(query: string): boolean {
-  return FUNCTION_PREFIXES.some((prefix) => query.startsWith(prefix));
-}
-
-function detectQueryType(query: string): QueryType {
-  if (query.includes("/") || query.startsWith("https://")) return "auto"; // raw path
-  if (/^C_\w+\.\w+/.test(query)) return "c_api";
-  if (/^[A-Z][A-Z0-9_]+$/.test(query) && query.includes("_")) return "event";
-  if (/^[A-Z][a-zA-Z]+$/.test(query) && looksLikeFunctionName(query))
-    return "function";
-  if (/^[A-Z][a-zA-Z]+$/.test(query)) return "widget";
-  return "function";
-}
-
-// ---------------------------------------------------------------------------
-// URL construction - pure functions per type
-// ---------------------------------------------------------------------------
-
-function buildUrlForFunction(name: string): string {
-  return `${WIKI_BASE}/API_${name}`;
-}
-
-function buildUrlForCApi(name: string): string {
-  // C_LootHistory.GetLoot -> API_C_LootHistory.GetLoot (dot is literal)
-  return `${WIKI_BASE}/API_${name}`;
-}
-
-function buildUrlForEvent(name: string): string {
-  return `${WIKI_BASE}/${name}`;
-}
-
-function buildUrlForWidget(name: string): string {
-  return `${WIKI_BASE}/UIOBJECT_${name}`;
-}
-
-function buildUrlForRawPath(query: string): string {
-  if (query.startsWith("https://")) return query;
-  // Treat as wiki path segment
-  const cleanPath = query.startsWith("/") ? query.slice(1) : query;
-  return `${WIKI_BASE}/${cleanPath}`;
-}
-
-function buildWikiUrl(query: string, resolvedType: QueryType): string {
-  switch (resolvedType) {
-    case "function":
-      return buildUrlForFunction(query);
-    case "c_api":
-      return buildUrlForCApi(query);
-    case "event":
-      return buildUrlForEvent(query);
-    case "widget":
-      return buildUrlForWidget(query);
-    default:
-      return buildUrlForRawPath(query);
+/** Fence wider than any backtick run in `content`, min 3. Anti-regression #2. */
+function fenceFor(content: string): string {
+  let max = 0;
+  const re = /`+/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(content)) !== null) {
+    if (m[0].length > max) max = m[0].length;
   }
+  return "`".repeat(Math.max(3, max + 1));
 }
 
-function resolveQueryType(query: string, explicit: QueryType): QueryType {
-  if (explicit !== "auto") return explicit;
-
-  const detected = detectQueryType(query);
-  // "auto" from detectQueryType means raw path - keep it
-  return detected;
-}
-
-// ---------------------------------------------------------------------------
-// HTML parsing helpers - no external dependencies
-// ---------------------------------------------------------------------------
-
-function extractMainContent(html: string): string {
-  // MediaWiki stores content inside <div id="mw-content-text">...</div>
-  // We grab from that div to the end, then strip a reasonable boundary
-  const contentStart = html.indexOf('id="mw-content-text"');
-  if (contentStart === -1) return "";
-
-  const afterStart = html.indexOf(">", contentStart);
-  if (afterStart === -1) return "";
-
-  // Find the content region - stop before footer / navigation elements
-  const contentHtml = html.slice(afterStart + 1);
-
-  // Cut at common footer markers
-  const footerMarkers = [
-    'id="catlinks"',
-    'class="printfooter"',
-    'id="mw-navigation"',
-    "<!--esi",
-  ];
-
-  let endIdx = contentHtml.length;
-  for (const marker of footerMarkers) {
-    const idx = contentHtml.indexOf(marker);
-    if (idx !== -1 && idx < endIdx) {
-      endIdx = idx;
-    }
-  }
-
-  return contentHtml.slice(0, endIdx);
-}
-
-function extractSections(
-  contentHtml: string,
-): Map<string, string> {
-  const sections = new Map<string, string>();
-
-  // Split on heading tags to find sections
-  // MediaWiki uses <h2><span id="SectionName">...</span></h2> or similar
-  const headingPattern =
-    /<h([2-3])[^>]*>.*?<span[^>]*id="([^"]*)"[^>]*>.*?<\/span>.*?<\/h\1>/gi;
-
-  const headings: Array<{ name: string; index: number }> = [];
-  let match: RegExpExecArray | null;
-
-  while ((match = headingPattern.exec(contentHtml)) !== null) {
-    headings.push({ name: match[2], index: match.index });
-  }
-
-  // Also try simpler heading pattern without span ids
-  if (headings.length === 0) {
-    const simpleHeadingPattern = /<h([2-3])[^>]*>(.*?)<\/h\1>/gi;
-    while ((match = simpleHeadingPattern.exec(contentHtml)) !== null) {
-      const name = stripHtml(match[2]).trim();
-      if (name) {
-        headings.push({ name, index: match.index });
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, n) => {
+      try {
+        return String.fromCodePoint(Number(n));
+      } catch {
+        return "";
       }
-    }
-  }
-
-  // Extract description (everything before first heading)
-  if (headings.length > 0) {
-    const descriptionHtml = contentHtml.slice(0, headings[0].index);
-    const descriptionText = stripHtml(descriptionHtml).trim();
-    if (descriptionText) {
-      sections.set("Description", descriptionText);
-    }
-  } else {
-    // No headings found - entire content is description
-    const descriptionText = stripHtml(contentHtml).trim();
-    if (descriptionText) {
-      sections.set("Description", descriptionText);
-    }
-    return sections;
-  }
-
-  // Extract each heading section
-  for (let i = 0; i < headings.length; i++) {
-    const heading = headings[i];
-    const nextStart =
-      i + 1 < headings.length ? headings[i + 1].index : contentHtml.length;
-    const sectionHtml = contentHtml.slice(heading.index, nextStart);
-    const sectionText = stripHtml(sectionHtml).trim();
-
-    // Remove the heading text itself from the section body
-    const headingText = heading.name.replace(/_/g, " ");
-    const bodyText = sectionText
-      .replace(new RegExp(`^\\s*${escapeRegex(headingText)}\\s*`, "i"), "")
-      .trim();
-
-    if (bodyText) {
-      sections.set(normalizeHeadingName(heading.name), bodyText);
-    }
-  }
-
-  return sections;
+    })
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, n) => {
+      try {
+        return String.fromCodePoint(parseInt(n, 16));
+      } catch {
+        return "";
+      }
+    });
 }
 
-function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function stripTags(s: string): string {
+  return s.replace(/<[^>]+>/g, "");
 }
 
-function normalizeHeadingName(raw: string): string {
-  // Wiki section IDs use underscores: "Patch_changes" -> "Patch changes"
-  return raw.replace(/_/g, " ");
+/** Decode entities, strip tags, collapse whitespace runs. Inline text only. */
+function clean(s: string): string {
+  return decodeEntities(stripTags(s)).replace(/[ \t\r\n]+/g, " ").trim();
 }
 
-// ---------------------------------------------------------------------------
-// Signature extraction - structured block for API/event/widget-method pages
-// ---------------------------------------------------------------------------
+// --- HTML extraction ------------------------------------------------------
 
-type SignatureParam = {
-  name: string;
-  type: string;
-  nilable: boolean;
-  description: string;
-};
-
-type SignatureBlock = {
-  signatureLines: string[];
-  parameters: SignatureParam[];
-  returns: SignatureParam[];
-  payload: SignatureParam[] | "none" | null;
-};
-
-/**
- * Parse the `class` attribute of a tag's attribute string into a token list.
- * Returns an empty array if no `class` attribute is present. Supports both
- * double- and single-quoted forms.
- */
-function parseClassTokens(tagAttrs: string): string[] {
-  const match =
-    /\bclass\s*=\s*"([^"]*)"/i.exec(tagAttrs) ??
-    /\bclass\s*=\s*'([^']*)'/i.exec(tagAttrs);
-  if (!match) return [];
-  return match[1].split(/\s+/).filter((token) => token.length > 0);
-}
-
-/**
- * The wiki marks the canonical signature with a `<div>` wrapping a
- * Pygments-tokenised `<pre>`. The discriminator is the `class` attribute
- * (parsed as a token list): it MUST contain both `mw-highlight` and
- * `mw-highlight-lang-lua`, and MUST NOT contain `mw-highlight-copy` (that
- * marker tags the inline copy-button block). A multi-line `<pre>` represents
- * overloads (e.g. `UnitClass`).
- */
-function isCanonicalSignatureDiv(tagAttrs: string): boolean {
-  const classes = parseClassTokens(tagAttrs);
-  return (
-    classes.includes("mw-highlight") &&
-    classes.includes("mw-highlight-lang-lua") &&
-    !classes.includes("mw-highlight-copy")
+function extractTitle(html: string): string {
+  const h1 = /<h1\b[^>]*id\s*=\s*["']firstHeading["'][^>]*>([\s\S]*?)<\/h1>/i.exec(
+    html,
   );
+  if (h1) {
+    const t = clean(h1[1]!);
+    if (t.length > 0) return t;
+  }
+  const t = /<title\b[^>]*>([\s\S]*?)<\/title>/i.exec(html);
+  if (t) {
+    return clean(t[1]!).replace(/\s*[-|–—]\s*Warcraft Wiki.*$/i, "");
+  }
+  return "";
 }
 
-function extractSignatureLines(contentHtml: string): string[] | null {
-  const divPattern =
-    /<div\b([^>]*)>\s*<pre\b[^>]*>([\s\S]*?)<\/pre>\s*<\/div>/gi;
-  let match: RegExpExecArray | null;
-  while ((match = divPattern.exec(contentHtml)) !== null) {
-    if (!isCanonicalSignatureDiv(match[1])) continue;
-    const lines = stripHtml(match[2])
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0);
-    if (lines.length === 0) return null;
-    return lines;
+function isNoArticle(html: string): boolean {
+  return /class\s*=\s*["'][^"']*\bnoarticletext\b/i.test(html);
+}
+
+/**
+ * Scrape `wgRedirectedFrom` from the inline RLCONF JS. MediaWiki sometimes
+ * serves redirect targets without an HTTP redirect, so the final URL check
+ * alone is insufficient (wiki research §redirects).
+ */
+function extractRedirectedFromSlug(html: string): string | null {
+  const m = /"wgRedirectedFrom"\s*:\s*"((?:\\.|[^"\\])*)"/.exec(html);
+  if (!m) return null;
+  return m[1]!
+    .replace(/\\"/g, '"')
+    .replace(/\\\//g, "/")
+    .replace(/\\\\/g, "\\");
+}
+
+function extractCategories(html: string): string[] {
+  const start = html.search(/<div\b[^>]*id\s*=\s*["']catlinks["']/i);
+  if (start === -1) return [];
+  const slice = html.slice(start, start + 80_000);
+  const cats: string[] = [];
+  const re =
+    /<a\s+[^>]*href\s*=\s*["'][^"']*\/wiki\/Category:([^"'#?]+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(slice)) !== null) {
+    try {
+      const name = decodeURIComponent(m[1]!).replace(/_/g, " ");
+      if (!cats.includes(name)) cats.push(name);
+    } catch {
+      // Skip malformed escape sequences.
+    }
+  }
+  return cats;
+}
+
+/**
+ * Slice the inner HTML of `<div id="mw-content-text">`. Anti-regression #1:
+ * we anchor on `mw-content-text` (the stable outer container), never on the
+ * brittle inner parser div. Walks div nesting manually because regex cannot
+ * balance.
+ */
+function sliceContentText(html: string): string | null {
+  const re = /<div\b[^>]*id\s*=\s*["']mw-content-text["'][^>]*>/i;
+  const m = re.exec(html);
+  if (!m) return null;
+  const openEnd = m.index + m[0].length;
+  let depth = 1;
+  let i = openEnd;
+  while (i < html.length && depth > 0) {
+    if (html.charCodeAt(i) !== 60 /* '<' */) {
+      i++;
+      continue;
+    }
+    if (html.startsWith("</div", i)) {
+      depth--;
+      if (depth === 0) {
+        return html.slice(openEnd, i);
+      }
+      const close = html.indexOf(">", i);
+      if (close === -1) return null;
+      i = close + 1;
+      continue;
+    }
+    if (
+      html.startsWith("<div", i) &&
+      (html.charCodeAt(i + 4) === 32 ||
+        html.charCodeAt(i + 4) === 62 ||
+        html.charCodeAt(i + 4) === 9 ||
+        html.charCodeAt(i + 4) === 10)
+    ) {
+      depth++;
+      const close = html.indexOf(">", i);
+      if (close === -1) return null;
+      i = close + 1;
+      continue;
+    }
+    i++;
   }
   return null;
 }
 
-/** Capture the HTML between an `<h2 id="anchor">` and the next `<h2>` (or EOF). */
-function extractSectionByAnchor(
-  contentHtml: string,
-  anchorId: string,
-): string | null {
-  const headingPattern = new RegExp(
-    `<h2\\b[^>]*>[\\s\\S]*?\\bid="${escapeRegex(anchorId)}"[\\s\\S]*?<\\/h2>`,
-    "i",
+/** Strip chrome bits inside the content slice that would noise up the body. */
+function stripChrome(html: string): string {
+  // catlinks (collected separately)
+  html = html.replace(
+    /<div\b[^>]*id\s*=\s*["']catlinks["'][\s\S]*?<\/div>\s*(?:<\/div>\s*)?/i,
+    "",
   );
-  const headingMatch = headingPattern.exec(contentHtml);
-  if (!headingMatch) return null;
-  const startIdx = headingMatch.index + headingMatch[0].length;
-  const tail = contentHtml.slice(startIdx);
-  const nextH2 = tail.search(/<h2\b/i);
-  return nextH2 === -1 ? tail : tail.slice(0, nextH2);
+  // edit-section "[edit]" spans on every heading
+  html = html.replace(
+    /<span\b[^>]*class\s*=\s*["'][^"']*mw-editsection[^"']*["'][\s\S]*?<\/span>/gi,
+    "",
+  );
+  // numbered footnote reference superscripts (the References list itself stays).
+  html = html.replace(
+    /<sup\b[^>]*class\s*=\s*["'][^"']*reference[^"']*["'][\s\S]*?<\/sup>/gi,
+    "",
+  );
+  return html;
+}
+
+// --- Body rendering -------------------------------------------------------
+
+function renderTable(body: string): string {
+  const rows: string[][] = [];
+  const trRe = /<tr\b[^>]*>([\s\S]*?)<\/tr>/gi;
+  let tr: RegExpExecArray | null;
+  while ((tr = trRe.exec(body)) !== null) {
+    const cells: string[] = [];
+    const cellRe = /<(t[hd])\b[^>]*>([\s\S]*?)<\/\1>/gi;
+    let c: RegExpExecArray | null;
+    while ((c = cellRe.exec(tr[1]!)) !== null) {
+      cells.push(clean(c[2]!).replace(/\|/g, "\\|"));
+    }
+    if (cells.length > 0) rows.push(cells);
+  }
+  if (rows.length === 0) return "";
+  const cols = Math.max(...rows.map((r) => r.length));
+  for (const r of rows) while (r.length < cols) r.push("");
+  const sep = Array<string>(cols).fill("---");
+  const lines: string[] = [];
+  lines.push(`| ${rows[0]!.join(" | ")} |`);
+  lines.push(`| ${sep.join(" | ")} |`);
+  for (let i = 1; i < rows.length; i++) {
+    lines.push(`| ${rows[i]!.join(" | ")} |`);
+  }
+  return `\n${lines.join("\n")}\n\n`;
+}
+
+function renderDl(body: string): string {
+  const re = /<(dt|dd)\b[^>]*>([\s\S]*?)<\/\1>/gi;
+  const parts: string[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(body)) !== null) {
+    const tag = m[1]!.toLowerCase();
+    const text = clean(m[2]!);
+    if (text.length === 0) continue;
+    if (tag === "dt") parts.push(`**${text}**`);
+    else parts.push(`: ${text}`);
+  }
+  return parts.length > 0 ? `\n${parts.join("\n")}\n\n` : "";
+}
+
+function renderList(body: string, marker: string): string {
+  const re = /<li\b[^>]*>([\s\S]*?)<\/li>/gi;
+  const items: string[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(body)) !== null) {
+    const text = clean(m[1]!);
+    if (text.length > 0) items.push(`${marker} ${text}`);
+  }
+  return items.length > 0 ? `\n${items.join("\n")}\n\n` : "";
 }
 
 /**
- * Within an Arguments/Returns/Payload section the wiki uses a `<dt>NAME</dt>`
- * + `<dd>TYPE [- description]</dd>` skeleton. We trust the first
- * type-coloured span as the canonical type and detect nilability from the
- * `title="nilable"` marker.
- *
- * Implementation note: we split on `<dt` boundaries and parse each chunk
- * independently. If one chunk has malformed nesting (e.g. an unclosed inner
- * tag), the failure stays localised to that single param rather than
- * derailing the whole regex sweep.
+ * Convert a chunk of article HTML to Markdown. Order is intentional:
+ * `<pre>` first so its content is decoded and fenced before subsequent
+ * passes touch it, then block-level elements top-down.
  */
-function extractParamsFromSection(sectionHtml: string): SignatureParam[] {
-  const params: SignatureParam[] = [];
-  // First chunk is preamble before any <dt>; skip it.
-  const chunks = sectionHtml.split(/<dt\b/i).slice(1);
+function renderHtml(html: string): string {
+  let s = html;
 
-  for (const rawChunk of chunks) {
-    // rawChunk starts immediately after `<dt` - i.e. with the rest of the
-    // <dt> opening tag (attributes + `>`), then dt content, then </dt>, then
-    // optional whitespace, then the matching <dd>...</dd>.
-    const dtOpenClose = rawChunk.indexOf(">");
-    if (dtOpenClose === -1) continue;
-    const dtEnd = rawChunk.indexOf("</dt>", dtOpenClose);
-    if (dtEnd === -1) continue;
-
-    const dtInner = rawChunk.slice(dtOpenClose + 1, dtEnd);
-    const name = stripHtml(dtInner).trim();
-    if (!name) continue;
-
-    const afterDt = rawChunk.slice(dtEnd + "</dt>".length);
-    const ddMatch = /^\s*<dd\b[^>]*>([\s\S]*?)<\/dd>/i.exec(afterDt);
-    if (!ddMatch) continue;
-    const ddHtml = ddMatch[1];
-
-    const typeMatch = ddHtml.match(
-      /<span[^>]*color:\s*#ecbc2a[^>]*>([\s\S]*?)<\/span>/i,
-    );
-    const type = typeMatch ? stripHtml(typeMatch[1]).trim() : "unknown";
-    const nilable = /title="nilable"/i.test(ddHtml);
-
-    const ddText = stripHtml(ddHtml).trim();
-    const sepIdx = ddText.indexOf(" - ");
-    const description = sepIdx === -1 ? "" : ddText.slice(sepIdx + 3).trim();
-
-    params.push({ name, type, nilable, description });
-  }
-  return params;
-}
-
-function extractSignature(contentHtml: string): SignatureBlock | null {
-  try {
-    const signatureLines = extractSignatureLines(contentHtml);
-    if (!signatureLines) return null;
-
-    const argsHtml = extractSectionByAnchor(contentHtml, "Arguments");
-    const returnsHtml = extractSectionByAnchor(contentHtml, "Returns");
-    const payloadHtml = extractSectionByAnchor(contentHtml, "Payload");
-
-    const parameters = argsHtml ? extractParamsFromSection(argsHtml) : [];
-    const returns = returnsHtml ? extractParamsFromSection(returnsHtml) : [];
-
-    let payload: SignatureParam[] | "none" | null;
-    if (payloadHtml === null) {
-      payload = null;
-    } else {
-      const payloadText = stripHtml(payloadHtml).trim();
-      payload =
-        payloadText === "None" ? "none" : extractParamsFromSection(payloadHtml);
-    }
-
-    return { signatureLines, parameters, returns, payload };
-  } catch {
-    return null;
-  }
-}
-
-function formatParamList(params: readonly SignatureParam[]): string {
-  return params
-    .map((param) => {
-      const typeText = param.nilable
-        ? `\`${param.type}\`, nilable`
-        : `\`${param.type}\``;
-      const descSuffix = param.description ? ` — ${param.description}` : "";
-      return `- **\`${param.name}\`** (${typeText})${descSuffix}`;
-    })
-    .join("\n");
-}
-
-function formatSignatureBlock(block: SignatureBlock): string {
-  const parts: string[] = [];
-  parts.push("```lua\n" + block.signatureLines.join("\n") + "\n```");
-
-  if (block.parameters.length > 0) {
-    parts.push(`**Parameters:**\n\n${formatParamList(block.parameters)}`);
-  }
-  if (block.returns.length > 0) {
-    parts.push(`**Returns:**\n\n${formatParamList(block.returns)}`);
-  }
-  if (block.payload === "none") {
-    parts.push("**Payload:**\n\n- (none)");
-  } else if (Array.isArray(block.payload) && block.payload.length > 0) {
-    parts.push(`**Payload:**\n\n${formatParamList(block.payload)}`);
-  }
-
-  return parts.join("\n\n");
-}
-
-// ---------------------------------------------------------------------------
-// Section selection - pick the most useful sections for output
-// ---------------------------------------------------------------------------
-
-const DESIRED_SECTIONS = [
-  "Description",
-  "Parameters",
-  "Arguments",
-  "Returns",
-  "Return values",
-  "Return value",
-  "Details",
-  "Notes",
-  "Example",
-  "Examples",
-  "Usage",
-  "Triggers",
-  "Payload",
-  "Fields",
-  "Methods",
-  "Patch changes",
-];
-
-function selectRelevantSections(
-  allSections: Map<string, string>,
-): Map<string, string> {
-  const selected = new Map<string, string>();
-
-  for (const desired of DESIRED_SECTIONS) {
-    const key = findSectionKey(allSections, desired);
-    if (key) {
-      selected.set(desired, allSections.get(key)!);
-    }
-  }
-
-  // If we got very little, include everything we have
-  if (selected.size <= 1) {
-    return allSections;
-  }
-
-  return selected;
-}
-
-function findSectionKey(
-  sections: Map<string, string>,
-  target: string,
-): string | undefined {
-  const targetLower = target.toLowerCase();
-  for (const key of sections.keys()) {
-    if (key.toLowerCase() === targetLower) return key;
-  }
-  // Partial match fallback
-  for (const key of sections.keys()) {
-    if (key.toLowerCase().includes(targetLower)) return key;
-  }
-  return undefined;
-}
-
-// ---------------------------------------------------------------------------
-// Output formatting
-// ---------------------------------------------------------------------------
-
-function buildWikiMetadata(
-  query: string,
-  type: string,
-  url: string,
-): MetadataPair[] {
-  return [
-    ["Query", `\`${query}\``],
-    ["Type", type],
-    ["Source", url],
-  ];
-}
-
-function resolveTypeLabel(query: string, resolvedType: QueryType): string {
-  // Distinguish raw paths/URLs from auto-detected types in the metadata
-  if (query.includes("/") || query.startsWith("https://")) return "path";
-  return resolvedType;
-}
-
-function formatOutput(
-  query: string,
-  url: string,
-  resolvedType: QueryType,
-  sections: Map<string, string>,
-  signatureMarkdown: string | null,
-): string {
-  const sectionBlocks: string[] = [];
-  if (signatureMarkdown) {
-    sectionBlocks.push(`### Signature\n\n${signatureMarkdown}`);
-  }
-  for (const [heading, body] of sections) {
-    sectionBlocks.push(`### ${heading}\n\n${truncateSection(body)}`);
-  }
-  return renderReport({
-    title: TITLES.wikiFetch,
-    metadata: buildWikiMetadata(
-      query,
-      resolveTypeLabel(query, resolvedType),
-      url,
-    ),
-    body: { outcome: "result", body: sectionBlocks.join("\n\n") },
-  });
-}
-
-function truncateSection(text: string): string {
-  // Collapse excessive whitespace
-  const cleaned = text.replace(/\n{3,}/g, "\n\n").trim();
-  if (cleaned.length <= MAX_CONTENT_LENGTH) return cleaned;
-  return (
-    cleaned.slice(0, MAX_CONTENT_LENGTH) +
-    "\n\n... (truncated - view full page on wiki)"
+  // Pre blocks first: detect lang, decode entities, wrap with safe fence.
+  s = s.replace(
+    /<pre\b([^>]*)>([\s\S]*?)<\/pre>/gi,
+    (_, attrs: string, body: string) => {
+      const langMatch = /mw-highlight-lang-(\w+)/.exec(attrs);
+      const lang = langMatch ? langMatch[1]! : "";
+      const text = decodeEntities(stripTags(body))
+        .replace(/\r\n?/g, "\n")
+        .replace(/\s+$/, "");
+      const fence = fenceFor(text);
+      return `\n\n${fence}${lang}\n${text}\n${fence}\n\n`;
+    },
   );
-}
 
-function buildFetchErrorReport(
-  query: string,
-  url: string,
-  status: number,
-  resolvedType: QueryType,
-): string {
-  const reason =
-    status === 0
-      ? "Network or server error fetching the wiki."
-      : `HTTP ${status} fetching ${url}.`;
-  const cause =
-    status === 404
-      ? `Page \`${url}\` does not exist on the wiki.`
-      : status === 0
-        ? "Unreachable host or DNS failure."
-        : `Wiki responded with HTTP ${status}.`;
-
-  const suggestions: string[] = [];
-
-  if (status === 404) {
-    if (resolvedType === "widget") {
-      suggestions.push(
-        `Try the function URL instead: ${buildUrlForFunction(query)}`,
+  // H3 sub-sections inside an H2 block.
+  s = s.replace(/<h3\b[^>]*>([\s\S]*?)<\/h3>/gi, (_, body: string) => {
+    const span =
+      /<span\b[^>]*class\s*=\s*["'][^"']*\bmw-headline\b[^"']*["'][^>]*>([\s\S]*?)<\/span>/i.exec(
+        body,
       );
-    }
-    if (resolvedType === "function") {
-      suggestions.push(
-        `Try the widget URL instead: ${buildUrlForWidget(query)}`,
-      );
-    }
-    suggestions.push(
-      `Search the wiki directly: https://warcraft.wiki.gg/index.php?search=${encodeURIComponent(query)}`,
-    );
-    suggestions.push(
-      "Use the `wow-api-lookup` tool for local annotation signatures.",
-    );
-  } else {
-    suggestions.push("Retry in a moment - the wiki may be temporarily unavailable.");
-    suggestions.push(`Check the URL manually: ${url}`);
-  }
-
-  // Suggestions is non-empty by construction (always at least 2 pushes for
-  // 404 widget/function/search, and 2 pushes for non-404).
-  const [first, ...rest] = suggestions;
-  return renderError({
-    title: TITLES.wikiFetch,
-    metadata: buildWikiMetadata(
-      query,
-      resolveTypeLabel(query, resolvedType),
-      url,
-    ),
-    reason,
-    cause,
-    suggestions: [first, ...rest] as readonly [string, ...string[]],
+    const text = span ? clean(span[1]!) : clean(body);
+    return `\n\n### ${text}\n\n`;
   });
+
+  s = s.replace(
+    /<table\b[^>]*>([\s\S]*?)<\/table>/gi,
+    (_, body: string) => renderTable(body),
+  );
+  s = s.replace(
+    /<dl\b[^>]*>([\s\S]*?)<\/dl>/gi,
+    (_, body: string) => renderDl(body),
+  );
+  s = s.replace(
+    /<ul\b[^>]*>([\s\S]*?)<\/ul>/gi,
+    (_, body: string) => renderList(body, "-"),
+  );
+  s = s.replace(
+    /<ol\b[^>]*>([\s\S]*?)<\/ol>/gi,
+    (_, body: string) => renderList(body, "1."),
+  );
+  s = s.replace(/<p\b[^>]*>([\s\S]*?)<\/p>/gi, (_, body: string) => {
+    const t = clean(body);
+    return t.length > 0 ? `\n\n${t}\n\n` : "";
+  });
+  s = s.replace(/<br\s*\/?>/gi, "\n");
+
+  // Strip remaining structural tags and decode any stray entities.
+  s = stripTags(s);
+  s = decodeEntities(s);
+
+  // Tidy whitespace without disturbing code fences (fences are bare lines).
+  s = s.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n");
+  return s.trim();
 }
 
-// ---------------------------------------------------------------------------
-// Fetch with redirect/retry logic
-// ---------------------------------------------------------------------------
+type Section = { id: string; heading: string; body: string };
 
-async function fetchWikiPage(
-  url: string,
-): Promise<{ ok: boolean; status: number; html: string }> {
-  try {
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "opencode-wow-wiki-fetch/1.0",
-        Accept: "text/html",
-      },
-      redirect: "follow",
+function segment(content: string): { lead: string; sections: Section[] } {
+  const h2Re = /<h2\b[^>]*>([\s\S]*?)<\/h2>/gi;
+  const matches: { idx: number; len: number; id: string; heading: string }[] =
+    [];
+  let m: RegExpExecArray | null;
+  while ((m = h2Re.exec(content)) !== null) {
+    const inner = m[1]!;
+    const sp =
+      /<span\b[^>]*class\s*=\s*["'][^"']*\bmw-headline\b[^"']*["'][^>]*>([\s\S]*?)<\/span>/i.exec(
+        inner,
+      );
+    if (!sp) continue;
+    const idMatch = /\bid\s*=\s*["']([^"']+)["']/.exec(sp[0]);
+    if (!idMatch) continue;
+    matches.push({
+      idx: m.index,
+      len: m[0].length,
+      id: idMatch[1]!,
+      heading: clean(sp[1]!),
     });
-
-    const html = await response.text();
-    return { ok: response.ok, status: response.status, html };
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unknown fetch error";
-    return { ok: false, status: 0, html: message };
   }
+  if (matches.length === 0) return { lead: content, sections: [] };
+  const lead = content.slice(0, matches[0]!.idx);
+  const sections: Section[] = [];
+  for (let i = 0; i < matches.length; i++) {
+    const cur = matches[i]!;
+    const end = i + 1 < matches.length ? matches[i + 1]!.idx : content.length;
+    sections.push({
+      id: cur.id,
+      heading: cur.heading,
+      body: content.slice(cur.idx + cur.len, end),
+    });
+  }
+  return { lead, sections };
 }
 
-// ---------------------------------------------------------------------------
-// Tool definition
-// ---------------------------------------------------------------------------
+// --- Top-level orchestration ---------------------------------------------
+
+function buildUrl(input: string): string {
+  return /^https?:\/\//i.test(input) ? input : BASE + input;
+}
+
+function normaliseInput(raw: string): string {
+  const trimmed = raw.trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return trimmed.replace(/\s+/g, "_");
+}
+
+function renderNoMatch(
+  originalInput: string,
+  requestedUrl: string,
+  redirectedFrom: string | undefined,
+): string {
+  const lines: string[] = [
+    `# ${originalInput}`,
+    "",
+    `No wiki page exists at ${requestedUrl}.`,
+    "",
+    "The server returned HTTP 404 (or a `noarticletext` body). The page does not exist at that slug.",
+    "",
+    "Slug conventions:",
+    "- Documented C_ API: `API_C_<Namespace>.<Method>` (e.g. `API_C_Item.GetItemInfo`).",
+    "- Global API: `API_<FuncName>` (e.g. `API_UnitName`, `API_CreateFrame`).",
+    "- Event: raw `EVENT_NAME` (e.g. `PLAYER_LOGIN`).",
+    "- Widget type: `UIOBJECT_<Widget>` (e.g. `UIOBJECT_Frame`).",
+    "- Enum: `Enum.<Name>` (e.g. `Enum.ItemQuality`).",
+    "- XML element: `XML/<Element>`. Note: the bare slug `Frame` redirects to `XML/Frame`; for the widget use `UIOBJECT_Frame`.",
+    "",
+    "If you do not know the slug, try `wow-api-lookup` or `wow-event-info` first - they resolve names against curated annotations and surface the canonical wiki URL.",
+    "",
+  ];
+  if (redirectedFrom) {
+    lines.splice(2, 0, `Redirected from \`${redirectedFrom}\``, "");
+  }
+  return lines.join("\n");
+}
+
+function renderArticle(opts: {
+  title: string;
+  url: string;
+  redirectedFrom: string | undefined;
+  categories: string[];
+  lead: string;
+  sections: Section[];
+}): { output: string; truncated: boolean } {
+  const header: string[] = [`# ${opts.title || "(untitled)"}`, ""];
+  header.push(`> Source: ${opts.url}`);
+  if (opts.redirectedFrom) {
+    header.push(`> Redirected from: \`${opts.redirectedFrom}\``);
+  }
+  if (opts.categories.length > 0) {
+    header.push(`> Categories: ${opts.categories.join(", ")}`);
+  }
+  header.push("");
+
+  let body = header.join("\n") + "\n";
+
+  const leadMd = renderHtml(stripChrome(opts.lead));
+  if (leadMd.length > 0) body += leadMd + "\n\n";
+
+  const reserveBytes = 200; // headroom for the truncation tail.
+  let truncated = false;
+
+  for (const sec of opts.sections) {
+    const secMd = renderHtml(stripChrome(sec.body));
+    const block = `## ${sec.heading}\n\n${secMd}\n\n`;
+    if (Buffer.byteLength(body + block, "utf8") + reserveBytes > BUDGET) {
+      truncated = true;
+      break;
+    }
+    body += block;
+  }
+
+  if (!truncated && Buffer.byteLength(body, "utf8") > BUDGET) {
+    truncated = true;
+    body = body.slice(0, BUDGET - reserveBytes);
+  }
+
+  if (truncated) {
+    body = body.replace(/\s+$/, "");
+    body += `\n\n... article truncated at 40 KB; see ${opts.url} for the full page.\n`;
+  }
+
+  return { output: body, truncated };
+}
 
 export default tool({
   description:
-    "Fetch detailed documentation from warcraft.wiki.gg for any WoW API function, event, widget, or topic. Returns behavioural details, caveats, parameters, return values, and examples that local annotation files do not carry.\n\n" +
-    "Usage:\n" +
-    "- The query name is mapped to a wiki URL by auto-detection:\n" +
-    "  - `C_*` (e.g. `C_Item.GetItemInfo`) → CAPI URL (`API_C_X.Y`).\n" +
-    "  - `ALL_CAPS` with underscores (e.g. `LOOT_OPENED`) → event URL (`EVENT_NAME`).\n" +
-    "  - `PascalCase` without verb prefix (e.g. `Frame`, `StatusBar`) → widget URL (`UIOBJECT_X`).\n" +
-    "  - Otherwise (e.g. `GetLootSlotInfo`) → global function URL (`API_X`).\n" +
-    "- Pass `type` to override the auto-detected pattern explicitly.\n" +
-    "- Raw paths (containing `/`) and full URLs are accepted as-is.\n\n" +
-    "For events, prefer `wow-event-info` with `wiki: true` (it pre-resolves the canonical event URL and merges with local payload data).\n" +
-    "For documented C_ API signatures, prefer `wow-api-lookup` (local search, faster).",
+    "Fetch a single page from warcraft.wiki.gg by slug or full URL and render it as Markdown. One arg `page` (slug like `API_C_Item.GetItemInfo`, `PLAYER_LOGIN`, `UIOBJECT_Frame`, or a full https://warcraft.wiki.gg/wiki/... URL). Returns `{ output, metadata: { url, redirectedFrom?, categories } }`. No caching, no auto page-type detection, no retail/classic toggle (the wiki has none).",
   args: {
-    query: tool.schema
-      .string()
-      .describe(
-        'The API name, event name, widget type, or wiki path to look up. Examples: "GetLootSlotInfo", "C_Item.GetItemInfo", "LOOT_OPENED", "Frame", "Professions/Recipes"',
-      ),
-    type: tool.schema
-      .enum(["auto", "function", "c_api", "event", "widget"])
-      .optional()
-      .default("auto")
-      .describe(
-        'Force a specific URL pattern instead of auto-detection. "auto" infers from the query shape. ' +
-          'Use "function" for API_X, "c_api" for API_C_X.Y, "event" for EVENT_NAME, "widget" for UIOBJECT_X.',
-      ),
+    page: z.string().min(1),
   },
-  async execute(args) {
-    const { query, type = "auto" } = args;
-
-    // --- Guard clauses ---
-    if (!query.trim()) {
-      return renderError({
-        title: TITLES.wikiFetch,
-        metadata: [["Query", "`(empty)`"]],
-        reason: "`query` must not be empty.",
-        cause: "(no query provided)",
-        suggestions: [
-          "Pass an API name, event, widget, or wiki path.",
-          "Examples: `GetLootSlotInfo`, `C_Item.GetItemInfo`, `LOOT_OPENED`, `Frame`, `Professions/Recipes`.",
-        ],
-      });
+  async execute({ page }) {
+    if (page.trim().length === 0) {
+      throw new Error("wow-wiki-fetch: page must be non-empty");
+    }
+    if (/[\r\n]/.test(page)) {
+      throw new Error("wow-wiki-fetch: page must not contain newlines");
+    }
+    if (page.length > MAX_INPUT_LEN) {
+      throw new Error(
+        `wow-wiki-fetch: page exceeds ${MAX_INPUT_LEN} characters`,
+      );
     }
 
-    // --- Parse query type at boundary ---
-    const trimmedQuery = query.trim();
-    const resolvedType = resolveQueryType(trimmedQuery, type);
-    const url = buildWikiUrl(trimmedQuery, resolvedType);
+    const slug = normaliseInput(page);
+    const requestedUrl = buildUrl(slug);
 
-    // --- Fetch ---
-    const { ok, status, html } = await fetchWikiPage(url);
-
-    if (!ok) {
-      return buildFetchErrorReport(trimmedQuery, url, status, resolvedType);
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(requestedUrl);
+    } catch {
+      throw new Error(`wow-wiki-fetch: invalid URL: ${requestedUrl}`);
+    }
+    if (parsedUrl.host !== WIKI_HOST) {
+      throw new Error(
+        `wow-wiki-fetch: host must be ${WIKI_HOST} (got ${parsedUrl.host})`,
+      );
     }
 
-    // --- Parse HTML into sections ---
-    const contentHtml = extractMainContent(html);
-    const typeLabel = resolveTypeLabel(trimmedQuery, resolvedType);
-
-    if (!contentHtml) {
-      return renderReport({
-        title: TITLES.wikiFetch,
-        metadata: buildWikiMetadata(trimmedQuery, typeLabel, url),
-        body: {
-          outcome: "result",
-          body:
-            `### Content\n\n` +
-            `Page fetched successfully but content extraction failed - the page structure may be non-standard. ` +
-            `Visit the page directly: ${url}`,
+    let res: Response;
+    try {
+      res = await fetch(requestedUrl, {
+        redirect: "follow",
+        headers: {
+          "User-Agent": USER_AGENT,
+          Accept: "text/html,application/xhtml+xml",
         },
       });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      throw new Error(`wow-wiki-fetch: network error: ${msg}`);
     }
 
-    const allSections = extractSections(contentHtml);
+    const finalUrl = res.url || requestedUrl;
+    let html: string;
+    try {
+      html = await res.text();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      throw new Error(`wow-wiki-fetch: failed reading response body: ${msg}`);
+    }
 
-    if (allSections.size === 0) {
-      // Fallback: return raw stripped text
-      const rawText = stripHtml(contentHtml).trim();
-      if (!rawText) {
-        return renderReport({
-          title: TITLES.wikiFetch,
-          metadata: buildWikiMetadata(trimmedQuery, typeLabel, url),
-          body: {
-            outcome: "result",
-            body: `### Content\n\nPage appears to have no text content. Visit: ${url}`,
-          },
-        });
-      }
-
-      return renderReport({
-        title: TITLES.wikiFetch,
-        metadata: buildWikiMetadata(trimmedQuery, typeLabel, url),
-        body: {
-          outcome: "result",
-          body: `### Content\n\n${truncateSection(rawText)}`,
+    // 404 / noarticletext → structured no-match body (NOT a throw, NOT a
+    // pretend-success). Anti-regression #4.
+    if (res.status === 404 || isNoArticle(html)) {
+      const wgRedir = extractRedirectedFromSlug(html);
+      const redirectedFrom =
+        finalUrl !== requestedUrl
+          ? requestedUrl
+          : wgRedir
+            ? page
+            : undefined;
+      return {
+        output: renderNoMatch(page, requestedUrl, redirectedFrom),
+        metadata: {
+          url: requestedUrl,
+          ...(redirectedFrom ? { redirectedFrom } : {}),
+          categories: [] as string[],
         },
-      });
+      };
     }
 
-    const relevantSections = selectRelevantSections(allSections);
-    const signatureBlock = extractSignature(contentHtml);
-    const signatureMarkdown = signatureBlock
-      ? formatSignatureBlock(signatureBlock) || null
-      : null;
-    return formatOutput(
-      trimmedQuery,
-      url,
-      resolvedType,
-      relevantSections,
-      signatureMarkdown,
-    );
+    if (res.status !== 200) {
+      throw new Error(`wow-wiki-fetch: HTTP ${res.status}: ${requestedUrl}`);
+    }
+
+    // Anti-regression #3: detect redirects via BOTH the HTTP final URL AND
+    // the inline `wgRedirectedFrom` JS variable. MediaWiki sometimes serves
+    // the redirect target inline without a 30x, so the HTTP signal alone is
+    // not sufficient.
+    const wgRedir = extractRedirectedFromSlug(html);
+    const redirectedFrom =
+      finalUrl !== requestedUrl ? requestedUrl : wgRedir ? page : undefined;
+
+    const title = extractTitle(html);
+    const categories = extractCategories(html);
+    const content = sliceContentText(html);
+
+    if (content === null) {
+      // 200 with no `mw-content-text` container is anomalous (special pages,
+      // changed layout). Surface what we have without inventing structure.
+      const fallback = [
+        `# ${title || page}`,
+        "",
+        `> Source: ${finalUrl}`,
+        ...(redirectedFrom ? [`> Redirected from: \`${redirectedFrom}\``] : []),
+        ...(categories.length > 0
+          ? [`> Categories: ${categories.join(", ")}`]
+          : []),
+        "",
+        "(Page returned 200 but no article container was found at the expected anchor. The wiki may have changed its layout, or this is a special page without article content.)",
+        "",
+      ].join("\n");
+      return {
+        output: fallback,
+        metadata: {
+          url: finalUrl,
+          ...(redirectedFrom ? { redirectedFrom } : {}),
+          categories,
+        },
+      };
+    }
+
+    const { lead, sections } = segment(content);
+    const { output } = renderArticle({
+      title,
+      url: finalUrl,
+      redirectedFrom,
+      categories,
+      lead,
+      sections,
+    });
+
+    return {
+      output,
+      metadata: {
+        url: finalUrl,
+        ...(redirectedFrom ? { redirectedFrom } : {}),
+        categories,
+      },
+    };
   },
 });
