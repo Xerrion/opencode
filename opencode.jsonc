@@ -238,13 +238,16 @@
 
     // Documentation / prose writer
     "scribe": {
-      "model": "github-copilot/gemini-3-flash-preview",
+      "model": "github-copilot/gpt-5.5",
       "temperature": 0.3,
       "permission": {
         "write": "allow",
         "edit": "allow",
         "plan_read": "deny",
         "todoread": "deny",
+        "skill": {
+          "pptx": "allow",
+        },
         // No bash at all
         "bash": { "*": "deny" },
       },
@@ -267,6 +270,7 @@
           "code-philosophy": "allow",
           "frontend-philosophy": "allow",
           "architecture-philosophy": "allow",
+          "pptx": "allow",
         },
         // Bash: give the software-engineer full access to bash.
         // Reasoning for this is that the software-engineer should not be stopped by missing permissions
@@ -303,7 +307,7 @@
 
     // Code reviewer & refactoring analyst (read-only)
     "reviewer": {
-      "model": "github-copilot/gemini-3-flash-preview",
+      "model": "github-copilot/gpt-5.5",
       "temperature": 0.1,
       "permission": {
         "write": "deny",

@@ -78,6 +78,7 @@ Load skills based on the task. The philosophy skills are mandatory; domain skill
 | `servicenow-scripting`      | Authoring Script Includes or server-side scripts — `Class.create` pattern, JSDoc, error handling, anti-patterns.                                                                                                                                    |
 | `servicenow-mcp-reference`  | Reference catalog for the ServiceNow MCP — 17 artifact types, `artifact_create` / `artifact_update` rules, write/query safety. Load when you need the catalog directly; otherwise the orchestrator's `servicenow-dev` agent typically handles this. |
 | `mcp-builder`               | Creating or extending an MCP server — tool design, naming, workflow vs API coverage.                                                                                                                                                                |
+| `pptx`                      | PowerPoint / `.pptx` files — creating, reading, editing slide decks, pitch decks, and presentations; extracting text; working with templates, layouts, speaker notes, and comments. Trigger on mentions of "deck", "slides", "presentation", or a `.pptx` filename. |
 
 **Skills you do NOT load.** `code-review`, `plan-protocol`, `plan-review`. Those belong to other agents.
 </skills>
