@@ -276,6 +276,31 @@
       },
     },
 
+    // Adversarial security red-team (full executor, on-demand only)
+    "red-team": {
+      "model": "github-copilot/claude-opus-4.7",
+      "temperature": 0.2,
+      "permission": {
+        "write": "allow",
+        "edit": "allow",
+        "plan_read": "deny",
+        "todoread": "deny",
+        "playwright_*": "allow",
+        // Skills the red-team is allowed to load. Philosophy skills only - domain skills
+        // (WoW, ServiceNow) live with the domain agents and are not needed for security analysis.
+        "skill": {
+          "code-philosophy": "allow",
+          "frontend-philosophy": "allow",
+          "architecture-philosophy": "allow",
+        },
+        // Bash: full access so the red-team can run scanners, fuzzers, and PoC scripts
+        // without being stopped by missing permissions. Prompt restricts PoCs to local code.
+        "bash": {
+          "*": "allow",
+        },
+      },
+    },
+
     // Code reviewer & refactoring analyst (read-only)
     "reviewer": {
       "model": "github-copilot/gemini-3-flash-preview",

@@ -10,7 +10,7 @@ This repository contains the global configuration, agent definitions, and specia
 - **`dcp.jsonc`**: Schema stub for the Development Communication Protocol plugin.
 - **`package.json`**: JS toolchain definitions for custom plugins and tools.
 - **`.markdownlint.json`**: Rules for maintaining consistent documentation style.
-- **`agents/`**: 12 specialized agent declarations defining modes, roles, and tool access.
+- **`agents/`**: 13 specialized agent declarations defining modes, roles, and tool access.
 - **`skills/`**: 14 on-demand knowledge packs for domains like ServiceNow, WoW, and architecture.
 - **`command/`**: 12 slash command definitions for automated pipelines and interactive UIs.
 - **`philosophy/`**: Discipline enforcement requiring philosophy loading before any code changes.
@@ -31,6 +31,7 @@ Agents operate as either primary orchestrators or specialized subagents. Primary
 | `explore`           | subagent | Codebase navigator; pointers in chat by default, persists large inventories to `.deliverables/explore/` |
 | `git`               | subagent | Git/GitHub operations via `git` and `gh`                        |
 | `researcher`        | subagent | External knowledge gathering                                    |
+| `red-team`          | subagent | On-demand adversarial security review with PoC-backed findings  |
 | `reviewer`          | subagent | Read-only code review plus safe refactors                       |
 | `scribe`            | subagent | Technical writer - READMEs, guides, API refs, changelogs        |
 | `servicenow-dev`    | subagent | ServiceNow script developer (Business Rules, Script Includes)   |
