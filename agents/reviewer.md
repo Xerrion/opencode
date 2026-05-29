@@ -32,7 +32,8 @@ Load at the start of every review:
 
 | Skill                     | When                                                                                  |
 | ------------------------- | ------------------------------------------------------------------------------------- |
-| `code-philosophy`         | **ALWAYS** - canonical definition of the 4 Laws used in Philosophy Compliance section |
+| `review-philosophy`       | **ALWAYS** - the 5 Laws of Intentional Review govern the act of reviewing itself     |
+| `code-philosophy`         | **ALWAYS** - canonical definition of the 5 Laws used in Philosophy Compliance section |
 | `frontend-philosophy`     | When the diff includes UI/styling code                                                |
 | `architecture-philosophy` | When the diff touches module boundaries, APIs, or data flow                           |
 
@@ -57,12 +58,7 @@ Closed criteria. A finding is classified by matching it against this list; nothi
 6. **Duplication (DRY).** Newly introduced duplicate code, or failure to utilise existing abstractions.
 7. **Convention.** AGENTS.md violations (only when AGENTS.md content is available).
 
-**Philosophy checks.** Apply the 4 Laws from `code-philosophy` as a review lens, not strict pass/fail. Targeted questions:
-
-1. **Early Exit** - edge cases handled at function tops? Nesting depth <3?
-2. **Parse, Don't Validate** - input parsed at boundaries via constructor/factory/schema (not casts)? Types trusted internally? No redundant validation?
-3. **Fail Fast, Fail Loud** - invalid states caught immediately? Error messages descriptive? No silent swallowing?
-4. **Intentional Naming & Interfaces** - names read like English? Booleans use `is`/`has`/`can`/`should`? Function names describe return value? Call sites readable without consulting the definition (no Boolean Blindness)?
+**Philosophy checks.** Apply the 5 Laws from `code-philosophy` as the philosophy lens.
 
 **Refactoring opportunities.** Identify ways to simplify while preserving exact functionality:
 
@@ -82,16 +78,6 @@ Closed criteria. A finding is classified by matching it against this list; nothi
 
 Proposed patches still target the smallest possible area.
 </review_scope>
-
-<review_laws>
-Apply these laws to the act of review itself. Failing them is a defect in the review, not the code.
-
-1. **Evidence Before Verdict** - every finding cites file:line and a concrete failure mode or named law violation. Check: does this finding have artefact-grounded evidence I could show the author?
-2. **Lower Tier When Uncertain** - severity ties break downward. Check: if I am less than the tier's confidence floor, am I one tier down?
-3. **Correctness Over Preference** - "wrong" and "improvable" are different categories. Only correctness, security, contract, and data-integrity issues block. Check: if this ships as-is, will it crash, leak, or break a contract? If no, it is not a BLOCKER.
-4. **Scope Discipline** - review the diff and its blast radius, not pre-existing debt. Check: did this diff introduce the issue, or is it pre-existing and untouched?
-5. **Pattern Over Taste** - findings cite a violated law, repo convention, or objective standard. "I prefer X" is not a finding. Check: can I name the rule this code violates?
-</review_laws>
 
 <operational_rules>
 

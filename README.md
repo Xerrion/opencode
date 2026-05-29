@@ -11,7 +11,7 @@ This repository contains the global configuration, agent definitions, and specia
 - **`package.json`**: JS toolchain definitions for custom plugins and tools.
 - **`.markdownlint.json`**: Rules for maintaining consistent documentation style.
 - **`agents/`**: 13 specialized agent declarations defining modes, roles, and tool access.
-- **`skills/`**: 14 on-demand knowledge packs for domains like ServiceNow, WoW, and architecture.
+- **`skills/`**: 24 on-demand knowledge packs for domains like ServiceNow, WoW, and architecture.
 - **`command/`**: 12 slash command definitions for automated pipelines and interactive UIs.
 - **`philosophy/`**: Discipline enforcement requiring philosophy loading before any code changes.
 - **`plugins/`**: 3 TypeScript plugins providing real-time security guards and instance warnings.
@@ -45,8 +45,18 @@ Skills provide deep domain context and are grouped by theme for scannability. Th
 ### Philosophy
 
 - **`architecture-philosophy`**: The Pillars of Intentional Architecture.
-- **`code-philosophy`**: The 4 Laws of Elegant Defense.
+- **`code-philosophy`**: The 5 Laws of Elegant Defense.
 - **`frontend-philosophy`**: The 5 Pillars of Intentional UI.
+
+### Agent-Act Discipline
+
+These skills define the discipline an agent applies to its own act of working, orthogonal to the code-shape philosophies above.
+
+- **`implementation-philosophy`**: The 5 Laws of Intentional Implementation (`software-engineer`).
+- **`review-philosophy`**: The 5 Laws of Intentional Review (`reviewer`).
+- **`writing-philosophy`**: The 6 Principles of Intentional Writing (`scribe`).
+- **`research-philosophy`**: The 6 Principles of Intentional Research (`researcher`).
+- **`accounting-philosophy`**: The 5 Principles of Intentional Bookkeeping (`accountant`).
 
 ### Planning & Review
 
