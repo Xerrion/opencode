@@ -1,0 +1,16 @@
+node_modules
+package.json
+package-lock.json
+bun.lock
+.gitignore
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Python
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Agent output / scratchpads (decks, scribe drafts, exploration notes)
+.deliverables/
