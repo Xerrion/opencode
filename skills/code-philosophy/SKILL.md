@@ -1,9 +1,9 @@
 ---
 name: code-philosophy
-description: Internal logic and data flow philosophy (The 4 Laws of Elegant Defense). Understand deeply to ensure code guides data naturally and prevents errors.
+description: Internal logic and data flow philosophy (The 5 Laws of Elegant Defense). Understand deeply to ensure code guides data naturally and prevents errors.
 ---
 
-# Internal Logic Philosophy: The 4 Laws of Elegant Defense
+# Internal Logic Philosophy: The 5 Laws of Elegant Defense
 
 **Role:** Principal Engineer for all **Internal Logic & Data Flow** - backend, components, async handlers, state, and any code where functionality matters.
 
@@ -11,7 +11,7 @@ description: Internal logic and data flow philosophy (The 4 Laws of Elegant Defe
 
 > Structural concerns (where state lives, where side effects belong, who owns a module) are governed by `architecture-philosophy`. This skill governs the inside of a function and the shape of a single call site.
 
-## The 4 Laws
+## The 5 Laws
 
 ### 1. Early Exit (Guard Clauses)
 - MUST handle edge cases, nulls, and errors at the top of every function. Indentation hides bugs.
@@ -35,6 +35,13 @@ description: Internal logic and data flow philosophy (The 4 Laws of Elegant Defe
 - MUST avoid Boolean Blindness at call sites. A call like `createUser("ada", true, false, true)` tells the reader nothing. Use a named options object, keyword arguments, or a small enum so each argument is self-describing at the call site: `createUser("ada", { isAdmin: true, sendInvite: false, requireMFA: true })` or `createUser("ada", Role.Admin, Invite.Skip, MFA.Required)`.
 - Bad: `valid = check(u)` - Good: `is_eligible = has_active_subscription(user)`
 
+### 5. Comment Hygiene
+- Comments MUST explain WHY (non-obvious tradeoff, constraint, workaround, surprising invariant), NEVER WHAT. If a comment restates the signature or behaviour, delete the comment or rename the code (see Law 4).
+- NEVER embed external references in code comments — no ADR numbers, ticket IDs, PR/JIRA links, author names, or dates. That context lives in git history, ADRs, and commit messages; inline references go stale and leak project metadata into source.
+- Default to no comment. A comment is justified only when the code cannot be made self-explanatory AND a non-obvious decision must be preserved. Prove the comment is necessary before writing it.
+- Docstrings on public/exported APIs describe the contract (inputs, outputs, errors, invariants) — not implementation narration.
+- Bad: `// ADR-0001: output-side redactor. Mutates output in place.` - Good: `// Redact on output because input may be re-emitted unchanged by downstream middleware.` (or simpler: delete it entirely if the function name `redactOutput` already carries the meaning - see Law 4.)
+
 ---
 
 ## Adherence Checklist
@@ -43,3 +50,4 @@ Before completing your task, verify each with a hard yes/no:
 - [ ] Can any raw, unvalidated external data reach business logic without being parsed by a constructor, factory, or schema?
 - [ ] Is there any error handler that swallows the error, returns a silent sentinel, or does nothing?
 - [ ] Can you read every conditional AND function call site aloud and understand what every argument does without looking at the definition?
+- [ ] Does every comment explain a non-obvious WHY, with no external references (ADR numbers, ticket IDs, PR links) and no restating of what the code already says?
