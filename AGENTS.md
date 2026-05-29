@@ -32,6 +32,15 @@ Universal rules that apply to every project regardless of language or framework.
 - **NEVER** commit code that breaks existing tests
 - **MUST** use `gh` CLI for GitHub operations (PRs, issues, etc.)
 
+## 🐰 CodeRabbit AI Interaction
+
+- **MUST** address CodeRabbit by handle (`@coderabbitai`) when replying to its inline review comments so the bot sees the reply and engages
+- **MUST** reply to every CodeRabbit finding - accept the fix, deflect with reasoning, or ask a clarifying question; silence reads as a missed comment
+- **PREFER** addressing findings inline on the originating PR thread over batch-replying in a single summary - keeps the audit trail attached to the relevant code
+- **MUST** state reasoning explicitly when deflecting a CodeRabbit finding - cite the project convention, philosophy law, or constraint that justifies the deflection; "not applicable" alone is insufficient
+- **PREFER** treating CodeRabbit's findings as one reviewer's opinion - weigh them against project conventions and the loaded philosophy skills, not as binding directives
+- **NEVER** auto-apply CodeRabbit suggestions without verifying they match the project's actual patterns - the bot does not load this repo's AGENTS.md or philosophy skills
+
 ## 🧪 Testing
 
 - **SHOULD** write tests for new functionality beyond trivial implementations
