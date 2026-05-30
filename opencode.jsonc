@@ -1,6 +1,39 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
+    "sonarqube": {
+      // Requires: docker pull mcp/sonarqube (image must be pre-pulled)
+      "type": "local",
+      "command": [
+        "docker",
+        "run",
+        "-i",
+        "--rm",
+        "--read-only",
+        "--tmpfs",
+        "/tmp:rw,noexec,nosuid,size=64m",
+        "--tmpfs",
+        "/app/storage:rw,noexec,nosuid,size=64m",
+        "--tmpfs",
+        "/etc/ssl/certs:rw,noexec,nosuid,size=8m",
+        "-e",
+        "SONARQUBE_TOKEN",
+        "-e",
+        "SONARQUBE_ORG",
+        "-e",
+        "SONARQUBE_CLOUD_URL",
+        "-e",
+        "SONARQUBE_IDE_PORT",
+        "mcp/sonarqube",
+      ],
+      "environment": {
+        "SONARQUBE_ORG": "{env:SONARQUBE_ORG}",
+        "SONARQUBE_CLOUD_URL": "{env:SONARQUBE_CLOUD_URL}",
+        "SONARQUBE_TOKEN": "{env:SONARQUBE_TOKEN}",
+        "SONARQUBE_IDE_PORT": "{env:SONARQUBE_IDE_PORT}",
+      },
+      "enabled": true,
+    },
     "servicenow": {
       // Requires: /Users/lasn/Projects/servicenow-platform-mcp to exist (local clone)
       "type": "local",
@@ -33,6 +66,21 @@
       "enabled": true,
       "timeout": 10000,
     },
+    "firefly-iii": {
+      // Requires: project at /Users/lasn/Projects/firefly-iii-mcp.
+      // Absolute bun path used because ~/.bun/bin is not on PATH for GUI launchers.
+      "type": "local",
+      "command": [
+        "bun",
+        "run",
+        "/Users/lasn/Projects/firefly-iii-mcp/src/index.ts",
+      ],
+      "environment": {
+        "FIREFLY_III_URL": "{env:FIREFLY_III_URL}",
+        "FIREFLY_III_TOKEN": "{env:FIREFLY_III_TOKEN}",
+      },
+      "enabled": true,
+    },
     "gh_grep": {
       "type": "remote",
       "url": "https://mcp.grep.app",
@@ -56,6 +104,15 @@
         "--image-responses=omit",
         "--output-dir=/tmp/playwright-mcp-research",
       ],
+      "enabled": true,
+    },
+    "pdf-reader": {
+      // PDF reader MCP — https://github.com/jztan/pdf-mcp
+      // Runs via uvx in an isolated env; no global install required.
+      // Version pinned for reproducibility; bump deliberately after testing.
+      // For OCR on scanned PDFs: `brew install tesseract`.
+      "type": "local",
+      "command": ["uvx", "--from", "pdf-mcp==1.13.1", "pdf-mcp"],
       "enabled": true,
     },
   },
@@ -88,7 +145,7 @@
     "glob": "allow",
 
     // Writing/editing
-    "write": "deny",
+    // "write" is the legacy alias for file creation; "edit" covers both create and modify.
     "edit": "deny",
 
     // Bash — deny by default, allow only read-only / inspection tools globally.
@@ -156,22 +213,29 @@
     // Orchestration & networking
     "task": "deny",
     "webfetch": "deny",
-    "worktree_*": "deny",
 
-    // Delegate — denied by default. Only read-only sub-agents may use delegate.
-    // Write-capable agents (write/edit/bash allow) must use the native task tool
-    // because background delegations run outside OpenCode's session tree and the
-    // undo/branching system cannot track changes made in those sessions.
-    "delegate": "deny",
-
-    // MCP tools — denied globally; agents opt-in
-    // (These hit external services with real side-effects)
+    // MCP tools — denied globally; agents opt-in.
+    // (These hit external services with real side-effects.)
+    //
+    // MCP credential blast radius (who can touch what when allowed):
+    //   sonarqube_*    -> reviewer
+    //   servicenow_*   -> servicenow, servicenow-dev
+    //   context7_*     -> researcher, accountant
+    //   exa_*          -> researcher, accountant
+    //   gh_grep*       -> researcher, accountant
+    //   playwright_*   -> researcher, software-engineer, red-team, explore, wow-addon
+    //   firefly_iii_*  -> accountant            (personal-finance API; sole consumer)
+    //   pdf_reader_*   -> accountant            (statement ingest)
+    // Keep this table in sync when adding/removing agent grants — it is the only
+    // at-a-glance audit of which agent can reach which external service.
     "context7_*": "deny",
     "exa_*": "deny",
     "gh_grep*": "deny",
     "sonarqube_*": "deny",
     "servicenow_*": "deny",
     "playwright_*": "deny",
+    "firefly_iii_*": "deny",
+    "pdf_reader_*": "deny",
 
     // Skills - deny by default. Each agent opts in to the specific skills it owns.
     // Skill ownership is per-agent; the build orchestrator does not route skills.
@@ -200,17 +264,16 @@
       "temperature": 0.3,
       "permission": {
         // No file mutation
-        "write": "deny",
         "edit": "deny",
-        "delegate": "allow",
-        "plan_read": "deny",
-        "todoread": "deny",
         // Enable research MCP tools
         "context7_*": "allow",
         "exa_*": "allow",
         "gh_grep*": "allow",
         "playwright_*": "allow",
         "webfetch": "allow",
+        "skill": {
+          "mcp-builder": "allow",
+        },
         // Bash: inherits global read-only tools, add GitHub CLI read ops
         "bash": {
           "gh repo view*": "allow",
@@ -236,15 +299,30 @@
       },
     },
 
+    // Personal accounting / Firefly III agent (read-mostly, PDF ingest for statements)
+    "accountant": {
+      "model": "github-copilot/claude-opus-4.7",
+      "temperature": 0.2,
+      "permission": {
+        "edit": "deny",
+        "submit_plan": "allow",
+        "webfetch": "allow",
+        "firefly_iii_*": "allow",
+        "context7_*": "allow",
+        "exa_*": "allow",
+        "gh_grep*": "allow",
+        "pdf_reader_*": "allow",
+        // Bash inherits the global read-only allowlist (cat/rg/jq/etc.); no extras needed.
+        "skill": { "accounting-philosophy": "allow" },
+      },
+    },
+
     // Documentation / prose writer
     "scribe": {
-      "model": "github-copilot/gpt-5.5",
+      "model": "github-copilot/claude-opus-4.6",
       "temperature": 0.3,
       "permission": {
-        "write": "allow",
         "edit": "allow",
-        "plan_read": "deny",
-        "todoread": "deny",
         "skill": {
           "pptx": "allow",
         },
@@ -259,21 +337,22 @@
       "variant": "medium",
       "temperature": 0.3,
       "permission": {
-        "write": "allow",
         "edit": "allow",
-        "plan_read": "deny",
-        "todoread": "deny",
         "playwright_*": "allow",
-        // Skills the software-engineer is allowed to load. Domain skills (WoW, ServiceNow) are
-        // intentionally excluded - those live with the domain agents.
+        // Skills the software-engineer is allowed to load. Domain skills (WoW, ServiceNow)
+        // are intentionally excluded — those live with their domain agents and are loaded
+        // there before any delegation reaches the SE.
         "skill": {
           "code-philosophy": "allow",
           "frontend-philosophy": "allow",
           "architecture-philosophy": "allow",
+          "implementation-philosophy": "allow",
+          "mcp-builder": "allow",
           "pptx": "allow",
         },
-        // Bash: give the software-engineer full access to bash.
-        // Reasoning for this is that the software-engineer should not be stopped by missing permissions
+        // SE owns git, gh, and the full project toolchain (build/lint/test across any
+        // stack), so the bash grant is intentionally broad. Destructive commands are
+        // still blocked by the global `rm */sudo *` denies.
         "bash": {
           "*": "allow",
         },
@@ -285,20 +364,13 @@
       "model": "github-copilot/claude-opus-4.7",
       "temperature": 0.2,
       "permission": {
-        "write": "allow",
         "edit": "allow",
-        "plan_read": "deny",
-        "todoread": "deny",
         "playwright_*": "allow",
-        // Skills the red-team is allowed to load. Philosophy skills only - domain skills
-        // (WoW, ServiceNow) live with the domain agents and are not needed for security analysis.
         "skill": {
           "code-philosophy": "allow",
           "frontend-philosophy": "allow",
           "architecture-philosophy": "allow",
         },
-        // Bash: full access so the red-team can run scanners, fuzzers, and PoC scripts
-        // without being stopped by missing permissions. Prompt restricts PoCs to local code.
         "bash": {
           "*": "allow",
         },
@@ -307,23 +379,18 @@
 
     // Code reviewer & refactoring analyst (read-only)
     "reviewer": {
-      "model": "github-copilot/gpt-5.5",
+      "model": "github-copilot/claude-opus-4.7",
       "temperature": 0.1,
       "permission": {
-        "write": "deny",
         "edit": "deny",
-        "delegate": "allow",
-        "plan_read": "allow",
-        "delegation_read": "allow",
-        "delegation_list": "allow",
+        "sonarqube_*": "allow",
         "skill": {
           "code-philosophy": "allow",
           "frontend-philosophy": "allow",
           "architecture-philosophy": "allow",
           "code-review": "allow",
+          "mcp-builder": "allow",
         },
-
-        // Bash: inherits global read-only tools (no additions needed)
       },
     },
 
@@ -331,17 +398,10 @@
     "plan": {
       "model": "github-copilot/claude-opus-4.7",
       "permission": {
-        "write": "deny",
         "edit": "deny",
-        "delegate": "allow",
         "bash": { "*": "deny" },
         "task": "allow",
-        "worktree_create": "allow",
-        "worktree_list": "allow",
-        "worktree_remove": "allow",
-        "plan_write": "allow",
-        "plan_save": "allow",
-        "plan_submit": "allow",
+        "submit_plan": "allow",
         "skill": {
           "plan-protocol": "allow",
           "plan-review": "allow",
@@ -355,13 +415,8 @@
       "model": "github-copilot/claude-opus-4.7",
       "permission": {
         "read": "deny",
-        "write": "deny",
-        "delegate": "allow",
         "bash": { "*": "deny" },
         "task": "allow",
-        "worktree_create": "allow",
-        "worktree_list": "allow",
-        "worktree_remove": "allow",
       },
     },
 
@@ -369,14 +424,8 @@
     "explore": {
       "model": "github-copilot/claude-opus-4.7",
       "permission": {
-        // Write/edit allowed; prompt restricts scope to .deliverables/explore/ only.
-        "write": "allow",
         "edit": "allow",
-        "delegate": "allow",
-        "plan_read": "deny",
-        "todoread": "deny",
         "playwright_*": "allow",
-        // Bash: inherits global read-only tools, add docker inspect
         "bash": {
           "docker inspect*": "allow",
         },
@@ -387,9 +436,7 @@
     "wow-addon": {
       "model": "github-copilot/claude-opus-4.7",
       "permission": {
-        "write": "deny",
         "edit": "deny",
-        "delegate": "allow",
         "bash": { "*": "deny" },
         "webfetch": "allow",
         "playwright_*": "allow",
@@ -408,28 +455,11 @@
       },
     },
 
-    // Git & GitHub operations
-    "git": {
-      "model": "github-copilot/claude-opus-4.7",
-      "permission": {
-        "read": "allow",
-        "write": "deny",
-        "edit": "deny",
-        "bash": {
-          "git *": "allow",
-          "gh *": "allow",
-          "cat *": "allow",
-        },
-      },
-    },
-
     // ServiceNow platform API agent
     "servicenow": {
       "model": "github-copilot/claude-opus-4.7",
       "permission": {
-        "write": "deny",
         "edit": "deny",
-        "delegate": "allow",
         "bash": { "*": "deny" },
         "task": "allow",
         "servicenow_*": "allow",
@@ -448,19 +478,15 @@
       "model": "github-copilot/claude-opus-4.7",
       "temperature": 0.2,
       "permission": {
-        // Write/edit allowed; prompt restricts scope to .deliverables/tech-lead/ only.
-        "write": "allow",
         "edit": "allow",
-        "delegate": "allow",
-        "plan_read": "allow",
-        "delegation_read": "allow",
-        "delegation_list": "allow",
         "webfetch": "allow",
+        // Per agents/tech-lead.md §skills: architecture-philosophy always, code-philosophy
+        // and wow-addon-design conditionally. No broader skill access is justified.
         "skill": {
           "architecture-philosophy": "allow",
           "code-philosophy": "allow",
+          "wow-addon-design": "allow",
         },
-        // Bash: inherits global read-only tools (no additions needed)
       },
     },
 
@@ -468,11 +494,9 @@
     "servicenow-dev": {
       "model": "github-copilot/claude-opus-4.7",
       "permission": {
-        "write": "allow",
         "edit": "allow",
         "bash": { "*": "deny" },
         "task": "deny",
-        "delegate": "deny",
         "webfetch": "deny",
         "servicenow_*": "allow",
         "skill": {

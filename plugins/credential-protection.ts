@@ -1,4 +1,10 @@
 import type { Plugin } from "@opencode-ai/plugin";
+import {
+  containsPlaceholder,
+  isCommentLine,
+  extractLineContaining,
+  redactToolOutput,
+} from "./credential-redaction";
 
 /**
  * General-Purpose Credential Protection Plugin
@@ -8,10 +14,16 @@ import type { Plugin } from "@opencode-ai/plugin";
  * 2. Blocking bash commands that contain credentials or stage sensitive files
  * 3. Warning when reading sensitive files or using broad git add
  * 4. Filtering false positives (placeholders, comments, env references)
+ * 5. Redacting credential-shaped strings from tool *output* before the LLM
+ *    transcript captures them.
+ *
+ * Pure redaction logic lives in `./credential-redaction` so it can be
+ * unit-tested without the opencode runtime. This file owns only the hook
+ * wiring and the input-side scanner.
  */
 
 // ---------------------------------------------------------------------------
-// Types
+// Types (input-side)
 // ---------------------------------------------------------------------------
 
 interface CredentialPattern {
@@ -21,7 +33,7 @@ interface CredentialPattern {
 }
 
 // ---------------------------------------------------------------------------
-// Constants - Credential patterns (5 categories, all case-insensitive)
+// Constants - Credential patterns (input-side; preserved unchanged)
 // ---------------------------------------------------------------------------
 
 const CREDENTIAL_PATTERNS: CredentialPattern[] = [
@@ -122,57 +134,12 @@ const SENSITIVE_FILE_PATTERNS: RegExp[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Constants - False positive indicators
+// Input-side scanner
 // ---------------------------------------------------------------------------
-
-const PLACEHOLDER_INDICATORS: string[] = [
-  "your-api-key",
-  "your_api_key",
-  "YOUR_API_KEY",
-  "xxx",
-  "XXX",
-  "changeme",
-  "CHANGEME",
-  "TODO",
-  "PLACEHOLDER",
-  "EXAMPLE",
-  "SAMPLE",
-  "<TOKEN>",
-  "<SECRET>",
-  "<PASSWORD>",
-  "<API_KEY>",
-  "${",
-  "process.env.",
-  "os.environ",
-  "System.getenv",
-  "import.meta.env.",
-];
-
-const COMMENT_LINE_PATTERN: RegExp = /^\s*(#|\/\/|--|\/\*|\*)/;
-
-// ---------------------------------------------------------------------------
-// Pure functions
-// ---------------------------------------------------------------------------
-
-function isCommentLine(line: string): boolean {
-  return COMMENT_LINE_PATTERN.test(line);
-}
-
-function containsPlaceholder(text: string): boolean {
-  const lowerText = text.toLowerCase();
-  return PLACEHOLDER_INDICATORS.some((indicator) =>
-    lowerText.includes(indicator.toLowerCase()),
-  );
-}
-
-function extractLineContaining(
-  content: string,
-  matchIndex: number,
-): string {
-  const lineStart = content.lastIndexOf("\n", matchIndex - 1) + 1;
-  const lineEnd = content.indexOf("\n", matchIndex);
-  return content.slice(lineStart, lineEnd === -1 ? undefined : lineEnd);
-}
+//
+// Comment-line and placeholder filters are shared with the output redactor
+// and live in `./credential-redaction` so both sides use the exact same
+// rules (see the `--(?!-)` PEM/SQL-comment note on COMMENT_LINE_PATTERN).
 
 function scanForCredentials(
   content: string,
@@ -290,6 +257,48 @@ export const CredentialProtection: Plugin = async ({ client }) => {
           `[credential-protection] WARNING: Reading sensitive file: ${filePath}. Ensure no credentials are extracted and written to code.`,
         );
       }
+    },
+
+    // Mutates `output` in place so downstream middleware sees the redacted shape.
+    "tool.execute.after": async (
+      input: { tool: string; callID?: string },
+      output: unknown,
+    ) => {
+      const { hits, error } = redactToolOutput(output);
+
+      if (error) {
+        // NEVER log the secret. Only log that the redactor failed.
+        await client.app.log({
+          body: {
+            service: "credential-protection",
+            level: "error",
+            message: "[credential-protection] redactor threw; payload suppressed",
+            extra: {
+              tool: input.tool,
+              callID: input.callID,
+              error: String(error.message).slice(0, 200),
+            },
+          },
+        });
+        return;
+      }
+
+      if (hits.length === 0) return;
+
+      const reasons = Array.from(new Set(hits.map((h) => h.reason)));
+      await client.app.log({
+        body: {
+          service: "credential-protection",
+          level: "warn",
+          message: `[credential-protection] redacted ${hits.length} value(s) from ${input.tool}`,
+          extra: {
+            tool: input.tool,
+            callID: input.callID,
+            hitCount: hits.length,
+            reasons,
+          },
+        },
+      });
     },
   };
 };

@@ -7,14 +7,14 @@ description: Criteria for reviewing implementation plans against quality standar
 
 
 ## TL;DR
-Systematic plan review focused on 3 quality categories: Citation Quality, Completeness, and Actionability. Structure is pre-validated by `plan_save`—focus on whether the plan provides actionable implementation guidance.
+Systematic plan review focused on 3 quality categories: Citation Quality, Completeness, and Actionability. Structure is pre-validated by `submit_plan`—focus on whether the plan provides actionable implementation guidance.
 
 
 ## Plan Review Checklist
 
 ### 1. Structure (Pre-validated)
 
-> **Note:** Saved plans are structurally validated by `plan_save` before storage.
+> **Note:** Saved plans are structurally validated by `submit_plan` before storage.
 > Format compliance (YAML frontmatter, status markers, CURRENT marker, numbering) is guaranteed.
 > Focus your review on the quality aspects below.
 
@@ -123,7 +123,7 @@ APPROVE | REQUEST_CHANGES | NEEDS_DISCUSSION
 
 ## What NOT to Do
 
-- Do NOT re-validate format—`plan_save` handles structural validation
+- Do NOT re-validate format—`submit_plan` handles structural validation
 - Do NOT evaluate code quality (that's code-review's job)
 - Do NOT execute or modify the plan during review
 - Do NOT skip citation verification for decisions

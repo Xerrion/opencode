@@ -23,7 +23,7 @@ When creating or updating a plan, ensure:
 
 ## Plan Format
 
-Use `plan_save` with this exact markdown format:
+Use `submit_plan` with this exact markdown format:
 
 ```markdown
 ---
@@ -233,7 +233,7 @@ Add authentication
 
 ## Before Saving Checklist
 
-Before calling `plan_save`, verify:
+Before calling `submit_plan`, verify:
 
 - [ ] **Frontmatter:** Has status, phase, and updated date?
 - [ ] **Goal:** Is there a clear, one-sentence goal?

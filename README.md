@@ -24,18 +24,18 @@ Agents operate as either primary orchestrators or specialized subagents. Primary
 
 | File                | Mode     | Purpose                                                         |
 | ------------------- | -------- | --------------------------------------------------------------- |
+| `accountant`        | primary  | Personal accounting specialist for Firefly III via the Firefly III and pdf-reader MCPs |
 | `build`             | primary  | Build orchestrator coordinating implementation via delegation   |
 | `plan`              | primary  | Planning orchestrator coordinating review via Plannotator       |
 | `servicenow`        | primary  | ServiceNow platform expert with full MCP access                 |
 | `software-engineer` | subagent | Technical implementation specialist                             |
 | `explore`           | subagent | Codebase navigator; pointers in chat by default, persists large inventories to `.deliverables/explore/` |
-| `git`               | subagent | Git/GitHub operations via `git` and `gh`                        |
 | `researcher`        | subagent | External knowledge gathering                                    |
 | `red-team`          | subagent | On-demand adversarial security review with PoC-backed findings  |
 | `reviewer`          | subagent | Read-only code review plus safe refactors                       |
 | `scribe`            | subagent | Technical writer - READMEs, guides, API refs, changelogs        |
 | `servicenow-dev`    | subagent | ServiceNow script developer (Business Rules, Script Includes)   |
-| `tech-lead`         | subagent | Architect advisor; writes ADR briefs to `.deliverables/tech-lead/` |
+| `tech-lead`         | subagent | High-bar advisor for new modules and cross-subsystem design; writes ADR briefs to `.deliverables/tech-lead/`. Not for routine in-codebase design - `software-engineer` handles that in-flight. |
 | `wow-addon`         | subagent | WoW addon read-only specialist (research, navigation, lint)     |
 
 ## 🧠 Skills
