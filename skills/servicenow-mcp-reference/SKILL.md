@@ -66,7 +66,7 @@ Updates an existing artifact by `sys_id`. Accepts:
 Before creating or modifying any artifact on a table, run these tools to build context and avoid conflicts:
 
 1. **`docs_logic_map(table="<target_table>")`** -- List ALL existing automations on the table (Business Rules, Client Scripts, UI Policies, etc. grouped by lifecycle phase). Prevents creating conflicting or redundant logic.
-2. **`meta_business_rules_for_table(table="<target>", field="<field>")`** -- If the request targets a specific field, find what already writes to it. Skip when no specific field is in scope.
+2. **`meta_what_writes(table="<target>", field="<field>")`** -- Find business rules and other automated mechanisms that write to a specific table (and optionally a specific field). Run before adding new logic that updates a field. Skip when no specific field is in scope.
 3. **`meta_find_references(target="<name>")`** -- If refactoring an existing Script Include or table, find what references it before changing behavior.
 4. **`table_describe(table="<target>")`** / **`meta_list_artifacts(artifact_type="<type>")`** -- Understand the schema (field names, types, references, choices) or discover existing artifacts of a type. Use `meta_get_artifact` to fetch a specific artifact's full script body.
 
@@ -134,7 +134,7 @@ Never log, print, or copy masked secrets. Treat values returned as `***MASKED***
 
 - **`table_describe`** -- Field metadata for a table: types, references, choices, attributes. Run before writing any script that targets a table.
 - **`table_query`** -- Query any table using an encoded query. Always call `build_query` first to produce the `query_token`.
-- **`table_get`** -- Fetch a single record by sys_id from any table.
+- **`record_get`** -- Fetch a single record by sys_id from any table.
 - **`table_aggregate`** -- Count, avg, min, max, sum with optional `group_by`. Requires `query_token` from `build_query`.
 
 ### Metadata (Platform Artifacts)
@@ -144,8 +144,8 @@ Never log, print, or copy masked secrets. Treat values returned as `***MASKED***
 
 ### Change Intelligence
 
-- **`meta_business_rules_for_table`** -- Find Business Rules and other automations that write to a specific table/field. Essential before adding new logic that touches a field.
 - **`meta_find_references`** -- Search all scripts on the instance for a target string (script include name, table name, property key). Use before refactoring or renaming.
+- **`meta_what_writes`** -- Find business rules and other automated mechanisms that write to a specific table (and optionally a specific field). Run before adding new logic that updates a field.
 
 ### Documentation
 
@@ -206,6 +206,21 @@ Use domain tools for common ITSM and CMDB reads because they are simpler and pur
 - **`knowledge_update`** -- Update a knowledge article.
 - **`knowledge_feedback`** -- Submit rating or feedback on an article.
 
+#### Service Catalog
+
+- **`sc_catalogs_list`** -- List service catalogs the user has access to.
+- **`sc_catalog_get`** -- Fetch details of a specific service catalog.
+- **`sc_categories_list`** -- List categories for a specific service catalog.
+- **`sc_category_get`** -- Fetch details of a specific service catalog category.
+- **`sc_items_list`** -- List catalog items with optional filters (catalog, category, text).
+- **`sc_item_get`** -- Fetch details of a specific catalog item.
+- **`sc_item_variables`** -- Fetch variables (form fields) for a specific catalog item.
+- **`sc_order_now`** -- Order a catalog item immediately, bypassing the cart.
+- **`sc_add_to_cart`** -- Add a catalog item to the shopping cart.
+- **`sc_cart_get`** -- Retrieve the current user's shopping cart contents.
+- **`sc_cart_submit`** -- Submit the current shopping cart as an order request.
+- **`sc_cart_checkout`** -- Checkout the current shopping cart (two-step ordering).
+
 #### CMDB
 
 - **`cmdb_list`** -- List CIs with optional class and operational status filters.
@@ -218,6 +233,7 @@ Use domain tools for common ITSM and CMDB reads because they are simpler and pur
 
 Use record tools for data records only. Do not use them for script artifact tables.
 
+- **`record_get`** -- Fetch a single record by sys_id from any table.
 - **`record_preview_create`** -- Preview a data record creation and return a preview token.
 - **`record_preview_update`** -- Preview a data record update and return a preview token plus diff.
 - **`record_preview_delete`** -- Preview a data record delete and return a preview token.
@@ -231,6 +247,18 @@ Use record tools for data records only. Do not use them for script artifact tabl
 - **`artifact_create`** -- Create a new platform artifact (any of the 17 types). See "Artifact Write Tools" above for full semantics. Preferred over `record_create` for script artifacts.
 - **`artifact_update`** -- Update an existing platform artifact by sys_id. See "Artifact Write Tools" above. Preferred over `record_update` for script artifacts.
 
+### Attachment (Read)
+
+- **`attachment_list`** -- List attachment metadata records with optional filters (table, sys_id, file_name).
+- **`attachment_get`** -- Fetch attachment metadata by attachment sys_id.
+- **`attachment_download`** -- Download attachment content by attachment sys_id.
+- **`attachment_download_by_name`** -- Download attachment content by source record and file name.
+
+### Attachment (Write)
+
+- **`attachment_upload`** -- Upload a new attachment using base64-encoded content.
+- **`attachment_delete`** -- Delete an attachment by attachment sys_id.
+
 ### Relationships
 
 - **`rel_references_to`** -- Find records that reference a target record.
@@ -241,7 +269,7 @@ Use record tools for data records only. Do not use them for script artifact tabl
 - **`changes_updateset_inspect`** -- Inspect update set members grouped by type, with risk flags where available.
 - **`changes_diff_artifact`** -- Produce a unified diff between recent versions of an artifact.
 - **`changes_last_touched`** -- Show who last changed a record and what changed.
-- **`changes_release_notes`** -- Generate release notes from an update set.
+- **`changes_release_notes`** -- Generate release notes from an update set (Markdown format via the `format` parameter).
 
 ### Debug and Trace
 
@@ -252,12 +280,24 @@ Use record tools for data records only. Do not use them for script artifact tabl
 - **`debug_importset_run`** -- Inspect import set header, row results, and errors.
 - **`debug_field_mutation_story`** -- Show chronological mutation history for a single field.
 
-### Developer and Admin Utilities
+### Flow Designer
 
-These tools change runtime behavior. Treat them as write tools and require explicit confirmation when the target is security-sensitive, production-impacting, or automation-related.
+- **`flow_list`** -- List Flow Designer flows and subflows with optional filters (table, flow_type, status, active_only).
+- **`flow_get`** -- Fetch a Flow Designer flow definition including its input and output variables.
+- **`flow_map`** -- Map the structure of a flow: action instances and logic blocks in order.
+- **`flow_action_detail`** -- Fetch detailed info about a flow action instance, its type definition, and configured steps.
+- **`flow_execution_list`** -- List Flow Designer execution contexts with optional filters (flow, source record, state).
+- **`flow_execution_detail`** -- Fetch detailed execution info including ordered log entries for a Flow Designer context.
+- **`flow_snapshot_list`** -- List published snapshots (versions) for a Flow Designer flow.
+- **`workflow_migration_analysis`** -- Analyze a legacy workflow version for Flow Designer migration readiness.
 
-- **`dev_toggle`** -- Toggle active state on supported platform artifacts.
-- **`dev_set_property`** -- Set a system property and return the previous value.
+### Workflow (Legacy)
+
+- **`workflow_contexts`** -- List legacy workflow and Flow Designer contexts running on a record.
+- **`workflow_map`** -- Show the structure of a workflow version: activities, transitions, activity variables.
+- **`workflow_status`** -- Show execution status of a workflow context: currently executing and completed steps.
+- **`workflow_activity_detail`** -- Fetch detailed info about a workflow activity, its element definition, and configured variables.
+- **`workflow_version_list`** -- List workflow versions defined for a specific table.
 
 ### Investigations
 
