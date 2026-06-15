@@ -34,7 +34,6 @@ Agents operate as either primary orchestrators or specialized subagents. Primary
 | `red-team`          | subagent | On-demand adversarial security review with PoC-backed findings  |
 | `reviewer`          | subagent | Read-only code review plus safe refactors                       |
 | `scribe`            | subagent | Technical writer - READMEs, guides, API refs, changelogs        |
-| `servicenow-dev`    | subagent | ServiceNow script developer (Business Rules, Script Includes)   |
 | `tech-lead`         | subagent | High-bar advisor for new modules and cross-subsystem design; writes ADR briefs to `.deliverables/tech-lead/`. Not for routine in-codebase design - `software-engineer` handles that in-flight. |
 | `wow-addon`         | subagent | WoW addon read-only specialist (research, navigation, lint)     |
 

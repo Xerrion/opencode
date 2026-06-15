@@ -26,9 +26,9 @@ Run ALL applicable MCP tools simultaneously:
 3. **`meta_business_rules_for_table(table="<target>", field="<field>")`** — If a specific field is targeted. Find what already writes to it.
 4. **`meta_list_artifacts(artifact_type="<type>")`** + **`meta_get_artifact`** — If modifying an existing artifact. Get the current script body.
 
-### Step 3: Delegate to servicenow-dev
+### Step 3: Delegate to servicenow
 
-Use `task(subagent_type="servicenow-dev", ...)` with the full context gathered above.
+Use `task(subagent_type="servicenow", ...)` with the full context gathered above.
 
 Include in the delegation prompt:
 
