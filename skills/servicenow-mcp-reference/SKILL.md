@@ -5,7 +5,7 @@ description: ServiceNow MCP tool catalog, safety workflows, and artifact deploym
 
 # ServiceNow MCP Tool Reference
 
-Canonical catalog of `servicenow` MCP tools and artifact deployment rules. Use this as the single source of truth for the `servicenow` and `servicenow-dev` agents.
+Canonical catalog of `servicenow` MCP tools and artifact deployment rules. Use this as the single source of truth for the `servicenow` agent.
 
 The MCP implementation lives at `/Users/lasn/Projects/servicenow-platform-mcp`. When tool behavior is unclear, inspect that implementation before guessing. Prefer the implementation over memory, stale prompt text, or assumptions.
 
@@ -326,7 +326,7 @@ Use it to verify:
 - Path restrictions for `script_path`
 - Validation behavior for `artifact_create` and `artifact_update`
 
-When hardening agents, keep operational behavior in the agent files and detailed MCP mechanics in this skill. This avoids drift between `servicenow`, `servicenow-dev`, and the shared reference.
+When hardening agents, keep operational behavior in the agent files and detailed MCP mechanics in this skill. This avoids drift between `servicenow` and the shared reference.
 
 ## Verification Checklist for MCP Work
 

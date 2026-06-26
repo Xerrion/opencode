@@ -195,9 +195,7 @@ export const CredentialProtection: Plugin = async ({ client }) => {
 
       // --- write/edit tool: scan content for credentials ---
       if (toolName === "write" || toolName === "edit") {
-        const text = String(
-          input.args?.content || input.args?.newString || "",
-        );
+        const text = String(input.args?.content || input.args?.newString || "");
         if (!text) return;
 
         const credential = scanForCredentials(text);
@@ -272,7 +270,8 @@ export const CredentialProtection: Plugin = async ({ client }) => {
           body: {
             service: "credential-protection",
             level: "error",
-            message: "[credential-protection] redactor threw; payload suppressed",
+            message:
+              "[credential-protection] redactor threw; payload suppressed",
             extra: {
               tool: input.tool,
               callID: input.callID,

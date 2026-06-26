@@ -5,23 +5,23 @@
       "npm": "@ai-sdk/openai-compatible",
       "name": "LM Studio (local)",
       "options": {
-        "baseURL": "http://127.0.0.1:1234/v1",
+        "baseURL": "http://127.0.0.1:1234/v1"
       },
       "models": {
         "google/gemma-4-e4b": {
-          "name": "Gemma 4 E4B (local)",
+          "name": "Gemma 4 E4B "
         },
         "google/gemma-4-12b-qat": {
-          "name": "Gemma 4 12B QAT",
+          "name": "Gemma 4 12B QAT"
         },
         "google/gemma-4-31b": {
-          "name": "Gemma 4 31B",
+          "name": "Gemma 4 31B"
         },
-        "qwen/qwen3.6-35b-a3b": {
-          "name": "Qwen 3.6 35B (local)",
-        },
-      },
-    },
+        "qwen/qwen3.6-27b": {
+          "name": "Qwen 3.6 27B"
+        }
+      }
+    }
   },
   "mcp": {
     "sonarqube": {
@@ -47,68 +47,58 @@
         "SONARQUBE_CLOUD_URL",
         "-e",
         "SONARQUBE_IDE_PORT",
-        "mcp/sonarqube",
+        "mcp/sonarqube"
       ],
       "environment": {
         "SONARQUBE_ORG": "{env:SONARQUBE_ORG}",
         "SONARQUBE_CLOUD_URL": "{env:SONARQUBE_CLOUD_URL}",
         "SONARQUBE_TOKEN": "{env:SONARQUBE_TOKEN}",
-        "SONARQUBE_IDE_PORT": "{env:SONARQUBE_IDE_PORT}",
+        "SONARQUBE_IDE_PORT": "{env:SONARQUBE_IDE_PORT}"
       },
-      "enabled": true,
+      "enabled": true
     },
     "servicenow": {
       // Requires: /Users/lasn/Projects/servicenow-platform-mcp to exist (local clone)
       "type": "local",
-      "command": [
-        "uv",
-        "run",
-        "--directory",
-        "/Users/lasn/Projects/servicenow-platform-mcp",
-        "servicenow-platform-mcp",
-      ],
+      "command": ["uv", "run", "--directory", "/Users/lasn/Projects/servicenow-platform-mcp", "servicenow-platform-mcp"],
       "environment": {
         "SERVICENOW_INSTANCE_URL": "{env:SERVICENOW_MCP_DEV_INSTANCE_URL}",
         "SERVICENOW_USERNAME": "{env:SERVICENOW_MCP_USERNAME}",
         "SERVICENOW_PASSWORD": "{env:SERVICENOW_MCP_DEV_PASSWORD}",
         "MCP_TOOL_PACKAGE": "{env:SERVICENOW_MCP_TOOL_PACKAGE}",
         "SERVICENOW_ENV": "{env:SERVICENOW_MCP_DEV_ENV}",
-        "SCRIPT_ALLOWED_ROOT": "/Users/lasn/Projects/servicenow-development/",
+        "SCRIPT_ALLOWED_ROOT": "/Users/lasn/Projects/servicenow-development/"
       },
-      "enabled": true,
+      "enabled": true
     },
     "context7": {
       "type": "remote",
       "url": "https://mcp.context7.com/mcp",
       "enabled": true,
-      "timeout": 10000,
+      "timeout": 10000
     },
     "exa": {
       "type": "remote",
       "url": "https://mcp.exa.ai/mcp",
       "enabled": true,
-      "timeout": 10000,
+      "timeout": 10000
     },
     "firefly-iii": {
       // Requires: project at /Users/lasn/Projects/firefly-iii-mcp.
       // Absolute bun path used because ~/.bun/bin is not on PATH for GUI launchers.
       "type": "local",
-      "command": [
-        "bun",
-        "run",
-        "/Users/lasn/Projects/firefly-iii-mcp/src/index.ts",
-      ],
+      "command": ["bun", "run", "/Users/lasn/Projects/firefly-iii-mcp/src/index.ts"],
       "environment": {
         "FIREFLY_III_URL": "{env:FIREFLY_III_URL}",
-        "FIREFLY_III_TOKEN": "{env:FIREFLY_III_TOKEN}",
+        "FIREFLY_III_TOKEN": "{env:FIREFLY_III_TOKEN}"
       },
-      "enabled": true,
+      "enabled": true
     },
     "gh_grep": {
       "type": "remote",
       "url": "https://mcp.grep.app",
       "enabled": true,
-      "timeout": 10000,
+      "timeout": 10000
     },
     "playwright": {
       // Requires: mise + node installed (mise use -g node@lts), chromium pre-installed (npx playwright install chromium)
@@ -125,9 +115,9 @@
         "--browser=chromium",
         "--block-service-workers",
         "--image-responses=omit",
-        "--output-dir=/tmp/playwright-mcp-research",
+        "--output-dir=/tmp/playwright-mcp-research"
       ],
-      "enabled": true,
+      "enabled": true
     },
     "pdf-reader": {
       // PDF reader MCP — https://github.com/jztan/pdf-mcp
@@ -136,23 +126,27 @@
       // For OCR on scanned PDFs: `brew install tesseract`.
       "type": "local",
       "command": ["uvx", "--from", "pdf-mcp==1.13.1", "pdf-mcp"],
-      "enabled": true,
+      "enabled": true
     },
+    "atlassian": {
+      "type": "remote",
+      "url": "https://mcp.atlassian.com/v1/mcp"
+    }
   },
   "lsp": {
     "pyright": {
-      "disabled": true,
+      "disabled": true
     },
     "basedpyright": {
       // Requires: basedpyright-langserver in PATH (npm install -g basedpyright)
       "command": ["basedpyright-langserver", "--stdio"],
-      "extensions": [".py", ".pyi"],
-    },
+      "extensions": [".py", ".pyi"]
+    }
   },
   "plugin": [
     "@plannotator/opencode@latest",
     "@tarquinen/opencode-dcp@latest",
-    "@franlol/opencode-md-table-formatter@latest",
+    "@franlol/opencode-md-table-formatter@latest"
   ],
 
   // ---------------------------------------------------------------------------
@@ -224,7 +218,7 @@
       "rm *": "deny",
       "sudo *": "deny",
       "shutdown*": "deny",
-      "reboot*": "deny",
+      "reboot*": "deny"
     },
 
     // WoW addon development
@@ -249,6 +243,7 @@
     //   playwright_*   -> researcher, nngineer, red-team, explore, wow-addon
     //   firefly_iii_*  -> accountant            (personal-finance API; sole consumer)
     //   pdf_reader_*   -> accountant            (statement ingest)
+    //   atlassian_*    -> jira
     // Keep this table in sync when adding/removing agent grants — it is the only
     // at-a-glance audit of which agent can reach which external service.
     "context7_*": "deny",
@@ -259,11 +254,12 @@
     "playwright_*": "deny",
     "firefly_iii_*": "deny",
     "pdf_reader_*": "deny",
+    "atlassian_*": "deny",
 
     // Skills - deny by default. Each agent opts in to the specific skills it owns.
     // Skill ownership is per-agent; the build orchestrator does not route skills.
     "skill": {
-      "*": "deny",
+      "*": "deny"
     },
 
     "external_directory": {
@@ -273,8 +269,8 @@
       "/tmp/**": "allow",
       // Wow addon development directories (read-only access to API references, annotations, and FrameXML source)
       "/home/xerrion/.local/share/wow-annotations/**": "allow",
-      "/home/xerrion/.local/share/wow-framexml/**": "allow",
-    },
+      "/home/xerrion/.local/share/wow-framexml/**": "allow"
+    }
   },
 
   // ---------------------------------------------------------------------------
@@ -283,11 +279,12 @@
   "agent": {
     // Research agent: read-only, external search tools enabled
     "researcher": {
-      "model": "github-copilot/claude-opus-4.6",
+      "model": "github-copilot/claude-opus-4.8",
       "temperature": 0.3,
       "permission": {
         // No file mutation
         "edit": "deny",
+        "write": "allow",
         // Enable research MCP tools
         "context7_*": "allow",
         "exa_*": "allow",
@@ -296,7 +293,7 @@
         "webfetch": "allow",
         "skill": {
           "mcp-builder": "allow",
-          "research-philosophy": "allow",
+          "research-philosophy": "allow"
         },
         // Bash: inherits global read-only tools, add GitHub CLI read ops
         "bash": {
@@ -318,14 +315,14 @@
           "pip show*": "allow",
           "pip index*": "allow",
           "cargo search*": "allow",
-          "cargo info*": "allow",
-        },
-      },
+          "cargo info*": "allow"
+        }
+      }
     },
 
     // Personal accounting / Firefly III agent (read-mostly, PDF ingest for statements)
     "accountant": {
-      "model": "lmstudio/google/gemma-4-12b-qat",
+      "model": "github-copilot/claude-opus-4.8",
       "temperature": 0.2,
       "permission": {
         "edit": "deny",
@@ -337,8 +334,8 @@
         "gh_grep*": "allow",
         "pdf_reader_*": "allow",
         // Bash inherits the global read-only allowlist (cat/rg/jq/etc.); no extras needed.
-        "skill": { "accounting-philosophy": "allow" },
-      },
+        "skill": { "accounting-philosophy": "allow" }
+      }
     },
 
     // Documentation / prose writer
@@ -348,16 +345,17 @@
       "permission": {
         "edit": "allow",
         "skill": {
-          "pptx": "allow",
+          "pptx": "allow"
         },
         // No bash at all
-        "bash": { "*": "deny" },
-      },
+        "bash": { "*": "deny" }
+      }
     },
 
     // Full-featured coding agent
     "software-engineer": {
-      "model": "github-copilot/claude-fable-5",
+      "model": "github-copilot/claude-opus-4.8",
+      "variant": "medium",
       "temperature": 0.3,
       "permission": {
         "write": "allow",
@@ -373,20 +371,21 @@
           "architecture-philosophy": "allow",
           "implementation-philosophy": "allow",
           "mcp-builder": "allow",
-          "pptx": "allow",
+          "pptx": "allow"
         },
         // SE owns git, gh, and the full project toolchain (build/lint/test across any
         // stack), so the bash grant is intentionally broad. Destructive commands are
         // still blocked by the global `rm */sudo *` denies.
         "bash": {
-          "*": "allow",
-        },
-      },
+          "*": "allow"
+        }
+      }
     },
 
     // Adversarial security red-team (full executor, on-demand only)
     "red-team": {
       "model": "github-copilot/claude-opus-4.8",
+      "variant": "medium",
       "temperature": 0.2,
       "permission": {
         "edit": "allow",
@@ -394,17 +393,17 @@
         "skill": {
           "code-philosophy": "allow",
           "frontend-philosophy": "allow",
-          "architecture-philosophy": "allow",
+          "architecture-philosophy": "allow"
         },
         "bash": {
-          "*": "allow",
-        },
-      },
+          "*": "allow"
+        }
+      }
     },
 
     // Code reviewer & refactoring analyst (read-only)
     "reviewer": {
-      "model": "opencode/deepseek-v4-flash-free",
+      "model": "github-copilot/claude-opus-4.8",
       "temperature": 0.1,
       "permission": {
         "edit": "deny",
@@ -414,14 +413,14 @@
           "frontend-philosophy": "allow",
           "architecture-philosophy": "allow",
           "code-review": "allow",
-          "mcp-builder": "allow",
-        },
-      },
+          "mcp-builder": "allow"
+        }
+      }
     },
 
     // Task orchestrator / planner
     "plan": {
-      "model": "opencode/deepseek-v4-flash-free",
+      "model": "github-copilot/claude-opus-4.8",
       "permission": {
         "edit": "deny",
         "bash": { "*": "deny" },
@@ -430,36 +429,38 @@
         "skill": {
           "plan-protocol": "allow",
           "plan-review": "allow",
-          "architecture-philosophy": "allow",
-        },
-      },
+          "architecture-philosophy": "allow"
+        }
+      }
     },
 
     // Build orchestrator
     "build": {
-      "model": "opencode/deepseek-v4-flash-free",
+      "model": "github-copilot/claude-opus-4.8",
       "permission": {
         "read": "deny",
+        "glob": "deny",
+
         "bash": { "*": "deny" },
-        "task": "allow",
-      },
+        "task": "allow"
+      }
     },
 
     // Filesystem & repo explorer (read-only source; persists scout reports to .deliverables/explore/)
     "explore": {
-      "model": "opencode/deepseek-v4-flash-free",
+      "model": "github-copilot/claude-opus-4.8",
       "permission": {
         "edit": "allow",
         "playwright_*": "allow",
         "bash": {
-          "docker inspect*": "allow",
-        },
-      },
+          "docker inspect*": "allow"
+        }
+      }
     },
 
     // WoW addon reference agent (read-only + external APIs)
     "wow-addon": {
-      "model": "lmstudio/google/gemma-4-12b-qat",
+      "model": "github-copilot/claude-opus-4.8",
       "permission": {
         "edit": "deny",
         "bash": { "*": "deny" },
@@ -475,14 +476,29 @@
           "wow-addon-toolkit": "allow",
           "wow-frame-api": "allow",
           "wow-event-handling": "allow",
-          "wow-lua-patterns": "allow",
-        },
-      },
+          "wow-lua-patterns": "allow"
+        }
+      }
+    },
+
+    // Jira / Atlassian operator
+    "jira": {
+      "model": "github-copilot/claude-opus-4.8",
+      "temperature": 0.2,
+      "permission": {
+        "edit": "deny",
+        "bash": { "*": "deny" },
+        "webfetch": "deny",
+        "atlassian_*": "allow",
+        "skill": {
+          "writing-philosophy": "allow"
+        }
+      }
     },
 
     // ServiceNow platform API agent
     "servicenow": {
-      "model": "lmstudio/qwen/qwen3.6-35b-a3b",
+      "model": "github-copilot/claude-opus-4.8",
       "permission": {
         "edit": "allow",
         "bash": { "*": "deny" },
@@ -494,18 +510,18 @@
           "servicenow-scripting": "allow",
           "servicenow-business-rules": "allow",
           "servicenow-client-scripts": "allow",
-          "servicenow-gliderecord": "allow",
-        },
-      },
+          "servicenow-gliderecord": "allow"
+        }
+      }
     },
 
     "general": {
-      "disable": true,
+      "disable": true
     },
 
     // Tech Lead/Architect advisor (writes ADR briefs to .deliverables/tech-lead/)
     "tech-lead": {
-      "model": "opencode/deepseek-v4-flash-free",
+      "model": "github-copilot/claude-opus-4.8",
       "temperature": 0.2,
       "permission": {
         "edit": "allow",
@@ -515,11 +531,11 @@
         "skill": {
           "architecture-philosophy": "allow",
           "code-philosophy": "allow",
-          "wow-addon-design": "allow",
-        },
-      },
-    },
+          "wow-addon-design": "allow"
+        }
+      }
+    }
   },
 
-  "instructions": ["./AGENTS.md", "./philosophy/AGENTS.md"],
+  "instructions": ["./AGENTS.md", "./philosophy/AGENTS.md"]
 }
