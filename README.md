@@ -29,7 +29,7 @@ Agents operate as either primary orchestrators or specialized subagents. Primary
 | `plan`              | primary  | Planning orchestrator coordinating review via Plannotator       |
 | `servicenow`        | primary  | ServiceNow platform expert with full MCP access                 |
 | `software-engineer` | subagent | Technical implementation specialist                             |
-| `explore`           | subagent | Codebase navigator; pointers in chat by default, persists large inventories to `.deliverables/explore/` |
+| `explore`           | subagent | Codebase navigator; read-only chat pointers; no deliverables    |
 | `researcher`        | subagent | External knowledge gathering                                    |
 | `red-team`          | subagent | On-demand adversarial security review with PoC-backed findings  |
 | `reviewer`          | subagent | Read-only code review plus safe refactors                       |
@@ -73,7 +73,7 @@ These skills define the discipline an agent applies to its own act of working, o
 
 ### World of Warcraft
 
-- **`wow-addon-dev`**: Addon development with LuaLS API annotations.
+- **`wow-addon-toolkit`**: Tool-selection precedence and LuaLS API annotation format for WoW addon research.
 - **`wow-lua-patterns`**: Idioms for namespaces, SavedVariables, and metatables.
 - **`wow-frame-api`**: Frame creation, anchoring, textures, and secure templates.
 - **`wow-event-handling`**: Registration, dispatching, and combat lockdown guards.

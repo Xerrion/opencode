@@ -283,7 +283,7 @@
       "temperature": 0.3,
       "permission": {
         // No file mutation
-        "edit": "deny",
+        "edit": "allow",
         "write": "allow",
         // Enable research MCP tools
         "context7_*": "allow",
@@ -292,8 +292,7 @@
         "playwright_*": "allow",
         "webfetch": "allow",
         "skill": {
-          "mcp-builder": "allow",
-          "research-philosophy": "allow"
+          "*": "allow"
         },
         // Bash: inherits global read-only tools, add GitHub CLI read ops
         "bash": {
@@ -438,19 +437,20 @@
     "build": {
       "model": "github-copilot/claude-opus-4.8",
       "permission": {
-        "read": "deny",
-        "glob": "deny",
+        // Scoped exception: subagents write findings under .deliverables/ for build to read directly.
+        "read": { ".deliverables/**": "allow", "*": "deny" },
+        "glob": { ".deliverables/**": "allow", "*": "deny" },
 
         "bash": { "*": "deny" },
         "task": "allow"
       }
     },
 
-    // Filesystem & repo explorer (read-only source; persists scout reports to .deliverables/explore/)
+    // Filesystem & repo explorer (strictly read-only; chat-only pointer summaries)
     "explore": {
       "model": "github-copilot/claude-opus-4.8",
       "permission": {
-        "edit": "allow",
+        "edit": "deny",
         "playwright_*": "allow",
         "bash": {
           "docker inspect*": "allow"

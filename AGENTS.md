@@ -59,7 +59,6 @@ Universal rules that apply to every project regardless of language or framework.
 - **MUST** update documentation when behavior changes
 - **MUST** write docstrings for public APIs and exported functions
 - **ONLY** use emojis where appropriate, e.g. in documentation section headers
-- **PREFER** regular dashes (-) over `em` and `en`-dashes for consistency
 
 ## 🎯 Scope Discipline
 
