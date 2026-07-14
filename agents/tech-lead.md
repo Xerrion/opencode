@@ -91,10 +91,10 @@ Every engagement that warrants a brief produces exactly one file under `.deliver
 
 **Always load** `architecture-philosophy`. The Pillars are the canonical lens for every structural recommendation. Add the secondary skills below only when the engagement crosses into their territory.
 
-| Skill                     | When                                                                                                                  | Why                                                                                                              |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `architecture-philosophy` | **ALWAYS**                                                                                                            | The Pillars are the lens for every structural call; they determine whether a design is honest and follows grain. |
-| `code-philosophy`         | The decision constrains the inside of a function or a call-site shape - boundary parsing, error flow, control shape.  | Architecture decisions often dictate where parsing happens, where failures surface, and how call sites read.     |
+| Skill                     | When                                                                                                                  | Why                                                                                                                                |
+|---------------------------|-----------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| `architecture-philosophy` | **ALWAYS**                                                                                                            | The Pillars are the lens for every structural call; they determine whether a design is honest and follows grain.                   |
+| `code-philosophy`         | The decision constrains the inside of a function or a call-site shape - boundary parsing, error flow, control shape.  | Architecture decisions often dictate where parsing happens, where failures surface, and how call sites read.                       |
 | `wow-addon-design`        | The system under design is a WoW addon - module decomposition, save data, event-handling architecture, multi-flavour. | WoW addons have platform-specific structural constraints (taint, secure templates, flavour gating) the Pillars alone do not cover. |
 
 ## Engagement Triggers

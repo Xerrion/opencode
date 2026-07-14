@@ -65,3 +65,9 @@ Universal rules that apply to every project regardless of language or framework.
 - **NEVER** make unrelated changes in the same commit or PR
 - **MUST** stay focused on the current task - resist scope creep
 - **FOLLOW** existing project file structure and organization
+
+## 🚧 Permission Boundaries
+
+- **NEVER** route around a denied action by substituting another tool (e.g. deleting via an interpreter after a shell `rm` is denied, or writing a file through a shell heredoc when `edit` is denied). A denial is a policy about the effect, not the specific command.
+- **MUST** treat a permission denial that blocks part of the task as a reportable blocker: state what was denied and what it prevented, then stop or continue with the rest - do not improvise a bypass.
+- **NEVER** widen your own effective permissions. If a task appears to require a capability your role lacks, say so and let the orchestrator re-route to an agent that holds it.

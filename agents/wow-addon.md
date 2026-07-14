@@ -99,9 +99,9 @@ If asked for a fix, answer the platform-facts portion (what changed, what replac
 
 Load at the start of every session and when context requires it:
 
-| Skill                | Load when                                                                                                                          |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `wow-addon-toolkit`  | Always - establishes tool-selection precedence and the LuaLS annotation format used by every WoW research delegation.              |
+| Skill                | Load when                                                                                                                         |
+|----------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| `wow-addon-toolkit`  | Always - establishes tool-selection precedence and the LuaLS annotation format used by every WoW research delegation.             |
 | `wow-lua-patterns`   | When the question is about Lua language idioms in WoW addon code - namespaces, metatables, secure hooks, error handling, varargs. |
 | `wow-frame-api`      | When the question is about frame, widget, or UI code - CreateFrame, anchors, textures, secure templates, taint, tooltips.         |
 | `wow-event-handling` | When the question is about event registration, dispatch, AceEvent, login sequence, combat lockdown, or event throttling.          |

@@ -42,6 +42,7 @@ Single source of truth for routing. `plan.md` references this matrix rather than
 | `scribe`            | Human-facing content - READMEs, changelogs, release notes, prose, technical docs, API references, architecture docs, user guides. Deck _content_ (narrative, slide copy).                                                                     | Writes prose; not code.                                                                                                                                                                               |
 | `reviewer`          | Mandatory after every `software-engineer` implementation. Code review, refactoring analysis, security, performance, philosophy compliance.                                                                                                    | Read-only. Returns severity-classified findings.                                                                                                                                                      |
 | `wow-addon`         | **All WoW addon work** - API lookups, event payloads, Blizzard source patterns, lint, AND any codebase exploration inside a WoW addon repo. Always preferred over `explore`/`researcher` when target is a WoW addon.                          | Research only. Loads `wow-addon-toolkit`. Returns findings for `software-engineer` to implement.                                                                                                      |
+| `linear`            | Tracker sync during orchestrated work - create Linear issues for planned tasks, update status as work progresses, comment results with PR/review evidence.                                                                                    | Records only delegated facts; never decides work state. Sync status after review verdicts land, not before. Tracker syncs skip review.                                                                |
 
 ## Routing Rules
 
@@ -51,6 +52,7 @@ Single source of truth for routing. `plan.md` references this matrix rather than
 - **Git operations** are `software-engineer`'s scope. Implementation ending in commit/push goes through normal review (review code, then commit). Trivial standalone git ops (status, committing already-reviewed code, push, opening a PR for a reviewed branch) skip review.
 - **Documentation** → `scribe`, never `software-engineer`.
 - **Refactoring**: `reviewer` identifies, `software-engineer` executes.
+- **Adversarial reasoning stays with `reviewer`; adversarial execution goes to an executor.** Questioning whether a claim holds - is this test tautological, does this rollback actually roll back, is this invariant really enforced - is `reviewer`'s job and stays read-only on every loop. Pull in an executor only when settling the question needs _hands-on execution_: `software-engineer` to run gates or write code, `red-team` to independently reproduce a gate, mutate-probe a suspect impl in a scratch copy, or build an exploit PoC. Never hand executor or probe work to a read-only agent (`reviewer`, `explore`) - a delegation that forces an agent past its grant produces a failure or a bypass, not a result. Reserve a `red-team` pass for genuine attack surface (untrusted input, auth, network boundaries) or a specific correctness claim that read-only review flagged but cannot settle without running it - not for routine review that reasoning already covers.
 
 ## Review Protocol
 
@@ -96,6 +98,7 @@ Non-blocking observations are informational - track but do not block.
 | Conflicting information              | Escalate to user with options and your recommendation.                                                                                      |
 | Review finds BLOCKERs                | Re-delegate to `software-engineer` with BLOCKERs verbatim.                                                                                  |
 | Unexpected output                    | Re-read carefully; retry with clarified instructions if genuinely wrong.                                                                    |
+| Subagent hits a permission block     | Re-route to an agent whose grant covers the capability - do not retry the same agent or accept a tool-substitution workaround. A denial means wrong agent for the task, not a narrower prompt. |
 | Genuinely ambiguous user request     | Trivial work: pick the most reasonable interpretation, state it in the summary. Non-trivial (architecture, scope, destructive action): ask. |
 | Lint/type errors post-implementation | Re-delegate to `software-engineer` to fix before review. Never send broken code to review.                                                  |
 

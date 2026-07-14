@@ -36,6 +36,7 @@ Agents operate as either primary orchestrators or specialized subagents. Primary
 | `scribe`            | subagent | Technical writer - READMEs, guides, API refs, changelogs        |
 | `tech-lead`         | subagent | High-bar advisor for new modules and cross-subsystem design; writes ADR briefs to `.deliverables/tech-lead/`. Not for routine in-codebase design - `software-engineer` handles that in-flight. |
 | `wow-addon`         | subagent | WoW addon read-only specialist (research, navigation, lint)     |
+| `linear`            | subagent | Linear tracker - records orchestrated work state on delegation  |
 
 ## 🧠 Skills
 

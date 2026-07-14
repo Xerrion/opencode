@@ -1,28 +1,28 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "provider": {
-    "lmstudio": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "LM Studio (local)",
-      "options": {
-        "baseURL": "http://127.0.0.1:1234/v1"
-      },
-      "models": {
-        "google/gemma-4-e4b": {
-          "name": "Gemma 4 E4B "
-        },
-        "google/gemma-4-12b-qat": {
-          "name": "Gemma 4 12B QAT"
-        },
-        "google/gemma-4-31b": {
-          "name": "Gemma 4 31B"
-        },
-        "qwen/qwen3.6-27b": {
-          "name": "Qwen 3.6 27B"
-        }
-      }
-    }
-  },
+  // "provider": {
+  //   "lmstudio": {
+  //     "npm": "@ai-sdk/openai-compatible",
+  //     "name": "LM Studio (local)",
+  //     "options": {
+  //       "baseURL": "http://127.0.0.1:1234/v1"
+  //     },
+  //     "models": {
+  //       "google/gemma-4-e4b": {
+  //         "name": "Gemma 4 E4B "
+  //       },
+  //       "google/gemma-4-12b-qat": {
+  //         "name": "Gemma 4 12B QAT"
+  //       },
+  //       "google/gemma-4-31b": {
+  //         "name": "Gemma 4 31B"
+  //       },
+  //       "qwen/qwen3.6-27b": {
+  //         "name": "Qwen 3.6 27B"
+  //       }
+  //     }
+  //   }
+  // },
   "mcp": {
     "sonarqube": {
       // Requires: docker pull mcp/sonarqube (image must be pre-pulled)
@@ -69,7 +69,7 @@
         "SERVICENOW_ENV": "{env:SERVICENOW_MCP_DEV_ENV}",
         "SCRIPT_ALLOWED_ROOT": "/Users/lasn/Projects/servicenow-development/"
       },
-      "enabled": true
+      "enabled": false
     },
     "context7": {
       "type": "remote",
@@ -92,7 +92,7 @@
         "FIREFLY_III_URL": "{env:FIREFLY_III_URL}",
         "FIREFLY_III_TOKEN": "{env:FIREFLY_III_TOKEN}"
       },
-      "enabled": true
+      "enabled": false
     },
     "gh_grep": {
       "type": "remote",
@@ -120,17 +120,19 @@
       "enabled": true
     },
     "pdf-reader": {
-      // PDF reader MCP — https://github.com/jztan/pdf-mcp
-      // Runs via uvx in an isolated env; no global install required.
-      // Version pinned for reproducibility; bump deliberately after testing.
-      // For OCR on scanned PDFs: `brew install tesseract`.
       "type": "local",
       "command": ["uvx", "--from", "pdf-mcp==1.13.1", "pdf-mcp"],
-      "enabled": true
+      "enabled": false
     },
     "atlassian": {
       "type": "remote",
-      "url": "https://mcp.atlassian.com/v1/mcp"
+      "url": "https://mcp.atlassian.com/v1/mcp",
+      "enabled": false
+    },
+    "linear": {
+      "type": "remote",
+      "url": "https://mcp.linear.app/mcp",
+      "enabled": true
     }
   },
   "lsp": {
@@ -218,7 +220,12 @@
       "rm *": "deny",
       "sudo *": "deny",
       "shutdown*": "deny",
-      "reboot*": "deny"
+      "reboot*": "deny",
+
+      // Everything unmatched is denied — without this fallback, unlisted commands
+      // (interpreters, cp, mkdir, package managers) silently fall through to allow,
+      // which also makes the rm/sudo denies trivially bypassable via `bun -e`/`python3`.
+      "*": "deny"
     },
 
     // WoW addon development
@@ -240,10 +247,11 @@
     //   context7_*     -> researcher, accountant
     //   exa_*          -> researcher, accountant
     //   gh_grep*       -> researcher, accountant
-    //   playwright_*   -> researcher, nngineer, red-team, explore, wow-addon
+    //   playwright_*   -> researcher, software-engineer, red-team, explore, wow-addon
     //   firefly_iii_*  -> accountant            (personal-finance API; sole consumer)
     //   pdf_reader_*   -> accountant            (statement ingest)
     //   atlassian_*    -> jira
+    //   linear_*       -> linear                (agent work-state tracking; sole consumer)
     // Keep this table in sync when adding/removing agent grants — it is the only
     // at-a-glance audit of which agent can reach which external service.
     "context7_*": "deny",
@@ -255,6 +263,7 @@
     "firefly_iii_*": "deny",
     "pdf_reader_*": "deny",
     "atlassian_*": "deny",
+    "linear_*": "deny",
 
     // Skills - deny by default. Each agent opts in to the specific skills it owns.
     // Skill ownership is per-agent; the build orchestrator does not route skills.
@@ -279,7 +288,7 @@
   "agent": {
     // Research agent: read-only, external search tools enabled
     "researcher": {
-      "model": "github-copilot/claude-opus-4.8",
+      "model": "github-copilot/claude-sonnet-5",
       "temperature": 0.3,
       "permission": {
         // No file mutation
@@ -339,11 +348,12 @@
 
     // Documentation / prose writer
     "scribe": {
-      "model": "opencode/deepseek-v4-flash-free",
+      "model": "github-copilot/claude-haiku-4.5",
       "temperature": 0.3,
       "permission": {
         "edit": "allow",
         "skill": {
+          "writing-philosophy": "allow",
           "pptx": "allow"
         },
         // No bash at all
@@ -412,6 +422,7 @@
           "frontend-philosophy": "allow",
           "architecture-philosophy": "allow",
           "code-review": "allow",
+          "review-philosophy": "allow",
           "mcp-builder": "allow"
         }
       }
@@ -419,7 +430,7 @@
 
     // Task orchestrator / planner
     "plan": {
-      "model": "github-copilot/claude-opus-4.8",
+      "model": "github-copilot/claude-sonnet-5",
       "permission": {
         "edit": "deny",
         "bash": { "*": "deny" },
@@ -435,7 +446,7 @@
 
     // Build orchestrator
     "build": {
-      "model": "github-copilot/claude-opus-4.8",
+      "model": "github-copilot/claude-sonnet-5",
       "permission": {
         // Scoped exception: subagents write findings under .deliverables/ for build to read directly.
         "read": { ".deliverables/**": "allow", "*": "deny" },
@@ -448,7 +459,7 @@
 
     // Filesystem & repo explorer (strictly read-only; chat-only pointer summaries)
     "explore": {
-      "model": "github-copilot/claude-opus-4.8",
+      "model": "github-copilot/claude-haiku-4.5",
       "permission": {
         "edit": "deny",
         "playwright_*": "allow",
@@ -483,7 +494,7 @@
 
     // Jira / Atlassian operator
     "jira": {
-      "model": "github-copilot/claude-opus-4.8",
+      "model": "github-copilot/claude-sonnet-5",
       "temperature": 0.2,
       "permission": {
         "edit": "deny",
@@ -496,9 +507,21 @@
       }
     },
 
+    // Linear tracker subagent (agent work-state recording; sole linear_* consumer)
+    "linear": {
+      "model": "github-copilot/claude-haiku-4.5",
+      "temperature": 0.1,
+      "permission": {
+        "edit": "deny",
+        "bash": { "*": "deny" },
+        "webfetch": "deny",
+        "linear_*": "allow"
+      }
+    },
+
     // ServiceNow platform API agent
     "servicenow": {
-      "model": "github-copilot/claude-opus-4.8",
+      "model": "github-copilot/claude-sonnet-5",
       "permission": {
         "edit": "allow",
         "bash": { "*": "deny" },
@@ -521,7 +544,7 @@
 
     // Tech Lead/Architect advisor (writes ADR briefs to .deliverables/tech-lead/)
     "tech-lead": {
-      "model": "github-copilot/claude-opus-4.8",
+      "model": "github-copilot/claude-haiku-4.5",
       "temperature": 0.2,
       "permission": {
         "edit": "allow",
@@ -537,5 +560,5 @@
     }
   },
 
-  "instructions": ["./AGENTS.md", "./philosophy/AGENTS.md"]
+  "instructions": ["./AGENTS.md"]
 }
