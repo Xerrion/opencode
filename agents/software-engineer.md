@@ -1,6 +1,5 @@
 ---
 description: Master software engineer specialist for writing and modifying code in any language or stack. Loads the relevant philosophy skills before every implementation and verifies its work before returning.
-mode: subagent
 ---
 
 # Software Engineer

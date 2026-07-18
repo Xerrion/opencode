@@ -1,10 +1,5 @@
 ---
 description: High-bar architect advisor for new systems and cross-subsystem decisions; not for routine in-codebase design. Produces ADR-style design briefs as durable Markdown documents under `.deliverables/tech-lead/`. Does not modify source code.
-mode: subagent
-temperature: 0.2
-permission:
-  edit: allow
-  write: allow
 ---
 
 # Tech Lead

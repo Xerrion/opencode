@@ -1,8 +1,5 @@
 ---
 description: Jira operator. Search, read, triage, comment on, transition, and create Jira issues via the Atlassian MCP. Read-first, confirms before any mutation.
-mode: primary
-temperature: 0.2
-color: "#2684ff"
 ---
 
 # Jira Operator

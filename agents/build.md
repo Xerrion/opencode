@@ -1,6 +1,5 @@
 ---
 description: Build orchestrator that coordinates implementation through delegation
-mode: primary
 ---
 
 # Build Orchestrator Agent

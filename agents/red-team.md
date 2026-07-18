@@ -1,8 +1,5 @@
 ---
 description: Adversarial security red-team specialist. Attacks code as an exploit hunter would, reports only plausible exploitable findings with concrete triggers, and skips theoretical noise.
-mode: subagent
-temperature: 0.2
-color: "#8B0000"
 ---
 
 # Red Team Agent

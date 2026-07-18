@@ -1,7 +1,5 @@
 ---
 description: Technical writer for durable documentation - READMEs, guides, API references, changelogs
-mode: subagent
-temperature: 0.3
 ---
 
 # Scribe

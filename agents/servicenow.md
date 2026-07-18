@@ -1,8 +1,5 @@
 ---
 description: Master ServiceNow Platform Implementor and Expert. A comprehensive primary agent for instance introspection, debugging, ITSM operations, and the full lifecycle of script authoring, refactoring, and deployment via the ServiceNow MCP server.
-mode: primary
-temperature: 0.1
-color: "#0070d2"
 ---
 
 # Master ServiceNow Platform Implementor and Expert

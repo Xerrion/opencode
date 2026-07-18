@@ -1,7 +1,5 @@
 ---
 description: Codebase navigator; read-only pointer-based codebase exploration in chat
-mode: subagent
-temperature: 0.2
 ---
 
 # Explore Agent
