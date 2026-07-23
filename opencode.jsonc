@@ -362,18 +362,15 @@
 
     // Full-featured coding agent
     "software-engineer": {
-      "model": "github-copilot/claude-fable-5",
+      "model": "github-copilot/gpt-5.6-sol",
       "mode": "subagent",
-      "variant": "medium",
+      "variant": "high",
       "temperature": 0.3,
       "permission": {
         "write": "allow",
         "read": "allow",
         "edit": "allow",
         "playwright_*": "allow",
-        // Skills the software-engineer is allowed to load. Domain skills (WoW, ServiceNow)
-        // are intentionally excluded — those live with their domain agents and are loaded
-        // there before any delegation reaches the SE.
         "skill": {
           "code-philosophy": "allow",
           "frontend-philosophy": "allow",
@@ -382,9 +379,6 @@
           "mcp-builder": "allow",
           "pptx": "allow"
         },
-        // SE owns git, gh, and the full project toolchain (build/lint/test across any
-        // stack), so the bash grant is intentionally broad. Destructive commands are
-        // still blocked by the global `rm */sudo *` denies.
         "bash": {
           "*": "allow"
         }
@@ -450,7 +444,8 @@
 
     // Code reviewer & refactoring analyst (read-only)
     "reviewer": {
-      "model": "github-copilot/gpt-5.6-sol",
+      "model": "github-copilot/gpt-5.6-terra",
+      "variant": "medium",
       "mode": "subagent",
       "temperature": 0.1,
       "permission": {
@@ -488,6 +483,7 @@
     // Build orchestrator
     "build": {
       "model": "github-copilot/gpt-5.6-terra",
+      "variant": "medium",
       "mode": "primary",
       "permission": {
         // Scoped exception: subagents write findings under .deliverables/ for build to read directly.
