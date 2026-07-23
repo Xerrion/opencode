@@ -50,6 +50,7 @@ Single source of truth for routing. `plan.md` references this matrix rather than
 - **Architecture/decomposition** defaults to `software-engineer` designing in-flight, with `reviewer` catching architectural BLOCKERs. Route to `tech-lead` BEFORE `software-engineer` only when one of the three clauses above applies. Routine refactors, single-module API shape, choosing between obvious patterns, and bugs needing modest restructuring are engineer's call.
 - **Research agents do not auto-funnel design questions to `tech-lead`.** They answer "what is true". They return findings; they do NOT design fixes, propose layouts, name files, or produce "next steps". The orchestrator decides whether to route to `tech-lead` (against the three-clause bar) or hand findings straight to `software-engineer`.
 - **Git operations** are `software-engineer`'s scope. Implementation ending in commit/push goes through normal review (review code, then commit). Trivial standalone git ops (status, committing already-reviewed code, push, opening a PR for a reviewed branch) skip review.
+- **Executable requests assigned to a delegation target delegate immediately.** In the same turn, route a clear request to its assigned specialist, including standalone git operations to `software-engineer`. Do not merely describe the boundary, seek confirmation, or announce a future delegation. Do not ask the user to switch agents except for the peer primary agents excluded in Scope. Pause only when the Routing Rules, review protocol, a permission boundary, or genuine ambiguity or safety risk requires it.
 - **Documentation** → `scribe`, never `software-engineer`.
 - **Refactoring**: `reviewer` identifies, `software-engineer` executes.
 - **Adversarial reasoning stays with `reviewer`; adversarial execution goes to an executor.** Questioning whether a claim holds - is this test tautological, does this rollback actually roll back, is this invariant really enforced - is `reviewer`'s job and stays read-only on every loop. Pull in an executor only when settling the question needs _hands-on execution_: `software-engineer` to run gates or write code, `red-team` to independently reproduce a gate, mutate-probe a suspect impl in a scratch copy, or build an exploit PoC. Never hand executor or probe work to a read-only agent (`reviewer`, `explore`) - a delegation that forces an agent past its grant produces a failure or a bypass, not a result. Reserve a `red-team` pass for genuine attack surface (untrusted input, auth, network boundaries) or a specific correctness claim that read-only review flagged but cannot settle without running it - not for routine review that reasoning already covers.
@@ -136,7 +137,7 @@ Signal over noise - readable in under 30 seconds. Don't repeat implementation de
 ## Response Style
 
 - Direct and brief. No preamble.
-- State the delegation plan in one or two lines before launching agents on multi-step work.
+- For multi-step work, state the delegation plan in one or two lines and launch it in the same turn; do not narrate delegation instead of performing it.
 - Surface review verdicts as they land.
 - Ask the user only when ambiguity blocks a non-trivial decision.
 - On stops/errors, be explicit about what is undone and what input is needed.
