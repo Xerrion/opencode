@@ -38,6 +38,16 @@ Universal rules that apply to every project regardless of language or framework.
 - **VERIFY** changes work by running the application when possible
 - **ALWAYS** check console output for warnings and errors during runs
 
+## 🔎 Delivery and Review
+
+These rules apply to every agent. They apply only when the agent's assigned scope and permissions allow it to make file changes; read-only agents follow them when reviewing or reporting changes made by others.
+
+- **MUST** complete work within the agent's assigned scope and escalate only decisions that require explicit user authority.
+- **MUST** self-review every complete diff before requesting external review: re-read changed files, inspect error and security paths, sweep renamed or reshaped references, and confirm verification evidence.
+- **MUST** request an independent `reviewer` review after every cycle that writes, edits, creates, moves, or deletes files - including tests, configuration, and documentation.
+- **MUST NOT** report a file-changing task as complete until `reviewer` returns `APPROVE`. On `REQUEST_CHANGES`, address every applicable BLOCKER, repeat verification and self-review, then request review again. On `NEEDS_DISCUSSION`, present the concrete decision to the user.
+- **MUST** preserve unrelated work in a dirty tree and send the reviewer the exact changed-file list, verification commands and outcomes, plus self-review evidence.
+
 ## ⚠️ Error Handling
 
 - **MUST** handle errors explicitly - do not silently swallow exceptions without good reason

@@ -10,7 +10,7 @@ This repository contains the global configuration, agent definitions, and specia
 - **`dcp.jsonc`**: Schema stub for the Development Communication Protocol plugin.
 - **`package.json`**: JS toolchain definitions for custom plugins and tools.
 - **`.markdownlint.json`**: Rules for maintaining consistent documentation style.
-- **`agents/`**: 13 specialized agent declarations defining modes, roles, and tool access.
+- **`agents/`**: 14 specialized agent declarations defining modes, roles, and tool access.
 - **`skills/`**: 24 on-demand knowledge packs for domains like ServiceNow, WoW, and architecture.
 - **`command/`**: 12 slash command definitions for automated pipelines and interactive UIs.
 - **`philosophy/`**: Discipline enforcement requiring philosophy loading before any code changes.
@@ -29,6 +29,7 @@ Agents operate as either primary orchestrators or specialized subagents. Primary
 | `plan`              | primary  | Planning orchestrator coordinating review via Plannotator       |
 | `servicenow`        | primary  | ServiceNow platform expert with full MCP access                 |
 | `software-engineer` | subagent | Technical implementation specialist                             |
+| `autonomous-engineer` | primary | End-to-end implementation owner with mandatory self-review and independent reviewer approval |
 | `explore`           | subagent | Codebase navigator; read-only chat pointers; no deliverables    |
 | `researcher`        | subagent | External knowledge gathering                                    |
 | `red-team`          | subagent | On-demand adversarial security review with PoC-backed findings  |
@@ -149,6 +150,12 @@ To ensure architectural integrity, this configuration enforces a strict philosop
 ### 3. Specialized Skills
 
 Skills are structured as standalone modules within the `skills/` directory. They provide the "depth" required for specialized tasks without cluttering the global agent prompt.
+
+### 4. Cost-aware discovery
+
+Discovery is proportional to uncertainty, not a mandatory phase. A request that already identifies a file, symbol, reproducible failure, or approved plan step goes directly to the implementation agent for targeted reading. `explore` is used only to answer a concrete local-code question, with a default three-call budget; a genuine scope or dependency-direction question may use up to eight. External research is limited to the one unresolved external fact that affects the decision.
+
+The `build` agent owns these gates and passes pointers forward, so agents do not rediscover the same facts. `explore` reports its budget use and stops when it has the decisive path, symbol, caller, test, or dependency fact. This reduces expensive primary-agent exploration without weakening implementation verification.
 
 ## 🔐 Permission Model
 

@@ -30,7 +30,6 @@ You operate as a safe primary operator: read-only investigation first, preview d
 
 - Architectural decisions about where platform logic should live - default to in-flight design as part of implementation; route to `tech-lead` only when one of (new module/service/subsystem; 3+ subsystems with non-obvious dependency direction or contract shape; user-requested ADR) applies.
 - Production code review of finished work - belongs to `reviewer`.
-- Code outside the ServiceNow platform - belongs to `software-engineer`.
 
 ## Constraints
 
