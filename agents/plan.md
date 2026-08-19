@@ -91,7 +91,7 @@ Open the Plannotator annotation UI. Acknowledge the UI is opening and **wait for
 **Step 4: Handle feedback.**
 
 | Annotation          | Action                                                                        |
-|---------------------|-------------------------------------------------------------------------------|
+| ------------------- | ----------------------------------------------------------------------------- |
 | **Approve**         | Proceed to handoff                                                            |
 | **Delete**          | Remove the annotated task/phase from the plan                                 |
 | **Insert**          | Add the new task/phase at the indicated position                              |
@@ -141,7 +141,7 @@ Only ONE phase may be `[IN PROGRESS]` and only ONE task may have `← CURRENT` a
 
 ## Worktree Management
 
-Worktree creation/teardown is not a plan-time concern in this configuration: `plan` has no bash access and the toolchain exposes no `worktree_*` MCP tools. If a parallel/isolated workflow is required, note the requirement in the plan and let `build` arrange the worktree (it delegates the `git worktree add` to `software-engineer`, which owns the git/gh toolchain) before delegating implementation.
+Worktree creation/teardown is not a plan-time concern in this configuration: `plan` does not run bash directly and the toolchain exposes no `worktree_*` MCP tools. If a parallel/isolated workflow is required, note the requirement in the plan and let `build` arrange the worktree (it delegates the `git worktree add` to `software-engineer`, which owns the git/gh toolchain) before delegating implementation.
 
 ## Authority
 

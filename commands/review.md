@@ -6,17 +6,17 @@ Delegate to the `reviewer` agent to perform a code review.
 
 **Scope:** $ARGUMENTS
 
-If no arguments provided, review staged changes using `git diff --cached`.
-If argument is "recent", review changes since last commit using `git diff HEAD~1`.
+If no arguments are provided, review staged changes with `git diff --cached`.
+If the argument is "recent", review changes since the last commit with `git diff HEAD~1`.
 Otherwise, review the specified file(s) or directory.
 
 The reviewer agent will:
 
-- Load the code-review skill
-- Apply the 4 Review Layers (Correctness, Security, Performance, Style)
-- Classify findings by severity (Critical, Major, Minor, Nitpick)
-- Only report findings with >=80% confidence
-- Include positive observations
-- Provide Philosophy Compliance checklist results
+- Load `review-philosophy` and `code-philosophy`, plus conditional review skills
+- Review correctness, security, performance, maintainability, and project conventions
+- Classify issues as BLOCKER, IMPORTANT, or NIT
+- Apply the configured confidence floor for each severity tier
+- Separate safe refactoring candidates from defects
+- Include positive observations and Philosophy Compliance results
 
 Return the complete review findings to the user.

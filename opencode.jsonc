@@ -2,7 +2,7 @@
   "$schema": "https://opencode.ai/config.json",
   // "provider": {
   //   "lmstudio": {
-  //     "npm": "@ai-sdk/openai-compatible",
+  //     "npm": "@ai-sdk/github-copilot-compatible",
   //     "name": "LM Studio (local)",
   //     "options": {
   //       "baseURL": "http://127.0.0.1:1234/v1"
@@ -83,16 +83,16 @@
       "enabled": true,
       "timeout": 10000
     },
-    // "vercel": {
-    //   "type": "remote",
-    //   "url": "https://mcp.vercel.com",
-    //   "enabled": true
-    // },
-    // "supabase": {
-    //   "type": "remote",
-    //   "url": "https://mcp.supabase.com/mcp?features=docs%2Caccount%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching",
-    //   "enabled": true
-    // },
+    "vercel": {
+      "type": "remote",
+      "url": "https://mcp.vercel.com",
+      "enabled": true
+    },
+    "supabase": {
+      "type": "remote",
+      "url": "https://mcp.supabase.com/mcp?features=docs%2Caccount%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching",
+      "enabled": true
+    },
     // "firefly-iii": {
     //   // Requires: project at /Users/lasn/Projects/firefly-iii-mcp.
     //   // Absolute bun path used because ~/.bun/bin is not on PATH for GUI launchers.
@@ -152,13 +152,15 @@
       "extensions": [".py", ".pyi"]
     }
   },
-  "plugin": ["@plannotator/opencode@latest", "@franlol/opencode-md-table-formatter@latest"],
+  // Version-pinned: plugins hook every tool call, so an unpinned @latest would
+  // auto-execute any future release with that access. Bump deliberately.
+  "plugin": ["@plannotator/opencode@0.25.1", "@franlol/opencode-md-table-formatter@0.0.6"],
 
   // ---------------------------------------------------------------------------
   // Global permissions
   //
-  // Philosophy: allow read-only / inspection operations outright, prompt ("ask")
-  // for light side-effects (write, edit, webfetch), hard-deny destructive ops
+  // Philosophy: allow native read-only inspection tools, prompt ("ask") for
+  // shell commands and light side-effects, and hard-deny destructive operations
   // and external MCP tools. Agents override upward as needed.
   // ---------------------------------------------------------------------------
   "permission": {
@@ -170,65 +172,14 @@
     // "write" is the legacy alias for file creation; "edit" covers both create and modify.
     "edit": "deny",
 
-    // Bash — deny by default, allow only read-only / inspection tools globally.
-    // Agents that need build tools, package managers, or mutating commands opt-in.
+    // Shell commands can hide writes behind read-only-looking binaries and
+    // options. Ask by default; agents opt in to what they need.
     "bash": {
-      // --- File inspection (read-only) ---
-      "cat *": "allow",
-      "head *": "allow",
-      "tail *": "allow",
-      "wc *": "allow",
-      "ls *": "allow",
-      "tree *": "allow",
-      "find *": "allow",
-      "file *": "allow",
-      "stat *": "allow",
-      "realpath *": "allow",
-      "pwd": "allow",
-      "which *": "allow",
-      "echo *": "allow",
-      "printf *": "allow",
-      "man *": "allow",
-      "tldr *": "allow",
-
-      // --- Search & text processing ---
-      "rg *": "allow",
-      "grep *": "allow",
-      "awk *": "allow",
-      "sed *": "allow",
-      "sort *": "allow",
-      "uniq *": "allow",
-      "cut *": "allow",
-      "tr *": "allow",
-      "diff *": "allow",
-      "jq *": "allow",
-
-      // --- Git (read-only) ---
-      "git status*": "allow",
-      "git log*": "allow",
-      "git diff*": "allow",
-      "git show*": "allow",
-      "git blame*": "allow",
-      "git branch*": "allow",
-      "git ls-files*": "allow",
-      "git fetch*": "allow",
-
-      // --- Networking (read-only lookups) ---
-      "dig *": "allow",
-      "nslookup *": "allow",
-      "whois *": "allow",
-      "host *": "allow",
-
-      // --- Hard deny: destructive / dangerous ---
+      "*": "ask",
       "rm *": "deny",
       "sudo *": "deny",
       "shutdown*": "deny",
-      "reboot*": "deny",
-
-      // Everything unmatched is denied — without this fallback, unlisted commands
-      // (interpreters, cp, mkdir, package managers) silently fall through to allow,
-      // which also makes the rm/sudo denies trivially bypassable via `bun -e`/`python3`.
-      "*": "deny"
+      "reboot*": "deny"
     },
 
     // WoW addon development
@@ -244,17 +195,19 @@
     // MCP tools — denied globally; agents opt-in.
     // (These hit external services with real side-effects.)
     //
-    // MCP credential blast radius (who can touch what when allowed):
+    // MCP credential blast radius (who can touch what when allowed).
+    // Disabled agents are listed too: their grants become live the moment
+    // "disable" is flipped, so they count toward the audit.
     //   sonarqube_*    -> reviewer
-    //   servicenow_*   -> servicenow
-    //   context7_*     -> researcher, accountant
-    //   exa_*          -> researcher, accountant
-    //   gh_grep*       -> researcher, accountant
-    //   playwright_*   -> researcher, software-engineer, red-team, explore, wow-addon
-    //   firefly_iii_*  -> accountant            (personal-finance API; sole consumer)
-    //   pdf_reader_*   -> accountant            (statement ingest)
-    //   atlassian_*    -> jira
-    //   linear_*       -> linear                (agent work-state tracking; sole consumer)
+    //   servicenow_*   -> servicenow (disabled)
+    //   context7_*     -> researcher, accountant (disabled), autonomous-engineer
+    //   exa_*          -> researcher, accountant (disabled), autonomous-engineer
+    //   gh_grep*       -> researcher, accountant (disabled), autonomous-engineer
+    //   playwright_*   -> researcher, software-engineer, red-team, explore, wow-addon, autonomous-engineer
+    //   firefly_iii_*  -> accountant (disabled)  (personal-finance API; sole consumer)
+    //   pdf_reader_*   -> accountant (disabled)  (statement ingest)
+    //   atlassian_*    -> jira (disabled)
+    //   linear_*       -> linear (disabled)      (agent work-state tracking; sole consumer)
     //   vercel_*       -> software-engineer, reviewer
     //   supabase_*     -> software-engineer, reviewer
     // Keep this table in sync when adding/removing agent grants — it is the only
@@ -271,12 +224,6 @@
     "linear_*": "deny",
     "vercel_*": "deny",
     "supabase_*": "deny",
-
-    // Skills - deny by default. Each agent opts in to the specific skills it owns.
-    // Skill ownership is per-agent; the build orchestrator does not route skills.
-    "skill": {
-      "*": "deny"
-    },
 
     "external_directory": {
       "/Users/lasn/.plannotator/**": "allow",
@@ -295,21 +242,23 @@
   "agent": {
     // Research agent: read-only, external search tools enabled
     "researcher": {
-      "model": "openai/gpt-5.6-sol",
+      "model": "github-copilot/claude-opus-5",
       "mode": "subagent",
       "temperature": 0.2,
       "permission": {
-        // No file mutation
+        // No file mutation - researcher.md: "You do not touch the filesystem."
+        // "edit" covers create+modify; "write" (legacy create alias) denied too.
         "edit": "deny",
-        "write": "allow",
+        "write": "deny",
         // Enable research MCP tools
         "context7_*": "allow",
         "exa_*": "allow",
         "gh_grep*": "allow",
         "playwright_*": "allow",
         "webfetch": "allow",
+        // Only the act-discipline skill this agent's prompt mandates.
         "skill": {
-          "*": "allow"
+          "research-philosophy": "allow"
         },
         // Bash: inherits global read-only tools, add GitHub CLI read ops
         "bash": {
@@ -324,7 +273,11 @@
           "gh run list*": "allow",
           "gh workflow list*": "allow",
           "gh search *": "allow",
-          "gh api *": "allow",
+          // gh api can mutate (-X POST/PATCH/DELETE, -f/-F imply POST) with the
+          // user's token, and this agent ingests untrusted web content - so
+          // every gh api call is human-gated. Read-only gh subcommands above
+          // stay frictionless.
+          "gh api *": "ask",
           "npm view*": "allow",
           "npm info*": "allow",
           "npm show*": "allow",
@@ -339,7 +292,7 @@
     // Personal accounting / Firefly III agent (read-mostly, PDF ingest for statements)
     "accountant": {
       "disable": true,
-      "model": "openai/gpt-5.6-sol",
+      "model": "github-copilot/claude-opus-5",
       "mode": "primary",
       "temperature": 0.2,
       "color": "#2e8b57",
@@ -350,12 +303,15 @@
         "context7_*": "allow",
         "exa_*": "allow",
         "gh_grep*": "allow",
-        "pdf-reader*": "allow",
-        // Bash inherits the global read-only allowlist. Python enables CSV parsing and
-        // exact Decimal-based reconciliation calculations; accountant policy prohibits
-        // file writes, subprocesses, network access, or package installation.
+        // Tool IDs normalize the server name's hyphens to underscores
+        // (server "pdf-reader" -> tools "pdf_reader_*", same as firefly-iii).
+        "pdf_reader_*": "allow",
+        // Python enables CSV parsing and exact Decimal-based reconciliation
+        // calculations. "ask" not "allow": an unrestricted interpreter can
+        // write files, spawn subprocesses, and reach the network - the prose
+        // policy in accountant.md cannot enforce that, so a human gates each run.
         "bash": {
-          "python3 *": "allow"
+          "python3 *": "ask"
         },
         "skill": { "accounting-philosophy": "allow" }
       }
@@ -363,7 +319,7 @@
 
     // Documentation / prose writer
     "scribe": {
-      "model": "openai/gpt-5.6-terra",
+      "model": "github-copilot/gpt-5.6-luna",
       "mode": "subagent",
       "temperature": 0.3,
       "permission": {
@@ -379,7 +335,7 @@
 
     // Full-featured coding agent
     "software-engineer": {
-      "model": "openai/gpt-5.6-sol",
+      "model": "github-copilot/claude-opus-5",
       "mode": "subagent",
       "variant": "high",
       "temperature": 0.3,
@@ -398,8 +354,14 @@
           "mcp-builder": "allow",
           "pptx": "allow"
         },
+        // Global destructive-command denies restated so they hold regardless
+        // of whether agent maps merge with or replace the global bash map.
         "bash": {
-          "*": "allow"
+          "*": "allow",
+          "rm *": "deny",
+          "sudo *": "deny",
+          "shutdown*": "deny",
+          "reboot*": "deny"
         }
       }
     },
@@ -408,8 +370,7 @@
     // primary agent may make research, documentation, and architecture decisions
     // itself and is responsible for invoking reviewer after every file change.
     "autonomous-engineer": {
-      "disable": true,
-      "model": "openai/gpt-5.6-terra",
+      "model": "github-copilot/gpt-5.6-terra",
       "mode": "primary",
       "variant": "medium",
       "temperature": 0.3,
@@ -417,7 +378,7 @@
         "write": "allow",
         "read": "allow",
         "edit": "allow",
-        "task": "deny",
+        "task": "allow",
         "playwright_*": "allow",
         "context7_*": "allow",
         "exa_*": "allow",
@@ -435,15 +396,20 @@
           "mcp-builder": "allow",
           "pptx": "allow"
         },
+        // Global destructive-command denies restated (see software-engineer note).
         "bash": {
-          "*": "allow"
+          "*": "allow",
+          "rm *": "deny",
+          "sudo *": "deny",
+          "shutdown*": "deny",
+          "reboot*": "deny"
         }
       }
     },
 
     // Adversarial security red-team (full executor, on-demand only)
     "red-team": {
-      "model": "openai/gpt-5.6-sol",
+      "model": "github-copilot/claude-opus-5",
       "mode": "subagent",
       "variant": "medium",
       "temperature": 0.2,
@@ -456,19 +422,39 @@
           "frontend-philosophy": "allow",
           "architecture-philosophy": "allow"
         },
+        // Global destructive-command denies restated (see software-engineer note).
         "bash": {
-          "*": "allow"
+          "*": "allow",
+          "rm *": "deny",
+          "sudo *": "deny",
+          "shutdown*": "deny",
+          "reboot*": "deny"
         }
       }
     },
 
     // Code reviewer & refactoring analyst (read-only)
     "reviewer": {
-      "model": "openai/gpt-5.6-terra",
+      "model": "github-copilot/claude-opus-5",
       "variant": "medium",
       "mode": "subagent",
       "temperature": 0.1,
       "permission": {
+        // Read-only Git inspection only. "git diff" uses exact + "git diff *"
+        // (trailing space) so "git difftool --extcmd=<cmd>" (arbitrary exec)
+        // never matches. Remaining prefix patterns are deliberate: flag-level
+        // writes like --output are prompt-forbidden (user-accepted trade-off).
+        "bash": {
+          "*": "deny",
+          "git status*": "allow",
+          "git diff": "allow",
+          "git diff *": "allow",
+          "git log*": "allow",
+          "git show*": "allow",
+          "git blame*": "allow",
+          "git ls-files*": "allow"
+        },
+        "glob": "allow",
         "edit": "deny",
         "sonarqube_*": "allow",
         "vercel_*": "allow",
@@ -486,12 +472,13 @@
 
     // Task orchestrator / planner
     "plan": {
-      "model": "openai/gpt-5.6-terra",
+      "model": "github-copilot/gpt-5.6-terra",
       "mode": "primary",
       "temperature": 0.3,
       "permission": {
-        "edit": "deny",
-        "bash": { "*": "deny" },
+        // Ask instead of deny: parent deny rules become hard limits for subagents.
+        "edit": "ask",
+        "bash": { "*": "ask" },
         "task": "allow",
         "submit_plan": "allow",
         "skill": {
@@ -504,22 +491,23 @@
 
     // Build orchestrator
     "build": {
-      "model": "openai/gpt-5.6-terra",
+      "model": "github-copilot/claude-opus-5",
       "variant": "medium",
       "mode": "primary",
       "permission": {
-        // Scoped exception: subagents write findings under .deliverables/ for build to read directly.
-        "read": { ".deliverables/**": "allow", "*": "deny" },
-        "glob": { ".deliverables/**": "allow", "*": "deny" },
-
-        "bash": { "*": "deny" },
+        // Ask instead of deny (deny would become a hard limit for subagents).
+        // Deliverables allow comes last: the last matching rule wins.
+        "read": { "*": "ask", ".deliverables/**": "allow" },
+        "glob": { "*": "ask", ".deliverables/**": "allow" },
+        "bash": { "*": "ask" },
         "task": "allow"
       }
     },
 
     // Filesystem & repo explorer (strictly read-only; chat-only pointer summaries)
     "explore": {
-      "model": "openai/gpt-5.6-luna",
+      "model": "github-copilot/gpt-5.6-luna",
+      "variant": "medium",
       "mode": "subagent",
       "temperature": 0.2,
       "permission": {
@@ -533,9 +521,10 @@
 
     // WoW addon reference agent (read-only + external APIs)
     "wow-addon": {
-      "model": "openai/gpt-5.6-terra",
+      "model": "github-copilot/gpt-5.6-terra",
+      "variant": "high",
       "mode": "subagent",
-      "temperature": 0.1,
+      "temperature": 0.3,
       "color": "#C79C6E",
       "permission": {
         "edit": "deny",
@@ -562,7 +551,7 @@
     // Jira / Atlassian operator
     "jira": {
       "disable": true,
-      "model": "openai/gpt-5.6-luna",
+      "model": "github-copilot/gpt-5.6-luna",
       "mode": "primary",
       "temperature": 0.2,
       "color": "#2684ff",
@@ -580,7 +569,7 @@
     // Linear tracker subagent (agent work-state recording; sole linear_* consumer)
     "linear": {
       "disable": true,
-      "model": "openai/gpt-5.6-luna",
+      "model": "github-copilot/gpt-5.6-luna",
       "mode": "subagent",
       "temperature": 0.1,
       "permission": {
@@ -594,7 +583,7 @@
     // ServiceNow platform API agent
     "servicenow": {
       "disable": true,
-      "model": "openai/gpt-5.6-sol",
+      "model": "github-copilot/claude-opus-5",
       "mode": "primary",
       "temperature": 0.1,
       "color": "#0070d2",
@@ -620,10 +609,14 @@
 
     // Tech Lead/Architect advisor (writes ADR briefs to .deliverables/tech-lead/)
     "tech-lead": {
-      "model": "openai/gpt-5.6-sol",
+      "model": "github-copilot/gpt-5.6-luna",
       "mode": "subagent",
       "temperature": 0.2,
       "permission": {
+        // tech-lead.md: "The ONLY directory you may write to or edit in is
+        // .deliverables/tech-lead/" - enforced here, not just in the prompt.
+        // "edit" governs create+modify; the legacy "write" alias is omitted so
+        // creation follows the same path rules.
         "edit": "allow",
         "write": "allow",
         "webfetch": "allow",

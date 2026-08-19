@@ -6,8 +6,9 @@ import { existsSync } from "node:fs";
 
 /**
  * wow-blizzard-source: ripgrep over the per-flavour FrameXML annotated
- * source tree at `~/.local/share/wow-framexml/<flavor>/Annotations/`,
- * returning matched lines with bounded context.
+ * source tree at `<data root>/wow-framexml/<flavor>/Annotations/`, where the
+ * data root is `~/.local/share` on macOS/Linux and `%LOCALAPPDATA%` on
+ * Windows, returning matched lines with bounded context.
  *
  * Contract per ADR-0001 `.deliverables/tech-lead/ADR-0001-rebuild-tool-surface.md`:
  *   - three args (`pattern`, `flavor`, `scope`)
@@ -20,8 +21,23 @@ import { existsSync } from "node:fs";
  *   - paths in output are anchor-relative (AddOns/Blizzard_X/...), never absolute
  */
 
+// Duplicated verbatim in wow-api-lookup.ts and wow-event-info.ts because
+// each tool file must stay self-contained (installed as standalone artifacts).
+// Must agree with maintain-annotations.sh / maintain-annotations.ps1.
+export function defaultDataRoot(
+  dirName: string,
+  platform: NodeJS.Platform = process.platform,
+  env: Record<string, string | undefined> = process.env,
+): string {
+  if (platform === "win32") {
+    const localAppData = env.LOCALAPPDATA ?? join(homedir(), "AppData", "Local");
+    return join(localAppData, dirName);
+  }
+  return join(homedir(), ".local", "share", dirName);
+}
+
 const FRAMEXML_ROOT =
-  process.env.WOW_FRAMEXML_ROOT ?? join(homedir(), ".local/share/wow-framexml");
+  process.env.WOW_FRAMEXML_ROOT ?? defaultDataRoot("wow-framexml");
 const BUDGET = 40_000;
 const MAX_PATTERN_LEN = 500;
 const RG_CONTEXT = 3;
@@ -207,7 +223,7 @@ function renderNoMatch(
   flavor: ResolvedFlavor,
   scope: Scope,
 ): string {
-  const relRoot = `~/.local/share/wow-framexml/${flavor}/Annotations/`;
+  const relRoot = `wow-framexml/${flavor}/Annotations/`;
   return [
     `# ${pattern} (flavor: ${flavor}, scope: ${scope})`,
     "",
@@ -221,7 +237,7 @@ function renderNoMatch(
 
 export default tool({
   description:
-    "Ripgrep over the per-flavor WoW FrameXML annotated source tree (~/.local/share/wow-framexml/<flavor>/Annotations/). Returns matched lines with 3 lines of context, capped at 5 matches per file and 40 KB total. Scope filters by *.lua.annotated.lua, *.xml.annotated.lua, or both.",
+    "Ripgrep over the per-flavor WoW FrameXML annotated source tree (wow-framexml/<flavor>/Annotations/ under the platform data root: ~/.local/share on macOS/Linux, %LOCALAPPDATA% on Windows). Returns matched lines with 3 lines of context, capped at 5 matches per file and 40 KB total. Scope filters by *.lua.annotated.lua, *.xml.annotated.lua, or both.",
   args: {
     pattern: z.string().min(1),
     flavor: z.enum(FLAVOR_ENUM).default("live"),
@@ -301,7 +317,7 @@ export default tool({
       const remainingFiles = groups.length - filesRendered;
       body += `... output truncated at 40 KB; at least ${remainingFiles} more file(s) have matches not shown. Counts are capped at ${RG_MAX_COUNT_PER_FILE} matches per file; narrow your pattern, or restrict scope to lua/xml only.\n`;
     } else {
-      body += `---\nReported ${totalMatches} match(es) across ${groups.length} file(s), capped at ${RG_MAX_COUNT_PER_FILE} per file; files reaching the cap may contain more. Searched ~/.local/share/wow-framexml/${resolved}/Annotations/ (scope: ${scope}).\n`;
+      body += `---\nReported ${totalMatches} match(es) across ${groups.length} file(s), capped at ${RG_MAX_COUNT_PER_FILE} per file; files reaching the cap may contain more. Searched wow-framexml/${resolved}/Annotations/ (scope: ${scope}).\n`;
     }
 
     return {

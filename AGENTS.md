@@ -4,9 +4,8 @@ Universal rules that apply to every project regardless of language or framework.
 
 ## 🧠 Communication
 
+- **ALWAYS** Use ASD-STE100 Simplified Technical English for all responses
 - **PREFER** concise responses over verbose explanations
-- **ALWAYS** explain WHY, not just WHAT, when making architectural decisions
-- **SUMMARIZE** changes made at the end of each task
 
 ## 🏗 Code Quality
 
@@ -44,13 +43,13 @@ These rules apply to every agent. They apply only when the agent's assigned scop
 
 - **MUST** complete work within the agent's assigned scope and escalate only decisions that require explicit user authority.
 - **MUST** self-review every complete diff before requesting external review: re-read changed files, inspect error and security paths, sweep renamed or reshaped references, and confirm verification evidence.
-- **MUST** request an independent `reviewer` review after every cycle that writes, edits, creates, moves, or deletes files - including tests, configuration, and documentation.
-- **MUST NOT** report a file-changing task as complete until `reviewer` returns `APPROVE`. On `REQUEST_CHANGES`, address every applicable BLOCKER, repeat verification and self-review, then request review again. On `NEEDS_DISCUSSION`, present the concrete decision to the user.
+- **MUST** request an independent `reviewer` review after every cycle that writes, edits, creates, moves, or deletes files - including tests, configuration, and documentation. Agents that cannot delegate (no `task` permission) or whose only writes are their own deliverable artefacts (e.g. ADRs under `.deliverables/`) instead **MUST** return the exact changed-file list and self-review evidence to their caller; the orchestrator or user then owns routing the review.
+- **MUST NOT** report a file-changing task as complete until `reviewer` returns `APPROVE`, except under the carve-out above, where completion means the changed-file list and evidence were handed to the caller. On `REQUEST_CHANGES`, address every applicable BLOCKER, repeat verification and self-review, then request review again. On `NEEDS_DISCUSSION`, present the concrete decision to the user.
 - **MUST** preserve unrelated work in a dirty tree and send the reviewer the exact changed-file list, verification commands and outcomes, plus self-review evidence.
 
 ## ⚠️ Error Handling
 
-- **MUST** handle errors explicitly - do not silently swallow exceptions without good reason
+- **MUST** handle errors explicitly - never silently swallow exceptions
 - **FOLLOW** the project's established error handling patterns
 - **PREFER** specific error types over generic catch-all handlers
 - **ALWAYS** include meaningful context in error messages
@@ -66,7 +65,7 @@ These rules apply to every agent. They apply only when the agent's assigned scop
 
 ## 📝 Documentation
 
-- **MUST** update documentation when behavior changes
+- **MUST** update documentation when behavior changes; agents whose scope excludes documentation **MUST** report the needed update to their caller for routing to a docs agent
 - **MUST** write docstrings for public APIs and exported functions
 - **ONLY** use emojis where appropriate, e.g. in documentation section headers
 
@@ -75,9 +74,3 @@ These rules apply to every agent. They apply only when the agent's assigned scop
 - **NEVER** make unrelated changes in the same commit or PR
 - **MUST** stay focused on the current task - resist scope creep
 - **FOLLOW** existing project file structure and organization
-
-## 🚧 Permission Boundaries
-
-- **NEVER** route around a denied action by substituting another tool (e.g. deleting via an interpreter after a shell `rm` is denied, or writing a file through a shell heredoc when `edit` is denied). A denial is a policy about the effect, not the specific command.
-- **MUST** treat a permission denial that blocks part of the task as a reportable blocker: state what was denied and what it prevented, then stop or continue with the rest - do not improvise a bypass.
-- **NEVER** widen your own effective permissions. If a task appears to require a capability your role lacks, say so and let the orchestrator re-route to an agent that holds it.

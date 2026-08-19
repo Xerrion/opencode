@@ -73,15 +73,10 @@ export function isCommentLine(line: string): boolean {
 
 export function containsPlaceholder(text: string): boolean {
   const lowerText = text.toLowerCase();
-  return PLACEHOLDER_INDICATORS.some((indicator) =>
-    lowerText.includes(indicator.toLowerCase()),
-  );
+  return PLACEHOLDER_INDICATORS.some((indicator) => lowerText.includes(indicator.toLowerCase()));
 }
 
-export function extractLineContaining(
-  content: string,
-  matchIndex: number,
-): string {
+export function extractLineContaining(content: string, matchIndex: number): string {
   const lineStart = content.lastIndexOf("\n", matchIndex - 1) + 1;
   const lineEnd = content.indexOf("\n", matchIndex);
   return content.slice(lineStart, lineEnd === -1 ? undefined : lineEnd);
@@ -125,9 +120,9 @@ export const REDACTION_PATTERNS: RedactionPattern[] = [
     buildReplacement: () => "<REDACTED:github-pat>",
   },
   {
-    reason: "openai-anthropic-key",
+    reason: "github-copilot-anthropic-key",
     pattern: /\bsk-[A-Za-z0-9_\-]{20,}\b/g,
-    buildReplacement: () => "<REDACTED:openai-anthropic-key>",
+    buildReplacement: () => "<REDACTED:github-copilot-anthropic-key>",
   },
   {
     reason: "slack-token",
@@ -161,8 +156,7 @@ export const REDACTION_PATTERNS: RedactionPattern[] = [
   },
   {
     reason: "jwt",
-    pattern:
-      /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g,
+    pattern: /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g,
     buildReplacement: () => "<REDACTED:jwt>",
   },
   {
@@ -200,15 +194,9 @@ export const REDACTION_PATTERNS: RedactionPattern[] = [
  * Uses `pattern.exec` in a loop (rather than `String.matchAll`) so the
  * fail-safe test can monkey-patch `.exec` and observe the hook's catch.
  */
-export function applyPattern(
-  text: string,
-  p: RedactionPattern,
-  hits: RedactionHit[],
-): string {
+export function applyPattern(text: string, p: RedactionPattern, hits: RedactionHit[]): string {
   if (!p.pattern.global) {
-    throw new Error(
-      `[credential-protection] pattern ${p.reason} is missing /g flag`,
-    );
+    throw new Error(`[credential-protection] pattern ${p.reason} is missing /g flag`);
   }
   p.pattern.lastIndex = 0;
   let result = "";
@@ -262,11 +250,7 @@ export function redactString(s: string): { text: string; hits: RedactionHit[] } 
  * hits. Non-string leaves are left untouched (Parse-Don't-Validate: we do
  * not coerce types we did not produce).
  */
-export function deepRedactStrings(
-  obj: unknown,
-  hits: RedactionHit[],
-  seen: WeakSet<object> = new WeakSet(),
-): void {
+export function deepRedactStrings(obj: unknown, hits: RedactionHit[], seen: WeakSet<object> = new WeakSet()): void {
   if (!obj || typeof obj !== "object") return;
   if (seen.has(obj as object)) return;
   seen.add(obj as object);
@@ -331,25 +315,16 @@ export function isMcpShape(output: unknown): output is McpShapedOutput {
   // `{ content: Array<{ type, text? }> }` as the second hook argument,
   // even though the TS type declares `{ title, output, metadata }`.
   // Single duck-type guard at the boundary, single cast.
-  return (
-    !!output &&
-    typeof output === "object" &&
-    Array.isArray((output as { content?: unknown }).content)
-  );
+  return !!output && typeof output === "object" && Array.isArray((output as { content?: unknown }).content);
 }
 
 /**
  * Prepend the warning line to the first text part of an MCP-shaped output;
  * if no text part exists, insert one at the head.
  */
-function prependWarningToMcp(
-  output: McpShapedOutput,
-  hits: RedactionHit[],
-): void {
+function prependWarningToMcp(output: McpShapedOutput, hits: RedactionHit[]): void {
   const warning = buildWarning(hits);
-  const firstText = output.content.find(
-    (p) => p?.type === "text" && typeof p.text === "string",
-  );
+  const firstText = output.content.find((p) => p?.type === "text" && typeof p.text === "string");
   if (firstText) {
     firstText.text = `${warning}\n${firstText.text ?? ""}`;
     return;
@@ -387,10 +362,7 @@ function redactStringField<T extends Record<string, unknown>>(
   hits.push(...r.hits);
 }
 
-function redactStandardOutput(
-  output: StandardOutput,
-  hits: RedactionHit[],
-): void {
+function redactStandardOutput(output: StandardOutput, hits: RedactionHit[]): void {
   redactStringField(output as Record<string, unknown>, "output", hits);
   redactStringField(output as Record<string, unknown>, "title", hits);
   if (Array.isArray(output.attachments)) {

@@ -40,11 +40,6 @@ Both modes share the same constraints: read-only, pointer-only, no fix design, n
 - Flag version differences explicitly whenever Retail and Classic diverge.
 - Return pointers, not payloads. Paths with line ranges, symbol names, signatures, short targeted snippets - never full file dumps or exhaustive directory listings. See Pointer Discipline below.
 - No fix design, no implementation paths. Report platform facts and existing-code pointers; do not propose fixes, design module layouts, name new files, write capability gates, sketch listener branches, or prescribe "recommended next actions". See No Solutioning below.
-- Honour the caller's tool-call budget. If none is supplied, use at most three calls; a caller may grant up to eight only when scope or dependency direction is genuinely unknown. Every parallel call counts separately.
-
-## Bounded Discovery
-
-Each delegation answers one material platform or codebase question. Start with the highest-authority, narrowest tool for that question and stop as soon as the required signature, event payload, version constraint, path, symbol, caller, or test is established. Do not use spare budget for related platform facts. If two calls do not reduce uncertainty, or the budget is exhausted, return the evidence, confidence, and one unresolved fact rather than broadening the search.
 
 ## Pointer Discipline
 
@@ -57,7 +52,6 @@ Output is a **map**, not a transcript.
 - Grep match counts and the top relevant hits with `file:line`
 - Short structural summaries ("3 listeners, all register via `addon:RegisterEvent` in `Initialize`")
 - Direct yes/no with one citation for existence questions ("does an `ns.capabilities` table exist? No - only `ns.IS_RETAIL` at `Core/Lifecycle.lua:23`")
-- `Budget used: N/N` and `Question resolved: yes/no`. If no, name the one unresolved fact.
 
 **Never return:**
 

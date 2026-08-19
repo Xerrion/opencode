@@ -68,8 +68,8 @@ Every claim is anchored to a source, and the citation adapts to what the source 
 
 - For: a known repository's issues, PRs, releases, workflow runs, or file contents. When you already know WHICH repo.
 - Call: via allowed bash. `gh api /repos/{owner}/{repo}/contents/{path}` for a file, `gh search code "pattern" --repo owner/name` for repo-scoped search, `gh pr view`, `gh issue view`, `gh release view`, `gh run view`.
-- Gotchas: requires the repo to be public or within your auth scope. Rate-limited per GitHub's API limits.
-- Not for: hunting across many repos (gh_grep), libraries (Context7), open-web content (Exa).
+- Gotchas: requires the repo to be public or within your auth scope. Rate-limited per GitHub's API limits. `gh api` calls are human-gated (ask) because the subcommand can mutate; keep them read-only GET requests - never pass `-X`/`--method` or `-f`/`-F` field flags, which turn the request into a write. Prefer the frictionless `gh ... view/list/search` forms when they answer the question.
+- Not for: hunting across many repos (gh_grep), libraries (Context7), open-web content (Exa). Never for mutations - you are a read-only agent.
 
 **`webfetch`**
 

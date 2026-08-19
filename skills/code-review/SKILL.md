@@ -7,7 +7,7 @@ description: Comprehensive code review methodology with severity classification 
 
 ## TL;DR
 
-Systematic code review across 4 layers with severity classification. Only report findings with ≥80% confidence. Include file:line references for all issues.
+Systematic code review across 4 layers with severity classification. Severities and confidence floors follow the repo-wide tiers: BLOCKER (≥90% confidence), IMPORTANT (≥70%), NIT (no minimum) - below a tier's floor, drop one tier. Include file:line references for all issues.
 
 ## The 4 Review Layers
 
@@ -32,7 +32,7 @@ Systematic code review across 4 layers with severity classification. Only report
 
 - No N+1 query patterns
 - Appropriate caching strategies
-- No unnecessary re-renders (React/frontend)
+- No unnecessary re-renders or redraws (frontend/UI code)
 - Lazy loading where appropriate
 - Memory leak prevention
 - Algorithmic complexity concerns
@@ -47,19 +47,25 @@ Systematic code review across 4 layers with severity classification. Only report
 
 ## Severity Classification
 
-| Severity | Icon | Criteria                                                 | Action Required       |
-| -------- | ---- | -------------------------------------------------------- | --------------------- |
-| Critical | 🔴   | Security vulnerabilities, crashes, data loss, corruption | Must fix before merge |
-| Major    | 🟠   | Bugs, performance issues, missing error handling         | Should fix            |
-| Minor    | 🟡   | Code smells, maintainability issues, test gaps           | Nice to fix           |
-| Nitpick  | 🟢   | Style preferences, naming suggestions, documentation     | Optional              |
+One severity system exists repo-wide; it is defined by `review-philosophy` and mirrored here. Closed criteria - a finding qualifies for a tier only by matching its list.
 
-## Confidence Threshold
+| Severity  | Criteria                                                                                                                                                                        | Action Required        |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| BLOCKER   | Correctness defect; security vulnerability; data loss or corruption; broken public contract; regression in tested behavior                                                      | Must fix before merge  |
+| IMPORTANT | Significant performance regression in a hot path; missing error handling on a high-risk path; clear violation of a named philosophy law; documented project convention violated | Should fix             |
+| NIT       | Style, naming (unless deceptive), minor doc gaps, "improvable but correct" code, cosmetic concerns                                                                              | Optional; never blocks |
 
-**Only report findings with ≥80% confidence.**
+## Confidence Floors
+
+Tier-specific floors (same as `review-philosophy` Law 2: Lower Tier When Uncertain):
+
+- BLOCKER requires ≥90% confidence.
+- IMPORTANT requires ≥70% confidence.
+- NIT has no minimum.
 
 If uncertain about an issue:
 
+- Below a tier's floor, report it one tier down - doubt deflates, confidence inflates.
 - State the uncertainty explicitly: "Potential issue (70% confidence): ..."
 - Suggest investigation rather than assert a problem
 - Prefer false negatives over false positives (reduce noise)
@@ -79,10 +85,10 @@ Structure your review as:
 1. **Files Reviewed** - List all files analyzed
 2. **Overall Assessment** - APPROVE | REQUEST_CHANGES | NEEDS_DISCUSSION
 3. **Summary** - 2-3 sentence overview
-4. **Critical Issues** (🔴) - With file:line references
-5. **Major Issues** (🟠) - With file:line references
-6. **Minor Issues** (🟡) - With file:line references
-7. **Positive Observations** (🟢) - What's done well (always include at least one)
+4. **BLOCKER Issues** - With file:line references
+5. **IMPORTANT Issues** - With file:line references
+6. **NIT Issues** - With file:line references
+7. **Positive Observations** - What's done well (always include at least one)
 8. **Philosophy Compliance** - Checklist results if applicable
 
 ## What NOT to Do
@@ -99,8 +105,8 @@ Structure your review as:
 Before completing a review, verify:
 
 - [ ] All 4 layers analyzed (Correctness, Security, Performance, Style)
-- [ ] Severity assigned to each finding
-- [ ] Confidence ≥80% for all reported issues (or uncertainty stated)
+- [ ] Severity assigned to each finding (BLOCKER/IMPORTANT/NIT)
+- [ ] Every finding meets its tier's confidence floor (BLOCKER ≥90%, IMPORTANT ≥70%) or was dropped a tier
 - [ ] File names and line numbers included for all findings
 - [ ] Positive observations noted
 - [ ] Output follows the standard format

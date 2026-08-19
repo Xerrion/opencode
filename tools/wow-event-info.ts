@@ -18,9 +18,24 @@ import { readFile } from "node:fs/promises";
  */
 
 const REL_PATH = "Annotations/Core/Data/Event.lua";
+
+// Duplicated verbatim in wow-api-lookup.ts and wow-blizzard-source.ts because
+// each tool file must stay self-contained (installed as standalone artifacts).
+// Must agree with maintain-annotations.sh / maintain-annotations.ps1.
+export function defaultDataRoot(
+  dirName: string,
+  platform: NodeJS.Platform = process.platform,
+  env: Record<string, string | undefined> = process.env,
+): string {
+  if (platform === "win32") {
+    const localAppData = env.LOCALAPPDATA ?? join(homedir(), "AppData", "Local");
+    return join(localAppData, dirName);
+  }
+  return join(homedir(), ".local", "share", dirName);
+}
+
 const ABS_PATH = join(
-  process.env.WOW_ANNOTATIONS_ROOT ??
-    join(homedir(), ".local/share/wow-annotations"),
+  process.env.WOW_ANNOTATIONS_ROOT ?? defaultDataRoot("wow-annotations"),
   REL_PATH,
 );
 const BUDGET = 40_000;

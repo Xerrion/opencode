@@ -6,7 +6,8 @@ import { readFile } from "node:fs/promises";
 
 /**
  * wow-api-lookup: exact-symbol lookup against the curated WoW LuaLS
- * annotation tree at `~/.local/share/wow-annotations/Annotations/Core/`.
+ * annotation tree under the platform data root (`~/.local/share/wow-annotations`
+ * on macOS/Linux, `%LOCALAPPDATA%\wow-annotations` on Windows).
  *
  * Contract per ADR-0001 (`.deliverables/tech-lead/ADR-0001-rebuild-tool-surface.md`):
  *   - one arg (`query`), no mode/category/wiki flags
@@ -26,9 +27,23 @@ import { readFile } from "node:fs/promises";
  *   - Data/Classic.lua                       (9-line override addendum)
  */
 
+// Duplicated verbatim in wow-event-info.ts and wow-blizzard-source.ts because
+// each tool file must stay self-contained (installed as standalone artifacts).
+// Must agree with maintain-annotations.sh / maintain-annotations.ps1.
+export function defaultDataRoot(
+  dirName: string,
+  platform: NodeJS.Platform = process.platform,
+  env: Record<string, string | undefined> = process.env,
+): string {
+  if (platform === "win32") {
+    const localAppData = env.LOCALAPPDATA ?? join(homedir(), "AppData", "Local");
+    return join(localAppData, dirName);
+  }
+  return join(homedir(), ".local", "share", dirName);
+}
+
 const ANCHOR_ROOT =
-  process.env.WOW_ANNOTATIONS_ROOT ??
-  join(homedir(), ".local/share/wow-annotations");
+  process.env.WOW_ANNOTATIONS_ROOT ?? defaultDataRoot("wow-annotations");
 const REL_CORE = "Annotations/Core";
 const BUDGET = 40_000;
 const MAX_QUERY_LEN = 200;

@@ -22,22 +22,23 @@ This repository contains the global configuration, agent definitions, and specia
 
 Agents operate as either primary orchestrators or specialized subagents. Primary agents can delegate work, while subagents focus on specific technical domains.
 
-| File                | Mode     | Purpose                                                         |
-| ------------------- | -------- | --------------------------------------------------------------- |
-| `accountant`        | primary  | Personal accounting specialist for Firefly III via the Firefly III and pdf-reader MCPs |
-| `build`             | primary  | Build orchestrator coordinating implementation via delegation   |
-| `plan`              | primary  | Planning orchestrator coordinating review via Plannotator       |
-| `servicenow`        | primary  | ServiceNow platform expert with full MCP access                 |
-| `software-engineer` | subagent | Technical implementation specialist                             |
-| `autonomous-engineer` | primary | End-to-end implementation owner with mandatory self-review and independent reviewer approval |
-| `explore`           | subagent | Codebase navigator; read-only chat pointers; no deliverables    |
-| `researcher`        | subagent | External knowledge gathering                                    |
-| `red-team`          | subagent | On-demand adversarial security review with PoC-backed findings  |
-| `reviewer`          | subagent | Read-only code review plus safe refactors                       |
-| `scribe`            | subagent | Technical writer - READMEs, guides, API refs, changelogs        |
-| `tech-lead`         | subagent | High-bar advisor for new modules and cross-subsystem design; writes ADR briefs to `.deliverables/tech-lead/`. Not for routine in-codebase design - `software-engineer` handles that in-flight. |
-| `wow-addon`         | subagent | WoW addon read-only specialist (research, navigation, lint)     |
-| `linear`            | subagent | Linear tracker - records orchestrated work state on delegation  |
+| File                  | Mode     | Purpose                                                                                                                                                                                        |
+| --------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `accountant`          | primary  | Personal accounting specialist for Firefly III via the Firefly III and pdf-reader MCPs (disabled)                                                                                              |
+| `build`               | primary  | Build orchestrator coordinating implementation via delegation                                                                                                                                  |
+| `plan`                | primary  | Planning orchestrator coordinating review via Plannotator                                                                                                                                      |
+| `servicenow`          | primary  | ServiceNow platform expert with full MCP access (disabled)                                                                                                                                     |
+| `software-engineer`   | subagent | Technical implementation specialist                                                                                                                                                            |
+| `autonomous-engineer` | primary  | End-to-end implementation owner with mandatory self-review and independent reviewer approval (disabled)                                                                                        |
+| `explore`             | subagent | Codebase navigator; read-only chat pointers; no deliverables                                                                                                                                   |
+| `researcher`          | subagent | External knowledge gathering                                                                                                                                                                   |
+| `red-team`            | subagent | On-demand adversarial security review with PoC-backed findings                                                                                                                                 |
+| `reviewer`            | subagent | Read-only code review plus safe refactors                                                                                                                                                      |
+| `scribe`              | subagent | Technical writer - READMEs, guides, API refs, changelogs                                                                                                                                       |
+| `tech-lead`           | subagent | High-bar advisor for new modules and cross-subsystem design; writes ADR briefs to `.deliverables/tech-lead/`. Not for routine in-codebase design - `software-engineer` handles that in-flight. |
+| `wow-addon`           | subagent | WoW addon read-only specialist (research, navigation, lint)                                                                                                                                    |
+| `jira`                | primary  | Jira / Atlassian operator via the Atlassian MCP (disabled)                                                                                                                                     |
+| `linear`              | subagent | Linear tracker - records orchestrated work state on delegation (disabled)                                                                                                                      |
 
 ## 🧠 Skills
 
@@ -45,7 +46,7 @@ Skills provide deep domain context and are grouped by theme for scannability. Th
 
 ### Philosophy
 
-- **`architecture-philosophy`**: The Pillars of Intentional Architecture.
+- **`architecture-philosophy`**: The 6 Pillars of Intentional Architecture.
 - **`code-philosophy`**: The 5 Laws of Elegant Defense.
 - **`frontend-philosophy`**: The 5 Pillars of Intentional UI.
 
@@ -162,8 +163,9 @@ The `build` agent owns these gates and passes pointers forward, so agents do not
 Safety is enforced through a restricted permission baseline:
 
 - **Read-only**: Operations are allowed globally for most agents.
-- **Restricted**: Writes, edits, destructive bash commands, and MCP tools are denied by default.
+- **Restricted**: Shell commands, writes, edits, and MCP tools require confirmation or are denied by default.
 - **Opt-in**: Each agent explicitly opts in to the tools it needs via per-agent overrides in `opencode.jsonc`.
+- **Subagent ceiling**: Parent `deny` rules become hard limits for spawned subagents, so orchestrators use `ask` for capabilities their subagents need.
 - **Allowlist**: Filesystem access is restricted to the current workspace and the `external_directory` allowlist.
 
 ## 📦 Setup / Prerequisites

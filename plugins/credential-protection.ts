@@ -5,6 +5,7 @@ import {
   extractLineContaining,
   redactToolOutput,
 } from "./credential-redaction";
+import { analyzeGitStaging } from "./credential-redaction/git-staging";
 
 /**
  * General-Purpose Credential Protection Plugin
@@ -193,9 +194,14 @@ export const CredentialProtection: Plugin = async ({ client }) => {
     }) => {
       const toolName = input.tool;
 
-      // --- write/edit tool: scan content for credentials ---
-      if (toolName === "write" || toolName === "edit") {
-        const text = String(input.args?.content || input.args?.newString || "");
+      // --- write/edit/patch tools: scan new content for credentials ---
+      // oldString is deliberately NOT scanned: edits that REMOVE a credential
+      // must not be blocked.
+      if (toolName === "write" || toolName === "edit" || toolName === "patch") {
+        const args = input.args ?? {};
+        const text = [args.content, args.newString, args.diff]
+          .filter((v): v is string => typeof v === "string")
+          .join("\n");
         if (!text) return;
 
         const credential = scanForCredentials(text);
@@ -214,29 +220,23 @@ export const CredentialProtection: Plugin = async ({ client }) => {
           await blockCredential("bash", credential);
         }
 
-        // Only check git add patterns if command contains "git add"
-        if (!/git\s+add/.test(command)) return;
+        // Actions B & C: git staging policy. analyzeGitStaging handles
+        // `git -C dir add`, the `git stage` alias, and chained commands, and
+        // reports broad adds and explicit paths independently so a broad add
+        // in one segment cannot mask a sensitive path staged in another.
+        const staging = analyzeGitStaging(command);
+        if (!staging) return;
 
-        // Action C: Warn on broad git add (check before Action B to avoid false block)
-        if (/git\s+add\s+(\.|(-A|--all))/.test(command)) {
+        if (staging.hasBroadAdd) {
           await log(
             "warn",
             "[credential-protection] WARNING: Broad 'git add' detected. Verify no sensitive files are being staged.",
           );
-          return;
         }
 
-        // Action B: Block staging of sensitive files
-        const commandParts = command.split(/\s+/);
-        const gitAddIndex = commandParts.indexOf("add");
-        if (gitAddIndex === -1) return;
-
-        const filesToStage = commandParts.slice(gitAddIndex + 1);
-        for (const file of filesToStage) {
-          const cleaned = file.replace(/^["']|["']$/g, "");
-          if (cleaned !== "--" && cleaned.startsWith("-")) continue;
-          if (isSensitiveFile(cleaned)) {
-            const msg = `[credential-protection] BLOCKED: Attempting to stage sensitive file '${cleaned}'.\nPattern matched: Sensitive file pattern\nIf this is a false positive, use a placeholder value like 'your-api-key-here' or reference an environment variable.`;
+        for (const path of staging.stagedPaths) {
+          if (isSensitiveFile(path)) {
+            const msg = `[credential-protection] BLOCKED: Attempting to stage sensitive file '${path}'.\nPattern matched: Sensitive file pattern\nIf this file must be tracked, remove the credential content first and stage a sanitized version.`;
             await log("error", msg);
             throw new Error(msg);
           }
