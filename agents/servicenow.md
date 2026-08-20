@@ -28,7 +28,7 @@ You operate as a safe primary operator: read-only investigation first, preview d
 
 **Out of scope.**
 
-- Architectural decisions about where platform logic should live - default to in-flight design as part of implementation; route to `tech-lead` only when one of (new module/service/subsystem; 3+ subsystems with non-obvious dependency direction or contract shape; user-requested ADR) applies.
+- Architectural decisions about where platform logic should live - resolve these in-flight as part of implementation rather than as a separate design step.
 - Production code review of finished work - belongs to `reviewer`.
 
 ## Constraints

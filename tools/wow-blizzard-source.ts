@@ -10,7 +10,7 @@ import { existsSync } from "node:fs";
  * data root is `~/.local/share` on macOS/Linux and `%LOCALAPPDATA%` on
  * Windows, returning matched lines with bounded context.
  *
- * Contract per ADR-0001 `.deliverables/tech-lead/ADR-0001-rebuild-tool-surface.md`:
+ * Contract per ADR-0001 (rebuild-tool-surface):
  *   - three args (`pattern`, `flavor`, `scope`)
  *   - `flavor` accepts `retail` as an alias for `live` (orchestrator amendment)
  *   - returns { output, metadata: { flavor, matchCount, selfTruncated } },
@@ -36,8 +36,7 @@ export function defaultDataRoot(
   return join(homedir(), ".local", "share", dirName);
 }
 
-const FRAMEXML_ROOT =
-  process.env.WOW_FRAMEXML_ROOT ?? defaultDataRoot("wow-framexml");
+const FRAMEXML_ROOT = process.env.WOW_FRAMEXML_ROOT ?? defaultDataRoot("wow-framexml");
 const BUDGET = 40_000;
 const MAX_PATTERN_LEN = 500;
 const RG_CONTEXT = 3;
@@ -137,8 +136,7 @@ function groupByFile(lines: RgLine[]): FileGroup[] {
       current = { path: l.path, lines: [], matchCount: 0 };
       groups.push(current);
     }
-    const isCountedMatch =
-      l.isMatch && current.matchCount < RG_MAX_COUNT_PER_FILE;
+    const isCountedMatch = l.isMatch && current.matchCount < RG_MAX_COUNT_PER_FILE;
     current.lines.push(isCountedMatch === l.isMatch ? l : { ...l, isMatch: false });
     if (isCountedMatch) current.matchCount += 1;
   }
@@ -199,12 +197,8 @@ async function runRg(
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(`wow-blizzard-source: failed to launch rg: ${message}`);
   }
-  const stdout = await new Response(
-    proc.stdout as ReadableStream<Uint8Array>,
-  ).text();
-  const stderr = await new Response(
-    proc.stderr as ReadableStream<Uint8Array>,
-  ).text();
+  const stdout = await new Response(proc.stdout as ReadableStream<Uint8Array>).text();
+  const stderr = await new Response(proc.stderr as ReadableStream<Uint8Array>).text();
   const exitCode = await proc.exited;
   const lines: RgLine[] = [];
   for (const raw of stdout.split("\n")) {
@@ -218,11 +212,7 @@ async function runRg(
   return { lines, exitCode, stderr };
 }
 
-function renderNoMatch(
-  pattern: string,
-  flavor: ResolvedFlavor,
-  scope: Scope,
-): string {
+function renderNoMatch(pattern: string, flavor: ResolvedFlavor, scope: Scope): string {
   const relRoot = `wow-framexml/${flavor}/Annotations/`;
   return [
     `# ${pattern} (flavor: ${flavor}, scope: ${scope})`,
@@ -249,9 +239,7 @@ export default tool({
       throw new Error("wow-blizzard-source: pattern must be non-empty");
     }
     if (p.length > MAX_PATTERN_LEN) {
-      throw new Error(
-        `wow-blizzard-source: pattern exceeds ${MAX_PATTERN_LEN} characters`,
-      );
+      throw new Error(`wow-blizzard-source: pattern exceeds ${MAX_PATTERN_LEN} characters`);
     }
     if (/[\r\n]/.test(p)) {
       throw new Error("wow-blizzard-source: pattern must not contain newlines");
@@ -261,17 +249,13 @@ export default tool({
     const absRoot = join(FRAMEXML_ROOT, resolved, "Annotations");
 
     if (!existsSync(absRoot)) {
-      throw new Error(
-        `wow-blizzard-source: flavor '${resolved}' not available at ${absRoot}`,
-      );
+      throw new Error(`wow-blizzard-source: flavor '${resolved}' not available at ${absRoot}`);
     }
 
     const { lines, exitCode, stderr } = await runRg(p, scope, absRoot);
 
     if (exitCode === 2) {
-      throw new Error(
-        `wow-blizzard-source: invalid regex: ${stderr.trim().slice(0, 200)}`,
-      );
+      throw new Error(`wow-blizzard-source: invalid regex: ${stderr.trim().slice(0, 200)}`);
     }
     if (exitCode !== 0 && exitCode !== 1) {
       throw new Error(

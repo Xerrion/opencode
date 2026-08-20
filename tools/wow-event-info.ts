@@ -9,7 +9,7 @@ import { readFile } from "node:fs/promises";
  * `Annotations/Core/Data/Event.lua`, returning the payload signature plus a
  * same-prefix family window for orientation.
  *
- * Contract per ADR-0001 `.deliverables/tech-lead/ADR-0001-rebuild-tool-surface.md`:
+ * Contract per ADR-0001 (rebuild-tool-surface):
  *  - one arg (`event`), no mode/category/wiki flags
  *  - bare-string return
  *  - 40 KB self-cap
@@ -34,10 +34,7 @@ export function defaultDataRoot(
   return join(homedir(), ".local", "share", dirName);
 }
 
-const ABS_PATH = join(
-  process.env.WOW_ANNOTATIONS_ROOT ?? defaultDataRoot("wow-annotations"),
-  REL_PATH,
-);
+const ABS_PATH = join(process.env.WOW_ANNOTATIONS_ROOT ?? defaultDataRoot("wow-annotations"), REL_PATH);
 const BUDGET = 40_000;
 const FAMILY_LINE_CAP = 30;
 const SUGGESTION_CAP = 20;
@@ -138,33 +135,21 @@ function renderMatch(event: string, rows: Row[], idx: number): string {
   const prefix = familyPrefix(row.name);
   let { lo, hi } = familyBounds(rows, idx);
 
-  const buildBody = (
-    loIdx: number,
-    hiIdx: number,
-    droppedAbove: number,
-    droppedBelow: number,
-  ): string => {
+  const buildBody = (loIdx: number, hiIdx: number, droppedAbove: number, droppedBelow: number): string => {
     const familyLines: string[] = [];
     if (droppedAbove > 0) {
-      familyLines.push(
-        `... +${droppedAbove} more events with prefix ${prefix}_ above`,
-      );
+      familyLines.push(`... +${droppedAbove} more events with prefix ${prefix}_ above`);
     }
     for (let i = loIdx; i <= hiIdx; i++) {
       familyLines.push(renderFamilyLine(rows[i]!, i === idx));
     }
     if (droppedBelow > 0) {
-      familyLines.push(
-        `... +${droppedBelow} more events with prefix ${prefix}_ below`,
-      );
+      familyLines.push(`... +${droppedBelow} more events with prefix ${prefix}_ below`);
     }
     const familyText = familyLines.join("\n");
     const fence = fenceFor(familyText);
 
-    const payloadLine =
-      row.payload !== null && row.payload.length > 0
-        ? row.payload
-        : "(no payload)";
+    const payloadLine = row.payload !== null && row.payload.length > 0 ? row.payload : "(no payload)";
 
     return [
       `# ${event}`,
@@ -215,16 +200,12 @@ function renderMatch(event: string, rows: Row[], idx: number): string {
 
 function renderNoMatch(event: string, rows: Row[]): string {
   const wanted = familyPrefix(event);
-  let suggestions = rows
-    .filter((r) => familyPrefix(r.name) === wanted)
-    .map((r) => r.name);
+  let suggestions = rows.filter((r) => familyPrefix(r.name) === wanted).map((r) => r.name);
 
   // Fallback: shared 3-char prefix when the family bucket is empty.
   if (suggestions.length === 0 && event.length >= 3) {
     const head = event.slice(0, 3);
-    suggestions = rows
-      .filter((r) => r.name.startsWith(head))
-      .map((r) => r.name);
+    suggestions = rows.filter((r) => r.name.startsWith(head)).map((r) => r.name);
   }
 
   // De-dupe + alphabetise + cap.
@@ -232,12 +213,7 @@ function renderNoMatch(event: string, rows: Row[]): string {
   const truncated = suggestions.length > SUGGESTION_CAP;
   const shown = suggestions.slice(0, SUGGESTION_CAP);
 
-  const lines: string[] = [
-    `# ${event}`,
-    "",
-    `No event by this exact name in ${REL_PATH}.`,
-    "",
-  ];
+  const lines: string[] = [`# ${event}`, "", `No event by this exact name in ${REL_PATH}.`, ""];
 
   if (shown.length > 0) {
     lines.push(`## Closest same-prefix events (prefix \`${wanted}_\`)`);
@@ -245,9 +221,7 @@ function renderNoMatch(event: string, rows: Row[]): string {
       lines.push(`- ${name}`);
     }
     if (truncated) {
-      lines.push(
-        `- ... +${suggestions.length - SUGGESTION_CAP} more with prefix ${wanted}_`,
-      );
+      lines.push(`- ... +${suggestions.length - SUGGESTION_CAP} more with prefix ${wanted}_`);
     }
     lines.push("");
   } else {
@@ -256,12 +230,8 @@ function renderNoMatch(event: string, rows: Row[]): string {
   }
 
   lines.push("## Note");
-  lines.push(
-    "This tool does not fuzzy-match. If you suspect a typo, retry with the exact name.",
-  );
-  lines.push(
-    `The wiki may carry it at https://warcraft.wiki.gg/wiki/${event} if it is a real event.`,
-  );
+  lines.push("This tool does not fuzzy-match. If you suspect a typo, retry with the exact name.");
+  lines.push(`The wiki may carry it at https://warcraft.wiki.gg/wiki/${event} if it is a real event.`);
   lines.push("");
 
   return truncateUtf8(lines.join("\n"), BUDGET);
@@ -282,9 +252,7 @@ export default tool({
       throw new Error("wow-event-info: event exceeds 100 characters");
     }
     if (!/^[A-Z0-9_]+$/.test(normalised)) {
-      throw new Error(
-        "wow-event-info: event must contain only A-Z, 0-9, and underscore",
-      );
+      throw new Error("wow-event-info: event must contain only A-Z, 0-9, and underscore");
     }
 
     let raw: string;

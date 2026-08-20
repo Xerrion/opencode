@@ -1,6 +1,8 @@
-# Code Philosophy - ZERO EXCEPTIONS
+# Code Philosophy
 
-**Every code change requires a loaded philosophy. No load, no code. If you already started writing - stop, load it, then resume.**
+**Every code change requires a loaded philosophy. If you have already started writing without one - stop, load it, then resume.**
+
+The load happens *before* the code because its purpose is to shape what you write, not to grade it afterwards. A philosophy consulted after the fact becomes a checklist you rationalise against; consulted first, it changes the shape of the first draft and there is nothing to rationalise.
 
 ## 1. Load Before You Touch Code
 
@@ -17,17 +19,9 @@ WoW addon work is the specialized exception: the `wow-addon` agent loads `wow-ad
 
 ### Agent-Act Discipline
 
-Code-shape philosophies above govern what good code looks like. The skills below govern the act each agent performs - implementing, reviewing, writing prose, researching, bookkeeping. Each agent loads its own act-discipline skill in addition to the code-shape skills relevant to the task.
+The philosophies above govern what good code looks like. A second kind governs the act you are performing - implementing, reviewing, writing prose, researching, bookkeeping. Load your act-discipline skill in addition to the code-shape skills the task calls for.
 
-| Agent                            | Act-discipline skill                                                                  |
-| -------------------------------- | ------------------------------------------------------------------------------------- |
-| `software-engineer`              | `implementation-philosophy`                                                           |
-| `reviewer`                       | `review-philosophy`                                                                   |
-| `scribe`                         | `writing-philosophy`                                                                  |
-| `researcher`                     | `research-philosophy`                                                                 |
-| `accountant`                     | `accounting-philosophy`                                                               |
-| `autonomous-engineer` (disabled) | `implementation-philosophy`, plus `review-philosophy` + `code-review` for self-review |
-| `jira` (disabled)                | `writing-philosophy`                                                                  |
+Your own agent file names which one and says when to load it.
 
 ## 2. Implement Against the Philosophy
 
@@ -35,12 +29,12 @@ Not beside it. Not after it. The philosophy defines what correct code looks like
 
 ## 3. Name What You Checked
 
-Before marking done, explicitly list which laws/pillars your code satisfies. Not "checklist passed" - name them:
+Before marking done, list which laws/pillars your code satisfies. Naming them forces you to re-read the code against each one; "checklist passed" does not, which is why it is not accepted:
 
 - **Code**: Early Exit (Guard Clauses), Parse, Don't Validate, Fail Fast, Fail Loud, Intentional Naming & Interfaces, Comment Hygiene
 - **Frontend**: Typography, Color, Motion, Composition, Atmosphere
 - **Architecture**: Follow the Grain, Strict Layer Direction, Justifiable Indirection, Design APIs for the Caller, Atomic Predictability, Honest Contracts
 - **Specialized domains** (e.g. WoW, ServiceNow): name the specific sections of the loaded domain skill you applied (e.g. Anchor System, Taint Avoidance, Frame Pooling from `wow-frame-api`) - do not invent law names the skill does not define.
-- **Act discipline** (per-agent): name the laws/principles from your act-discipline skill - `implementation-philosophy`, `review-philosophy`, `writing-philosophy`, `research-philosophy`, or `accounting-philosophy`.
+- **Act discipline**: name the laws or principles from the act-discipline skill your agent file told you to load.
 
 Omitting this step means the task is not done.

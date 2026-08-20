@@ -12,15 +12,19 @@ This repository contains the global configuration, agent definitions, and specia
 - **`.markdownlint.json`**: Rules for maintaining consistent documentation style.
 - **`agents/`**: 14 specialized agent declarations defining modes, roles, and tool access.
 - **`skills/`**: 24 on-demand knowledge packs for domains like ServiceNow, WoW, and architecture.
-- **`command/`**: 12 slash command definitions for automated pipelines and interactive UIs.
+- **`commands/`**: 12 slash command definitions for automated pipelines and interactive UIs.
 - **`philosophy/`**: Discipline enforcement requiring philosophy loading before any code changes.
 - **`plugins/`**: 3 TypeScript plugins providing real-time security guards and instance warnings.
-- **`tools/`**: 5 custom tools for World of Warcraft addon development and research.
-- **`docs/`**: Supporting documentation and demonstrations.
+- **`tools/`**: 4 custom tools for World of Warcraft addon development and research.
+- **`scripts/`**: Converter that regenerates the GitHub Copilot CLI mirror at `~/.copilot` from this repo.
 
 ## 🤖 Agents
 
 Agents operate as either primary orchestrators or specialized subagents. Primary agents can delegate work, while subagents focus on specific technical domains.
+
+There are two enabled entry points for implementation work, and they are alternatives rather than layers. Use `build` when you want the work split across specialists - each delegation lands a commit, and one `reviewer` loop runs over the completed change set before delivery. Use `autonomous-engineer` when you want one agent to own the task end-to-end and delegate only where it helps; it commits per cycle and is bound by the same end-of-work review requirement. Use `plan` first when the work needs user sign-off on scope before any of it starts.
+
+Enablement is defined in `opencode.jsonc`; the `(disabled)` notes below are a convenience and that file is authoritative.
 
 | File                  | Mode     | Purpose                                                                                                                                                                                        |
 | --------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -29,14 +33,13 @@ Agents operate as either primary orchestrators or specialized subagents. Primary
 | `plan`                | primary  | Planning orchestrator coordinating review via Plannotator                                                                                                                                      |
 | `servicenow`          | primary  | ServiceNow platform expert with full MCP access (disabled)                                                                                                                                     |
 | `software-engineer`   | subagent | Technical implementation specialist                                                                                                                                                            |
-| `autonomous-engineer` | primary  | End-to-end implementation owner with mandatory self-review and independent reviewer approval (disabled)                                                                                        |
+| `autonomous-engineer` | primary  | End-to-end implementation owner with mandatory self-review and independent reviewer approval                                                                                                   |
 | `explore`             | subagent | Codebase navigator; read-only chat pointers; no deliverables                                                                                                                                   |
 | `researcher`          | subagent | External knowledge gathering                                                                                                                                                                   |
 | `red-team`            | subagent | On-demand adversarial security review with PoC-backed findings                                                                                                                                 |
 | `reviewer`            | subagent | Read-only code review plus safe refactors                                                                                                                                                      |
 | `scribe`              | subagent | Technical writer - READMEs, guides, API refs, changelogs                                                                                                                                       |
-| `tech-lead`           | subagent | High-bar advisor for new modules and cross-subsystem design; writes ADR briefs to `.deliverables/tech-lead/`. Not for routine in-codebase design - `software-engineer` handles that in-flight. |
-| `wow-addon`           | subagent | WoW addon read-only specialist (research, navigation, lint)                                                                                                                                    |
+| `wow-addon`           | subagent | WoW addon read-only specialist (API/event research, codebase navigation)                                                                                                                       |
 | `jira`                | primary  | Jira / Atlassian operator via the Atlassian MCP (disabled)                                                                                                                                     |
 | `linear`              | subagent | Linear tracker - records orchestrated work state on delegation (disabled)                                                                                                                      |
 
@@ -127,7 +130,6 @@ Specialized tools for World of Warcraft development:
 - **`wow-wiki-fetch`**: Fetch documentation from Warcraft wikis.
 - **`wow-event-info`**: Parse annotations and wiki links for WoW events.
 - **`wow-blizzard-source`**: Browse local Blizzard FrameXML source files.
-- **`wow-addon-lint`**: Custom static analysis rules for WoW Lua code.
 
 ## ⚙️ How It Works
 

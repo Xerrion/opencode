@@ -9,7 +9,7 @@ import { readFile } from "node:fs/promises";
  * annotation tree under the platform data root (`~/.local/share/wow-annotations`
  * on macOS/Linux, `%LOCALAPPDATA%\wow-annotations` on Windows).
  *
- * Contract per ADR-0001 (`.deliverables/tech-lead/ADR-0001-rebuild-tool-surface.md`):
+ * Contract per ADR-0001 (rebuild-tool-surface):
  *   - one arg (`query`), no mode/category/wiki flags
  *   - bare-string return
  *   - 40 KB self-cap with explicit truncation tail
@@ -42,8 +42,7 @@ export function defaultDataRoot(
   return join(homedir(), ".local", "share", dirName);
 }
 
-const ANCHOR_ROOT =
-  process.env.WOW_ANNOTATIONS_ROOT ?? defaultDataRoot("wow-annotations");
+const ANCHOR_ROOT = process.env.WOW_ANNOTATIONS_ROOT ?? defaultDataRoot("wow-annotations");
 const REL_CORE = "Annotations/Core";
 const BUDGET = 40_000;
 const MAX_QUERY_LEN = 200;
@@ -63,14 +62,7 @@ const BUCKETS = {
 } as const;
 
 type BucketKey = keyof typeof BUCKETS;
-const ALL_BUCKETS: readonly BucketKey[] = [
-  "api",
-  "widget",
-  "libraries",
-  "type",
-  "framexml",
-  "wiki",
-];
+const ALL_BUCKETS: readonly BucketKey[] = ["api", "widget", "libraries", "type", "framexml", "wiki"];
 const ABS_ROOT_PREFIX = `${ANCHOR_ROOT}/`;
 
 type Plan = {
@@ -120,10 +112,7 @@ function classify(query: string): Plan {
   if (/^C_[A-Za-z]\w*$/.test(query)) {
     return {
       shape: "C_NS",
-      patterns: [
-        `^${e(query)}\\s*=\\s*\\{`,
-        `^---@class\\s+${e(query)}\\b`,
-      ],
+      patterns: [`^${e(query)}\\s*=\\s*\\{`, `^---@class\\s+${e(query)}\\b`],
       roots: ["api", "type"],
       suggestionRoots: ["api", "type"],
     };
@@ -135,10 +124,7 @@ function classify(query: string): Plan {
   if (/^Enum\.[A-Za-z]\w*$/.test(query)) {
     return {
       shape: "Enum.X",
-      patterns: [
-        `^---@enum\\s+${e(query)}\\b`,
-        `^${e(query)}\\s*=\\s*\\{`,
-      ],
+      patterns: [`^---@enum\\s+${e(query)}\\b`, `^${e(query)}\\s*=\\s*\\{`],
       roots: ["enum", "type"],
       suggestionRoots: ["enum", "type", "api"],
     };
@@ -174,10 +160,7 @@ function classify(query: string): Plan {
   if (/^[A-Z]\w*Mixin$/.test(query)) {
     return {
       shape: "Mixin",
-      patterns: [
-        `^---@class\\s+${e(query)}\\b`,
-        `^${e(query)}\\s*=\\s*\\{`,
-      ],
+      patterns: [`^---@class\\s+${e(query)}\\b`, `^${e(query)}\\s*=\\s*\\{`],
       roots: ["type", "framexml", "libraries"],
       suggestionRoots: ["type", "framexml"],
     };
@@ -214,10 +197,7 @@ function classify(query: string): Plan {
   // Bare identifier (mixed case, global API style)
   return {
     shape: "bare-identifier",
-    patterns: [
-      `^function\\s+${e(query)}\\s*\\(`,
-      `^---@class\\s+${e(query)}\\b`,
-    ],
+    patterns: [`^function\\s+${e(query)}\\s*\\(`, `^---@class\\s+${e(query)}\\b`],
     roots: ["wiki", "widget", "libraries", "framexml", "type"],
     suggestionRoots: ["wiki", "widget", "libraries"],
   };
@@ -231,12 +211,7 @@ function errorMessage(error: unknown): string {
 }
 
 function isMissingFile(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "ENOENT"
-  );
+  return typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT";
 }
 
 /**
@@ -281,10 +256,7 @@ function parseRgLine(raw: string): RgLine | null {
   return null;
 }
 
-async function runRg(
-  patterns: string[],
-  roots: string[],
-): Promise<RgLine[]> {
+async function runRg(patterns: string[], roots: string[]): Promise<RgLine[]> {
   if (patterns.length === 0 || roots.length === 0) return [];
   const args = [
     "--color",
@@ -311,14 +283,10 @@ async function runRg(
   } catch (error) {
     throw new Error(`wow-api-lookup: failed to launch rg: ${errorMessage(error)}`);
   }
-  const stdout = await new Response(
-    proc.stdout as ReadableStream<Uint8Array>,
-  ).text();
+  const stdout = await new Response(proc.stdout as ReadableStream<Uint8Array>).text();
   const exitCode = await proc.exited;
   if (exitCode !== 0 && exitCode !== 1) {
-    const err = await new Response(
-      proc.stderr as ReadableStream<Uint8Array>,
-    ).text();
+    const err = await new Response(proc.stderr as ReadableStream<Uint8Array>).text();
     throw new Error(
       `wow-api-lookup: rg failed with exit code ${exitCode}: ${err.trim().slice(0, 200) || "no diagnostic output"}`,
     );
@@ -339,10 +307,7 @@ async function runRg(
   return out;
 }
 
-function extractAnnotationBlock(
-  lines: string[],
-  matchLine: number,
-): string {
+function extractAnnotationBlock(lines: string[], matchLine: number): string {
   const signatureIndex = matchLine - 1;
   if (signatureIndex < 0 || signatureIndex >= lines.length) {
     throw new Error(`match line ${matchLine} is outside the file`);
@@ -365,9 +330,7 @@ async function buildHits(lines: RgLine[]): Promise<Hit[]> {
         fileLines = raw.split(/\r?\n/);
         files.set(line.path, fileLines);
       } catch (error) {
-        throw new Error(
-          `wow-api-lookup: failed reading annotation file ${line.path}: ${errorMessage(error)}`,
-        );
+        throw new Error(`wow-api-lookup: failed reading annotation file ${line.path}: ${errorMessage(error)}`);
       }
     }
     try {
@@ -377,9 +340,7 @@ async function buildHits(lines: RgLine[]): Promise<Hit[]> {
         block: extractAnnotationBlock(fileLines, line.line),
       });
     } catch (error) {
-      throw new Error(
-        `wow-api-lookup: corrupt annotation match at ${line.path}:${line.line}: ${errorMessage(error)}`,
-      );
+      throw new Error(`wow-api-lookup: corrupt annotation match at ${line.path}:${line.line}: ${errorMessage(error)}`);
     }
   }
   return hits;
@@ -394,9 +355,7 @@ function renderHits(query: string, hits: Hit[], plan: Plan): string {
 
   for (const h of hits.slice(0, MAX_MATCHES_TOTAL)) {
     const fence = fenceFor(h.block);
-    const block =
-      `## ${h.path}:${h.matchLine}\n` +
-      `${fence}lua\n${h.block}\n${fence}\n\n`;
+    const block = `## ${h.path}:${h.matchLine}\n` + `${fence}lua\n${h.block}\n${fence}\n\n`;
     const blockSize = Buffer.byteLength(block, "utf8");
     if (used + blockSize > BUDGET) {
       truncated = true;
@@ -411,9 +370,9 @@ function renderHits(query: string, hits: Hit[], plan: Plan): string {
   if (truncated || hits.length > rendered) {
     const remaining = hits.length - rendered;
     const tail =
-      remaining > 0
-        ? `... output truncated at 40 KB; ${remaining} more match(es) not shown. Query is too generic — qualify with NS.Method or Class:Method, or use the exact namespace prefix.\n`
-        : `... output truncated at 40 KB; narrow the query with a NS.Method or Class:Method qualifier.\n`;
+      remaining > 0 ?
+        `... output truncated at 40 KB; ${remaining} more match(es) not shown. Query is too generic — qualify with NS.Method or Class:Method, or use the exact namespace prefix.\n`
+      : `... output truncated at 40 KB; narrow the query with a NS.Method or Class:Method qualifier.\n`;
     body += tail;
   }
   return body;
@@ -429,9 +388,7 @@ async function tryClassicOverride(query: string): Promise<string | null> {
   try {
     const raw = await readFile(join(ANCHOR_ROOT, BUCKETS.classic), "utf8");
     const lines = raw.split("\n");
-    const sigRe = new RegExp(
-      `^function\\s+${escapeRegex(query)}\\s*\\(`,
-    );
+    const sigRe = new RegExp(`^function\\s+${escapeRegex(query)}\\s*\\(`);
     for (let i = 0; i < lines.length; i++) {
       if (sigRe.test(lines[i]!)) {
         // Walk back to gather the annotation block.
@@ -439,17 +396,12 @@ async function tryClassicOverride(query: string): Promise<string | null> {
         while (lo > 0 && /^---/.test(lines[lo - 1]!)) lo--;
         const chunk = lines.slice(lo, i + 1).join("\n");
         const fence = fenceFor(chunk);
-        return (
-          `## Classic override (${BUCKETS.classic}:${i + 1})\n` +
-          `${fence}lua\n${chunk}\n${fence}\n\n`
-        );
+        return `## Classic override (${BUCKETS.classic}:${i + 1})\n` + `${fence}lua\n${chunk}\n${fence}\n\n`;
       }
     }
   } catch (error) {
     if (isMissingFile(error)) return null;
-    throw new Error(
-      `wow-api-lookup: failed reading optional Classic overrides: ${errorMessage(error)}`,
-    );
+    throw new Error(`wow-api-lookup: failed reading optional Classic overrides: ${errorMessage(error)}`);
   }
   return null;
 }
@@ -460,10 +412,7 @@ async function tryClassicOverride(query: string): Promise<string | null> {
  * query is a single bare token (the file-naming convention catches
  * `C_Item` → `ItemDocumentation.lua`).
  */
-async function gatherSuggestions(
-  query: string,
-  plan: Plan,
-): Promise<string[]> {
+async function gatherSuggestions(query: string, plan: Plan): Promise<string[]> {
   const seed = query.replace(/^Enum\./, "").replace(/[:.].*$/, "");
   if (seed.length < 3) return [];
   const head = seed.slice(0, Math.min(seed.length, 6));
@@ -509,11 +458,7 @@ async function gatherSuggestions(
   }
 }
 
-function renderNoMatch(
-  query: string,
-  plan: Plan,
-  suggestions: string[],
-): string {
+function renderNoMatch(query: string, plan: Plan, suggestions: string[]): string {
   const lines = [
     `# ${query}`,
     "",
@@ -548,9 +493,7 @@ export default tool({
       throw new Error("wow-api-lookup: query must be non-empty");
     }
     if (q.length > MAX_QUERY_LEN) {
-      throw new Error(
-        `wow-api-lookup: query exceeds ${MAX_QUERY_LEN} characters`,
-      );
+      throw new Error(`wow-api-lookup: query exceeds ${MAX_QUERY_LEN} characters`);
     }
     if (/[\r\n]/.test(q)) {
       throw new Error("wow-api-lookup: query must not contain newlines");

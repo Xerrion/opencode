@@ -605,29 +605,6 @@
 
     "general": {
       "disable": true
-    },
-
-    // Tech Lead/Architect advisor (writes ADR briefs to .deliverables/tech-lead/)
-    "tech-lead": {
-      "model": "github-copilot/gpt-5.6-luna",
-      "mode": "subagent",
-      "temperature": 0.2,
-      "permission": {
-        // tech-lead.md: "The ONLY directory you may write to or edit in is
-        // .deliverables/tech-lead/" - enforced here, not just in the prompt.
-        // "edit" governs create+modify; the legacy "write" alias is omitted so
-        // creation follows the same path rules.
-        "edit": "allow",
-        "write": "allow",
-        "webfetch": "allow",
-        // Per agents/tech-lead.md §skills: architecture-philosophy always, code-philosophy
-        // and wow-addon-design conditionally. No broader skill access is justified.
-        "skill": {
-          "architecture-philosophy": "allow",
-          "code-philosophy": "allow",
-          "wow-addon-design": "allow"
-        }
-      }
     }
   },
 
