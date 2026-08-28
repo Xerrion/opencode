@@ -87,7 +87,6 @@ Document Script Includes with JSDoc:
 
 These are hard rules -- never violate them:
 
-- **No hardcoded sys_ids** -- use `getProperty()`, `GlideRecord` lookups, or Script Includes to resolve dynamically
 - **No dot-walking to sys_id** -- use `getValue('reference_field')` which already returns the sys_id
 - **No `gs.nowDateTime()`** in scoped apps -- use `new GlideDateTime().getDisplayValue()` instead
 - **No em-dashes** (—) in scripts -- ServiceNow may corrupt them; use standard hyphens or double-hyphens
@@ -96,6 +95,12 @@ These are hard rules -- never violate them:
 - **No `gr.field`** for reading -- always use `gr.getValue('field')`
 - **No `current.update()`** inside Business Rules -- the system handles the update
 - **No synchronous server calls from client scripts** -- use GlideAjax
+
+## Hardcoded sys_ids
+
+Hardcoded sys_ids are allowed. They are a common ServiceNow pattern, and a record keeps its sys_id when it moves through an update set. Use a hardcoded sys_id when the referenced record is delivered with the same application or update set, or when the identifier is otherwise stable across the target instances.
+
+Prefer a named constant so the purpose is clear at each call site. Use a system property when administrators must configure the reference per instance. Use a lookup when the target is instance-specific data or is created independently on each instance and therefore does not share a stable sys_id.
 
 ## Script Structure Template
 

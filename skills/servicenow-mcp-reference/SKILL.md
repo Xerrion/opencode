@@ -151,7 +151,7 @@ Never log, print, or copy masked secrets. Treat values returned as `***MASKED***
 
 - **`docs_logic_map`** -- Lifecycle map of ALL automations on a table (before/after insert/update, display, async). Grouped by lifecycle phase. Run before adding any new automation to a table.
 - **`docs_artifact_summary`** -- Summary of an artifact with dependency analysis (what it touches, what touches it). Use before modifying an artifact to understand blast radius.
-- **`docs_review_notes`** -- Anti-pattern scan for a specific artifact: GlideRecord in loops, hardcoded sys_ids, unbounded queries, and similar smells. Run after writing or modifying a script.
+- **`docs_review_notes`** -- Anti-pattern scan for a specific artifact: GlideRecord in loops, non-portable sys_ids, unbounded queries, and similar smells. Run after writing or modifying a script. A hardcoded sys_id is valid when the referenced record keeps that identifier across target instances, such as when it moves through the same update set.
 - **`docs_test_scenarios`** -- Suggested test scenarios derived from script analysis. Run after writing a script to present test coverage to the user.
 
 ### Query
