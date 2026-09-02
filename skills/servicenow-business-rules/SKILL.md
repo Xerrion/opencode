@@ -5,16 +5,20 @@ description: ServiceNow Business Rule development patterns. Covers timing select
 
 # ServiceNow Business Rule Standards
 
+## JavaScript Mode
+
+Business Rules are server-side scripts, so the ECMAScript 2021 toggle applies to them. The IIFE wrapper, the `current`/`previous` contract, and every hard rule below are unchanged by the mode -- only the JavaScript inside the wrapper changes. Confirm the mode before using ES2021 syntax; see `servicenow-scripting`.
+
 ## Timing Selection
 
 Choose the correct **When** timing based on what the rule does:
 
-| Timing | Use When | Example |
-|--------|----------|---------|
-| **before** | Manipulating fields on the current record before it saves | Set priority from impact + urgency |
-| **after** | Creating/updating OTHER records based on this record's save | Create a child task when parent is created |
-| **async** | Heavy processing that shouldn't block the user transaction | Sending notifications, external integrations, bulk updates |
-| **display** | Populating `g_scratchpad` data for client-side use | Pass server data to an onChange Client Script |
+| Timing      | Use When                                                    | Example                                                    |
+| ----------- | ----------------------------------------------------------- | ---------------------------------------------------------- |
+| **before**  | Manipulating fields on the current record before it saves   | Set priority from impact + urgency                         |
+| **after**   | Creating/updating OTHER records based on this record's save | Create a child task when parent is created                 |
+| **async**   | Heavy processing that shouldn't block the user transaction  | Sending notifications, external integrations, bulk updates |
+| **display** | Populating `g_scratchpad` data for client-side use          | Pass server data to an onChange Client Script              |
 
 **Default to `before`** for field manipulation. Only use `after` when you need the record's sys_id (insert) or need to affect other records. Use `async` for anything that doesn't need to block.
 
@@ -55,13 +59,13 @@ Use `previous` object for update operations to detect field changes:
 
 ```javascript
 // Check if a specific field changed
-if (current.getValue('state') != previous.getValue('state')) {
-    // state changed
+if (current.getValue("state") != previous.getValue("state")) {
+  // state changed
 }
 
 // Check if priority was escalated (went to a lower number = higher priority)
-if (parseInt(current.getValue('priority')) < parseInt(previous.getValue('priority'))) {
-    // priority escalated
+if (parseInt(current.getValue("priority")) < parseInt(previous.getValue("priority"))) {
+  // priority escalated
 }
 ```
 
@@ -81,10 +85,10 @@ To prevent a save with a user-facing error (before insert/update only):
 
 ```javascript
 (function executeRule(current, previous) {
-    if (!isValid(current)) {
-        gs.addErrorMessage('Cannot save: <reason>');
-        current.setAbortAction(true);
-    }
+  if (!isValid(current)) {
+    gs.addErrorMessage("Cannot save: <reason>");
+    current.setAbortAction(true);
+  }
 })(current, previous);
 ```
 
@@ -105,7 +109,7 @@ For async Business Rules:
 // Table: incident | When: before | Insert: yes | Update: yes
 // Condition: (on form) impact changes OR urgency changes
 (function executeRule(current, previous) {
-    new IncidentUtils().calculatePriority(current);
+  new IncidentUtils().calculatePriority(current);
 })(current, previous);
 ```
 
@@ -113,29 +117,69 @@ For async Business Rules:
 // Script Include: IncidentUtils
 var IncidentUtils = Class.create();
 IncidentUtils.prototype = {
-    initialize: function() {},
+  initialize: function () {},
 
-    /**
-     * Calculate and set priority based on impact and urgency matrix.
-     * @param {GlideRecord} grIncident - The incident record
-     */
-    calculatePriority: function(grIncident) {
-        var impact = parseInt(grIncident.getValue('impact'));
-        var urgency = parseInt(grIncident.getValue('urgency'));
-        var priority = this._getPriorityFromMatrix(impact, urgency);
-        grIncident.setValue('priority', priority);
-    },
+  /**
+   * Calculate and set priority based on impact and urgency matrix.
+   * @param {GlideRecord} grIncident - The incident record
+   */
+  calculatePriority: function (grIncident) {
+    var impact = parseInt(grIncident.getValue("impact"));
+    var urgency = parseInt(grIncident.getValue("urgency"));
+    var priority = this._getPriorityFromMatrix(impact, urgency);
+    grIncident.setValue("priority", priority);
+  },
 
-    _getPriorityFromMatrix: function(impact, urgency) {
-        // Priority matrix: lower = more critical
-        var matrix = {
-            '1-1': '1', '1-2': '2', '1-3': '3',
-            '2-1': '2', '2-2': '3', '2-3': '4',
-            '3-1': '3', '3-2': '4', '3-3': '5'
-        };
-        return matrix[impact + '-' + urgency] || '4';
-    },
+  _getPriorityFromMatrix: function (impact, urgency) {
+    // Priority matrix: lower = more critical
+    var matrix = {
+      "1-1": "1",
+      "1-2": "2",
+      "1-3": "3",
+      "2-1": "2",
+      "2-2": "3",
+      "2-3": "4",
+      "3-1": "3",
+      "3-2": "4",
+      "3-3": "5",
+    };
+    return matrix[impact + "-" + urgency] || "4";
+  },
 
-    type: 'IncidentUtils'
+  type: "IncidentUtils",
+};
+```
+
+In ES2021 mode the Business Rule wrapper is identical and only the Script Include body modernizes:
+
+```javascript
+// Script Include: IncidentUtils (ES2021 mode)
+var IncidentUtils = Class.create();
+IncidentUtils.prototype = {
+  initialize: function () {
+    this.PRIORITY_MATRIX = new Map([
+      ["1-1", "1"],
+      ["1-2", "2"],
+      ["1-3", "3"],
+      ["2-1", "2"],
+      ["2-2", "3"],
+      ["2-3", "4"],
+      ["3-1", "3"],
+      ["3-2", "4"],
+      ["3-3", "5"],
+    ]);
+  },
+
+  /**
+   * Calculate and set priority based on impact and urgency matrix.
+   * @param {GlideRecord} grIncident - The incident record
+   */
+  calculatePriority: function (grIncident) {
+    const impact = grIncident.getValue("impact");
+    const urgency = grIncident.getValue("urgency");
+    grIncident.setValue("priority", this.PRIORITY_MATRIX.get(`${impact}-${urgency}`) ?? "4");
+  },
+
+  type: "IncidentUtils",
 };
 ```

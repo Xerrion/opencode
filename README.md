@@ -71,8 +71,9 @@ These skills define the discipline an agent applies to its own act of working, o
 
 ### ServiceNow
 
-- **`servicenow-scripting`**: Server-side standards (classes, naming, errors, JSDoc).
+- **`servicenow-scripting`**: Server-side standards (JavaScript mode, classes, naming, errors, JSDoc).
 - **`servicenow-gliderecord`**: GlideRecord and GlideAggregate best practices.
+- **`servicenow-encoded-queries`**: Encoded query operators, composition, translation, and safety.
 - **`servicenow-business-rules`**: Business Rule timing selection and anti-patterns.
 - **`servicenow-client-scripts`**: onChange guards, GlideAjax, and UI Policy patterns.
 - **`servicenow-mcp-reference`**: Catalog of 17 supported ServiceNow artifact types.

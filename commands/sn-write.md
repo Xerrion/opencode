@@ -12,6 +12,7 @@ The user wants to create or modify a ServiceNow script. Follow the Development H
 ### Step 1: Parse the Request
 
 From the user's description (`$ARGUMENTS`), identify:
+
 - **What** to write (Business Rule, Script Include, Client Script, etc.)
 - **Target table** (incident, change_request, etc.)
 - **Target field** (if the script modifies a specific field)
@@ -32,12 +33,13 @@ Use `task(subagent_type="servicenow", ...)` with the full context gathered above
 
 Include in the delegation prompt:
 
-```
+```text
 TASK: <What the user asked for>
 ACTION: CREATE and DEPLOY this artifact to the instance using MCP `artifact_create` (new) or `artifact_update` (existing). Do NOT just show the code -- actually create it.
 
 TARGET TABLE: <table name>
 SCOPE: <application scope -- use "global" unless user specifies a scoped app>
+JAVASCRIPT MODE: <ES5 or ES2021 -- confirm the scope's JavaScript mode and, for an existing artifact, the sys_es_latest_script toggle; use ES5 if unconfirmed>
 TABLE SCHEMA (relevant fields):
 <key fields from table_describe>
 
@@ -56,14 +58,17 @@ CONSTRAINTS:
 ```
 
 Load relevant skills for the dev agent:
+
 - Always: `servicenow-scripting`
 - For Business Rules: `servicenow-business-rules`
 - For Client Scripts: `servicenow-client-scripts`
 - For GlideRecord-heavy work: `servicenow-gliderecord`
+- For encoded queries, filter strings, or `sysparm_query`: `servicenow-encoded-queries`
 
 ### Step 4: Verify and Relay
 
 After the dev agent returns:
+
 1. Review the output for completeness
 2. Check if `docs_review_notes` flagged any issues
 3. Relay the script to the user with any warnings

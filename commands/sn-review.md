@@ -19,6 +19,7 @@ Run a comprehensive code review on the specified artifact.
 If `$2` looks like a sys_id (32-char hex), use it directly.
 
 Otherwise, search for the artifact by name:
+
 - `meta_list_artifacts(artifact_type="$1")` and filter results by name matching `$2`
 
 ### Step 2: Fetch and Analyze (in parallel)
