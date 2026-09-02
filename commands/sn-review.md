@@ -19,6 +19,7 @@ Run a comprehensive code review on the specified artifact.
 If `$2` looks like a sys_id (32-char hex), use it directly.
 
 Otherwise, search for the artifact by name:
+
 - `meta_list_artifacts(artifact_type="$1")` and filter results by name matching `$2`
 
 ### Step 2: Fetch and Analyze (in parallel)
@@ -26,7 +27,7 @@ Otherwise, search for the artifact by name:
 Once you have the sys_id, run ALL of these simultaneously:
 
 1. **`meta_get_artifact(artifact_type="$1", sys_id="<id>")`** — Get the full script body and metadata
-2. **`docs_review_notes(artifact_type="$1", sys_id="<id>")`** — Scan for anti-patterns (GlideRecord in loops, hardcoded sys_ids, unbounded queries)
+2. **`docs_review_notes(artifact_type="$1", sys_id="<id>")`** — Scan for anti-patterns (GlideRecord in loops, non-portable sys_ids, unbounded queries)
 3. **`docs_test_scenarios(artifact_type="$1", sys_id="<id>")`** — Generate test scenario suggestions
 4. **`docs_artifact_summary(artifact_type="$1", sys_id="<id>")`** — Dependency analysis (what it references, what references it)
 
@@ -37,7 +38,7 @@ Review the script body for:
 1. **Correctness** — Does the logic match its description? Are conditions comprehensive?
 2. **Style** — Follows naming conventions? Proper error handling with `gs.error()`?
 3. **Performance** — GlideRecord usage efficient? Queries bounded? Appropriate use of GlideAggregate?
-4. **Safety** — No hardcoded sys_ids? No `eval()`? No `current.update()` in BRs?
+4. **Safety** — Are hardcoded sys_ids stable across target instances? No `eval()`? No `current.update()` in BRs?
 5. **Testability** — Logic in Script Includes (not inline)? Clear inputs/outputs?
 
 ### Step 4: Present Review
