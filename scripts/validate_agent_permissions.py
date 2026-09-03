@@ -33,11 +33,13 @@ READ_ONLY_PLAYWRIGHT_TOOLS = (
     "playwright_browser_navigate",
     "playwright_browser_navigate_back",
     "playwright_browser_find",
-    "playwright_browser_snapshot",
-    "playwright_browser_network_requests",
     "playwright_browser_wait_for",
 )
-MUTATING_PLAYWRIGHT_TOOLS = (
+FILE_PRODUCING_PLAYWRIGHT_TOOLS = (
+    "playwright_browser_snapshot",
+    "playwright_browser_network_requests",
+)
+DENIED_PLAYWRIGHT_TOOLS = FILE_PRODUCING_PLAYWRIGHT_TOOLS + (
     "playwright_browser_click",
     "playwright_browser_close",
     "playwright_browser_console_messages",
@@ -64,6 +66,14 @@ MUTATING_NAMESPACES = (
     "servicenow_artifact_update",
     "supabase_apply_migration",
     "vercel_deploy",
+)
+SCRIBE_NESTED_CONTROL_PLANE_PATHS = (
+    "docs/.opencode/agent/reviewer.md",
+    "docs/.opencode/agents/reviewer.md",
+    "docs/.opencode/command/build.md",
+    "docs/.opencode/commands/build.md",
+    "docs/.opencode/skill/security/SKILL.md",
+    "docs/.opencode/skills/security/SKILL.md",
 )
 
 
@@ -226,7 +236,7 @@ def assert_research_playwright(profiles: dict[str, list[Rule]]) -> None:
     for agent in ("researcher", "wow-addon"):
         for tool_id in READ_ONLY_PLAYWRIGHT_TOOLS:
             assert_action(profiles, agent, tool_id, "https://example.invalid", "allow")
-        for tool_id in MUTATING_PLAYWRIGHT_TOOLS:
+        for tool_id in DENIED_PLAYWRIGHT_TOOLS:
             assert_action(profiles, agent, tool_id, "target-element", "deny")
         assert_action(
             profiles, agent, "playwright_future_mutator", "target-element", "deny"
@@ -253,6 +263,7 @@ def assert_scribe_paths(profiles: dict[str, list[Rule]]) -> None:
         ".opencode/commands/build.md",
         ".opencode/skill/security/SKILL.md",
         ".opencode/skills/security/SKILL.md",
+        *SCRIBE_NESTED_CONTROL_PLANE_PATHS,
         "src/config.md",
     )
     for permission in ("edit", "write"):
@@ -283,6 +294,45 @@ def assert_red_team_confinement(profiles: dict[str, list[Rule]]) -> None:
         "curl -X POST https://example.invalid",
     ):
         assert_action(profiles, "red-team", "bash", command, "deny")
+    for permission in (
+        "task",
+        "playwright_browser_navigate",
+        "python_execute",
+    ):
+        assert_action(profiles, "red-team", permission, "*", "deny")
+
+
+def assert_red_team_routing_contract() -> None:
+    required_text = {
+        "agents/build.md": (
+            "Any check that requires gate execution, local reproduction, mutation-probe execution, or exploit execution goes to `software-engineer`.",
+            "Red Team does not execute gates, probes, reproductions, or exploits.",
+        ),
+        "agents/autonomous-engineer.md": (
+            "Route all gate runs, local reproductions, mutation-probe execution, and exploit execution to `software-engineer`",
+            "`red-team` provides static exploitability reasoning, concrete payloads, probe designs, and confined evidence files only.",
+        ),
+        "agents/red-team.md": (
+            "You reason about exploitability and design concrete malicious payloads or probes. You do not execute them.",
+            "Bash, Playwright, task delegation, and unspecified execution tools are unavailable.",
+        ),
+    }
+    forbidden_red_team_text = (
+        "independently rerunning a gate",
+        "hands-on reproduction",
+        "use an available non-shell tool if one can execute it safely",
+        "Running scanners, fuzzers",
+    )
+    for path, snippets in required_text.items():
+        source = Path(path).read_text(encoding="utf-8")
+        for snippet in snippets:
+            if snippet not in source:
+                raise AssertionError(f"{path}: missing red-team routing contract: {snippet}")
+
+    red_team_source = Path("agents/red-team.md").read_text(encoding="utf-8")
+    for snippet in forbidden_red_team_text:
+        if snippet in red_team_source:
+            raise AssertionError(f"agents/red-team.md: stale execution claim: {snippet}")
 
 
 def assert_executor_shell(profiles: dict[str, list[Rule]]) -> None:
@@ -423,9 +473,33 @@ def assert_rejects_reintroduced_blockers(profiles: dict[str, list[Rule]]) -> Non
         tuple[str, str, Rule, Callable[[dict[str, list[Rule]]], None]], ...
     ] = (
         (
-            "research Playwright mutation",
+            "research Playwright interaction",
             "researcher",
             Rule("playwright_browser_click", "*", "allow"),
+            assert_research_playwright,
+        ),
+        (
+            "research Playwright snapshot file production",
+            "researcher",
+            Rule("playwright_browser_snapshot", "*", "allow"),
+            assert_research_playwright,
+        ),
+        (
+            "research Playwright network-list file production",
+            "researcher",
+            Rule("playwright_browser_network_requests", "*", "allow"),
+            assert_research_playwright,
+        ),
+        (
+            "WoW Playwright snapshot file production",
+            "wow-addon",
+            Rule("playwright_browser_snapshot", "*", "allow"),
+            assert_research_playwright,
+        ),
+        (
+            "WoW Playwright network-list file production",
+            "wow-addon",
+            Rule("playwright_browser_network_requests", "*", "allow"),
             assert_research_playwright,
         ),
         (
@@ -447,6 +521,30 @@ def assert_rejects_reintroduced_blockers(profiles: dict[str, list[Rule]]) -> Non
             assert_red_team_confinement,
         ),
         (
+            "red-team shell execution",
+            "red-team",
+            Rule("bash", "*", "allow"),
+            assert_red_team_confinement,
+        ),
+        (
+            "red-team browser execution",
+            "red-team",
+            Rule("playwright_browser_navigate", "*", "allow"),
+            assert_red_team_confinement,
+        ),
+        (
+            "red-team task execution",
+            "red-team",
+            Rule("task", "*", "allow"),
+            assert_red_team_confinement,
+        ),
+        (
+            "red-team unspecified execution",
+            "red-team",
+            Rule("python_execute", "*", "allow"),
+            assert_red_team_confinement,
+        ),
+        (
             "executor push",
             "software-engineer",
             Rule("bash", "git push*", "allow"),
@@ -459,6 +557,17 @@ def assert_rejects_reintroduced_blockers(profiles: dict[str, list[Rule]]) -> Non
             assert_namespace_matrix,
         ),
     )
+    nested_scribe_cases = tuple(
+        (
+            f"scribe nested control-plane {permission} bypass: {path}",
+            "scribe",
+            Rule(permission, path, "allow"),
+            assert_scribe_paths,
+        )
+        for permission in ("edit", "write")
+        for path in SCRIBE_NESTED_CONTROL_PLANE_PATHS
+    )
+    regression_cases += nested_scribe_cases
     for label, agent, unsafe_rule, assertion in regression_cases:
         unsafe_profiles = {name: list(rules) for name, rules in profiles.items()}
         unsafe_profiles[agent].append(unsafe_rule)
@@ -490,6 +599,7 @@ def main() -> int:
     assert_research_playwright(profiles)
     assert_scribe_paths(profiles)
     assert_red_team_confinement(profiles)
+    assert_red_team_routing_contract()
     assert_executor_shell(profiles)
     assert_namespace_matrix(profiles)
     assert_core_capability_matrix(profiles)

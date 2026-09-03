@@ -24,6 +24,12 @@ permission:
     ".opencode/commands/**": deny
     ".opencode/skill/**": deny
     ".opencode/skills/**": deny
+    "**/.opencode/agent/**": deny
+    "**/.opencode/agents/**": deny
+    "**/.opencode/command/**": deny
+    "**/.opencode/commands/**": deny
+    "**/.opencode/skill/**": deny
+    "**/.opencode/skills/**": deny
   write:
     "*": deny
     "README*.md": allow
@@ -40,6 +46,12 @@ permission:
     ".opencode/commands/**": deny
     ".opencode/skill/**": deny
     ".opencode/skills/**": deny
+    "**/.opencode/agent/**": deny
+    "**/.opencode/agents/**": deny
+    "**/.opencode/command/**": deny
+    "**/.opencode/commands/**": deny
+    "**/.opencode/skill/**": deny
+    "**/.opencode/skills/**": deny
   bash: deny
   skill:
     "*": deny

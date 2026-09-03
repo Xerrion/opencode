@@ -15,9 +15,9 @@ permission:
   playwright_browser_navigate: allow
   playwright_browser_navigate_back: allow
   playwright_browser_find: allow
-  playwright_browser_snapshot: allow
-  playwright_browser_network_requests: allow
   playwright_browser_wait_for: allow
+  playwright_browser_snapshot: deny
+  playwright_browser_network_requests: deny
   playwright_browser_click: deny
   playwright_browser_close: deny
   playwright_browser_console_messages: deny
@@ -159,7 +159,7 @@ Four WoW-specific tools are available. Their full descriptions ship with each to
 
 **Codebase navigation tools (Mode 2).** For file discovery, grep, and structural questions inside a WoW addon repo: `glob`, `grep`, and `read` with line ranges. Same toolkit `explore` uses, applied to a WoW repo. Return pointers, not payloads.
 
-**Playwright MCP and webfetch.** Wowhead and other rate-limited or JS-rendered community sources via read-only Playwright navigation, snapshots, network-request lists, and text waits; specific known URLs via `webfetch`. Browser interaction, file-producing inspection, page evaluation, uploads, and unsafe code execution are unavailable. Reach for `wow-wiki-fetch` first when the question is about a Wowpedia API page.
+**Playwright MCP and webfetch.** Wowhead and other rate-limited or JS-rendered community sources via read-only Playwright navigation, accessibility-tree text search, and text waits; specific known URLs via `webfetch`. Snapshots, network-request lists, browser interaction, file-producing inspection, page evaluation, uploads, and unsafe code execution are unavailable. Reach for `wow-wiki-fetch` first when the question is about a Wowpedia API page.
 
 **Tool selection precedence (cheapest/most authoritative first):**
 

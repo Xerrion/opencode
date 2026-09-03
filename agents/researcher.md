@@ -12,9 +12,9 @@ permission:
   playwright_browser_navigate: allow
   playwright_browser_navigate_back: allow
   playwright_browser_find: allow
-  playwright_browser_snapshot: allow
-  playwright_browser_network_requests: allow
   playwright_browser_wait_for: allow
+  playwright_browser_snapshot: deny
+  playwright_browser_network_requests: deny
   playwright_browser_click: deny
   playwright_browser_close: deny
   playwright_browser_console_messages: deny
@@ -112,7 +112,7 @@ Every claim is anchored to a source, and the citation adapts to what the source 
 **Playwright MCP**:
 
 - For: pages that webfetch cannot read - SPAs that render via JS, sites that block simple GET, sites that aggressively rate-limit (e.g. data sites that throttle plain-HTTP scrapers but tolerate browser sessions).
-- Call: navigate, inspect snapshots and network-request lists, and wait for page text. Interaction, file-producing inspection, page evaluation, uploads, and unsafe code execution are unavailable.
+- Call: navigate, find text in the accessibility tree, and wait for page text. Snapshots, network-request lists, interaction, file-producing inspection, page evaluation, uploads, and unsafe code execution are unavailable.
 - Gotchas: stateful and heavyweight. Reach for webfetch first; escalate to playwright only when webfetch fails or is rate-limited. Don't drive a browser to do work `curl` could do.
 - Not for: anything webfetch can already retrieve cleanly.
 
