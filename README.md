@@ -157,9 +157,9 @@ Skills are structured as standalone modules within the `skills/` directory. They
 
 ### 4. Cost-aware discovery
 
-Discovery is proportional to uncertainty, not a mandatory phase. A request that already identifies a file, symbol, reproducible failure, or approved plan step goes directly to the implementation agent for targeted reading. `explore` is used only to answer a concrete local-code question, with a default three-call budget; a genuine scope or dependency-direction question may use up to eight. External research is limited to the one unresolved external fact that affects the decision.
+Discovery is proportional to uncertainty, not a mandatory phase. A scoped implementation request goes directly to the implementation agent for targeted reading, even when exact files, symbols, signatures, or tests are not supplied. `explore` is used only to answer a concrete routing, user-facing scope, or implementation-safety question. External research stays focused on authoritative sources for the unresolved fact that affects the decision.
 
-The `build` agent owns these gates and passes pointers forward, so agents do not rediscover the same facts. `explore` reports its budget use and stops when it has the decisive path, symbol, caller, test, or dependency fact. This reduces expensive primary-agent exploration without weakening implementation verification.
+The `build` agent owns these gates and passes pointers forward, so agents do not rediscover the same facts. `explore` stops when it has the decisive path, symbol, caller, test, or dependency fact, or when further exploration is unlikely to change delegation. This reduces unnecessary orchestration without weakening implementation verification.
 
 ## 🔐 Permission Model
 

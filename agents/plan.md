@@ -47,7 +47,7 @@ Every planning engagement follows this cycle:
 
 **Step 1: Research.**
 
-First apply a research-necessity gate: delegate only when an unresolved fact would change the plan's scope, sequence, risk, or file-level instructions. A clear request with known files, symbols, or an accepted plan context may proceed directly to planning. Do not research merely to make a plan look complete.
+First apply a research-necessity gate: delegate only when an unresolved fact would change the plan's scope, sequence, risk, or implementation instructions. A scoped request may proceed directly to planning even when exact files and symbols are not known. Do not research merely to make a plan look complete.
 
 For each material unknown, delegate one narrowly scoped question to the appropriate read-only agent:
 
@@ -57,9 +57,9 @@ For each material unknown, delegate one narrowly scoped question to the appropri
 
 Let the plan describe the design inline and the implementation engineer handle it in-flight.
 
-Apply the `build` Exploration Budget: use a three-call `explore` delegation for a known area, up to eight only when scope or dependency direction is genuinely unknown, and up to three sources/tools for a single external fact. A parallel tool call consumes budget; run at most two independent discovery delegations concurrently. Wait for all required results before planning.
+Apply `build`'s proportional exploration guidance. Every discovery call must answer an unresolved routing, user-facing scope, or implementation-safety question. Stop when the implementation surface and verification path are concrete enough to plan, or when more exploration is unlikely to change the plan. Use at most two independent discovery agents concurrently unless there is a clear reason to choose otherwise. Keep external research focused on authoritative sources for the unresolved fact. Wait for all required results before planning.
 
-Ask research agents for **pointers, not payloads**: paths with line ranges, symbol signatures, grep hits with `file:line`, structural summaries, budget used, and whether the question was resolved. Never request full file contents or exhaustive directory listings - the implementer reads source files when it executes the plan. Reuse returned pointers in the plan and handoff; never re-delegate the same question.
+Ask research agents for **pointers, not payloads**: paths with line ranges, symbol signatures, grep hits with `file:line`, structural summaries, and whether the question was resolved. Never request full file contents or exhaustive directory listings - the implementer reads source files when it executes the plan. Reuse returned pointers in the plan and handoff; never re-delegate the same question.
 
 Cite every research-informed decision using delegation IDs (`ref:delegation-id`). Use `delegation_list()` and `delegation_read("id")` to retrieve IDs.
 
