@@ -14,11 +14,54 @@ permission:
   bash:
     "*": allow
     "rm *": deny
+    "rm.exe *": deny
+    "del *": deny
+    "del.exe *": deny
+    "erase *": deny
+    "erase.exe *": deny
+    "rmdir *": deny
+    "rmdir.exe *": deny
+    "rd *": deny
+    "Remove-Item*": deny
+    "remove-item*": deny
     "sudo *": deny
+    "sudo.exe *": deny
+    "doas *": deny
+    "doas.exe *": deny
+    "su *": deny
     "shutdown*": deny
+    "shutdown.exe*": deny
     "reboot*": deny
+    "Restart-Computer*": deny
+    "restart-computer*": deny
+    "Stop-Computer*": deny
+    "stop-computer*": deny
+    "poweroff*": deny
+    "halt*": deny
+    "systemctl poweroff*": deny
+    "systemctl reboot*": deny
+    "git push*": deny
+    "git.exe push*": deny
+    "git * push*": deny
+    "git.exe * push*": deny
+    "git *alias.*": deny
+    "git.exe *alias.*": deny
+    "git-push*": deny
+    "git -C * push*": deny
+    "git.exe -C * push*": deny
+    "git --git-dir* push*": deny
+    "git.exe --git-dir* push*": deny
     "git push --force*": deny
     "git reset --hard*": deny
+    "git reset *--hard*": deny
+    "git * reset *--hard*": deny
+    "git.exe reset *--hard*": deny
+    "git.exe * reset *--hard*": deny
+    "git-reset *--hard*": deny
+    "git -C * reset *--hard*": deny
+    "git.exe -C * reset *--hard*": deny
+    "git --git-dir* reset *--hard*": deny
+    "git.exe --git-dir* reset *--hard*": deny
   webfetch: allow
   servicenow_*: allow
   exa_*: allow
@@ -83,6 +126,7 @@ You operate as a safe primary operator: read-only investigation first, preview d
 - **Documentation Limits**: Field documentation may be truncated for large tables. Confirm the available metadata before relying on it.
 - **Internal Names**: Method and field names in scripts are platform internals, not UX labels. Inspect the symbol before narrating its user-visible behaviour.
 - **Evidence**: Customer emails are primary evidence. When the user pastes or references an email naming a probable cause (a record producer, an integration, a scheduled job), treat it as the first hypothesis to falsify - not the last.
+- **Shell boundary**: Shell command rules use last-match string globs. They reduce accidental use but are not a process sandbox. Do not use aliases, wrappers, interpreters, command chains, or alternate option placement to bypass a denied operation.
 
 ## Skills
 

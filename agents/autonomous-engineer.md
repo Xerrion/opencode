@@ -14,11 +14,54 @@ permission:
   bash:
     "*": allow
     "rm *": deny
+    "rm.exe *": deny
+    "del *": deny
+    "del.exe *": deny
+    "erase *": deny
+    "erase.exe *": deny
+    "rmdir *": deny
+    "rmdir.exe *": deny
+    "rd *": deny
+    "Remove-Item*": deny
+    "remove-item*": deny
     "sudo *": deny
+    "sudo.exe *": deny
+    "doas *": deny
+    "doas.exe *": deny
+    "su *": deny
     "shutdown*": deny
+    "shutdown.exe*": deny
     "reboot*": deny
+    "Restart-Computer*": deny
+    "restart-computer*": deny
+    "Stop-Computer*": deny
+    "stop-computer*": deny
+    "poweroff*": deny
+    "halt*": deny
+    "systemctl poweroff*": deny
+    "systemctl reboot*": deny
+    "git push*": deny
+    "git.exe push*": deny
+    "git * push*": deny
+    "git.exe * push*": deny
+    "git *alias.*": deny
+    "git.exe *alias.*": deny
+    "git-push*": deny
+    "git -C * push*": deny
+    "git.exe -C * push*": deny
+    "git --git-dir* push*": deny
+    "git.exe --git-dir* push*": deny
     "git push --force*": deny
     "git reset --hard*": deny
+    "git reset *--hard*": deny
+    "git * reset *--hard*": deny
+    "git.exe reset *--hard*": deny
+    "git.exe * reset *--hard*": deny
+    "git-reset *--hard*": deny
+    "git -C * reset *--hard*": deny
+    "git.exe -C * reset *--hard*": deny
+    "git --git-dir* reset *--hard*": deny
+    "git.exe --git-dir* reset *--hard*": deny
   task:
     "*": deny
     explore: allow
@@ -80,6 +123,7 @@ You decide directly on internal architecture, private modules, services, file se
 - Detect the repository's actual language, package manager, build tool, lint tool, and test runner from its configuration. Never substitute guessed commands for project-defined commands.
 - Read the files you change and their relevant callers/importers before editing. Preserve a dirty worktree's unrelated changes.
 - Treat exploration as evidence gathering, not a default phase. Reuse supplied pointers and stop once the change surface, verification route, or one material external fact is established.
+- Shell command rules use last-match string globs. They reduce accidental use but are not a process sandbox. Do not use aliases, wrappers, interpreters, command chains, or alternate option placement to bypass a denied operation.
 
 ## Workflow
 
@@ -135,7 +179,7 @@ Treat `APPROVE` as the only clear completion verdict. Treat `REQUEST_CHANGES` as
 - Run project-defined format, lint, type, build, and test checks where they exist. Use `N/A` only when the project genuinely has no equivalent check.
 - For UI work, verify visual layout and interaction in a browser.
 - Before a commit, read `git status` and the staged diff. Stage explicit paths only, never broad dirty-tree staging. Do not commit secrets, environment files, or build artefacts.
-- Use conventional, atomic commit messages and feature branches unless the user explicitly directs a different workflow. Do not force-push shared branches or publish/release without explicit user authorization.
+- Use conventional, atomic commit messages and feature branches unless the user explicitly directs a different workflow. Shell-based push is unavailable; hand verified commits to an approved external remote-operation step. Do not publish or release without explicit user authorization.
 
 ## Error Handling
 

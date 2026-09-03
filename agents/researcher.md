@@ -8,29 +8,33 @@ permission:
   context7_*: allow
   exa_*: allow
   gh_grep*: allow
-  playwright_*: allow
+  playwright_*: deny
+  playwright_browser_navigate: allow
+  playwright_browser_navigate_back: allow
+  playwright_browser_find: allow
+  playwright_browser_snapshot: allow
+  playwright_browser_network_requests: allow
+  playwright_browser_wait_for: allow
+  playwright_browser_click: deny
+  playwright_browser_close: deny
+  playwright_browser_console_messages: deny
+  playwright_browser_drag: deny
+  playwright_browser_drop: deny
+  playwright_browser_evaluate: deny
+  playwright_browser_file_upload: deny
+  playwright_browser_fill_form: deny
+  playwright_browser_handle_dialog: deny
+  playwright_browser_hover: deny
+  playwright_browser_network_request: deny
+  playwright_browser_press_key: deny
+  playwright_browser_resize: deny
+  playwright_browser_run_code_unsafe: deny
+  playwright_browser_select_option: deny
+  playwright_browser_tabs: deny
+  playwright_browser_take_screenshot: deny
+  playwright_browser_type: deny
   webfetch: allow
-  bash:
-    "*": deny
-    "gh repo view*": allow
-    "gh pr view*": allow
-    "gh pr list*": allow
-    "gh issue view*": allow
-    "gh issue list*": allow
-    "gh release view*": allow
-    "gh release list*": allow
-    "gh run view*": allow
-    "gh run list*": allow
-    "gh workflow list*": allow
-    "gh search *": allow
-    "gh api *": ask
-    "npm view*": allow
-    "npm info*": allow
-    "npm show*": allow
-    "pip show*": allow
-    "pip index*": allow
-    "cargo search*": allow
-    "cargo info*": allow
+  bash: deny
   skill:
     "*": deny
     research-philosophy: allow
@@ -98,13 +102,6 @@ Every claim is anchored to a source, and the citation adapts to what the source 
 - Gotchas: filter arrays like `includeText` and `excludeText` accept a single item only - two or more returns HTTP 400. The `company` category rejects `includeDomains` and date filters. Check filter shape before batching.
 - Not for: library API docs (Context7 is better-scoped), code patterns (gh_grep is better), a URL already in hand (use `webfetch`).
 
-**`gh` CLI**
-
-- For: a known repository's issues, PRs, releases, workflow runs, or file contents. When you already know WHICH repo.
-- Call: via allowed bash. `gh api /repos/{owner}/{repo}/contents/{path}` for a file, `gh search code "pattern" --repo owner/name` for repo-scoped search, `gh pr view`, `gh issue view`, `gh release view`, `gh run view`.
-- Gotchas: requires the repo to be public or within your auth scope. Rate-limited per GitHub's API limits. `gh api` calls are human-gated (ask) because the subcommand can mutate; keep them read-only GET requests - never pass `-X`/`--method` or `-f`/`-F` field flags, which turn the request into a write. Prefer the frictionless `gh ... view/list/search` forms when they answer the question.
-- Not for: hunting across many repos (gh_grep), libraries (Context7), open-web content (Exa). Never for mutations - you are a read-only agent.
-
 **`webfetch`**
 
 - For: a specific URL already in hand - a spec page, a blog post, a changelog, a docs page you know about.
@@ -115,7 +112,7 @@ Every claim is anchored to a source, and the citation adapts to what the source 
 **Playwright MCP**:
 
 - For: pages that webfetch cannot read - SPAs that render via JS, sites that block simple GET, sites that aggressively rate-limit (e.g. data sites that throttle plain-HTTP scrapers but tolerate browser sessions).
-- Call: navigate, evaluate, screenshot. Browser-automation primitives.
+- Call: navigate, inspect snapshots and network-request lists, and wait for page text. Interaction, file-producing inspection, page evaluation, uploads, and unsafe code execution are unavailable.
 - Gotchas: stateful and heavyweight. Reach for webfetch first; escalate to playwright only when webfetch fails or is rate-limited. Don't drive a browser to do work `curl` could do.
 - Not for: anything webfetch can already retrieve cleanly.
 

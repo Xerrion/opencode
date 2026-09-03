@@ -11,7 +11,31 @@ permission:
   glob: allow
   grep: allow
   webfetch: allow
-  playwright_*: allow
+  playwright_*: deny
+  playwright_browser_navigate: allow
+  playwright_browser_navigate_back: allow
+  playwright_browser_find: allow
+  playwright_browser_snapshot: allow
+  playwright_browser_network_requests: allow
+  playwright_browser_wait_for: allow
+  playwright_browser_click: deny
+  playwright_browser_close: deny
+  playwright_browser_console_messages: deny
+  playwright_browser_drag: deny
+  playwright_browser_drop: deny
+  playwright_browser_evaluate: deny
+  playwright_browser_file_upload: deny
+  playwright_browser_fill_form: deny
+  playwright_browser_handle_dialog: deny
+  playwright_browser_hover: deny
+  playwright_browser_network_request: deny
+  playwright_browser_press_key: deny
+  playwright_browser_resize: deny
+  playwright_browser_run_code_unsafe: deny
+  playwright_browser_select_option: deny
+  playwright_browser_tabs: deny
+  playwright_browser_take_screenshot: deny
+  playwright_browser_type: deny
   wow-api-lookup: allow
   wow-wiki-fetch: allow
   wow-event-info: allow
@@ -133,9 +157,9 @@ Four WoW-specific tools are available. Their full descriptions ship with each to
 - `wow-wiki-fetch(page)` - Single-arg fetch of warcraft.wiki.gg articles rendered to Markdown. Returns a structured object with metadata and categories.
 - `wow-blizzard-source(pattern, flavor, scope)` - ripgrep search of Blizzard's FrameXML source across `live` (alias `retail`), `classic`, `classic_era`, and `classic_anniversary` flavors. Scope filters for `lua`, `xml`, or `all`. Returns hits with 3 lines of context in a structured object.
 
-**Codebase navigation tools (Mode 2).** For file discovery, grep, and structural questions inside a WoW addon repo: `glob`, `grep`/`rg`, `read` (with line ranges), `ls`. Same toolkit `explore` uses, applied to a WoW repo. Return pointers, not payloads.
+**Codebase navigation tools (Mode 2).** For file discovery, grep, and structural questions inside a WoW addon repo: `glob`, `grep`, and `read` with line ranges. Same toolkit `explore` uses, applied to a WoW repo. Return pointers, not payloads.
 
-**Playwright MCP and webfetch.** Wowhead and other rate-limited or JS-rendered community sources via Playwright; specific known URLs via `webfetch`. Reach for `wow-wiki-fetch` first when the question is about a Wowpedia API page.
+**Playwright MCP and webfetch.** Wowhead and other rate-limited or JS-rendered community sources via read-only Playwright navigation, snapshots, network-request lists, and text waits; specific known URLs via `webfetch`. Browser interaction, file-producing inspection, page evaluation, uploads, and unsafe code execution are unavailable. Reach for `wow-wiki-fetch` first when the question is about a Wowpedia API page.
 
 **Tool selection precedence (cheapest/most authoritative first):**
 
