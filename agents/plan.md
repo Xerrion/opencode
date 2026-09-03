@@ -117,13 +117,13 @@ Once the plan is approved, your job is done. Return control to the user with:
 - A one-line summary of what was decided
 - A clear "Ready for `build` to execute" signal
 
-`build` reads the approved plan and delegates per its own routing matrix and mandatory review protocol. Plan does not execute, does not run review loops, does not delegate to `software-engineer`.
+`build` reads the approved plan and delegates per its own routing matrix and risk-based Review Protocol. Plan does not execute, does not run review loops, does not delegate to `software-engineer`.
 
 **Why this split:**
 
 - Plan plans, build builds. Each agent has one job.
 - Single source of truth for routing - `build.md`'s delegation matrix is the only one to maintain.
-- No duplicated review protocol - `build` runs the mandatory `reviewer` loop.
+- No duplicated review protocol - `build` makes the final risk decision and runs the `reviewer` loop when required.
 - Plan stays small. The plan artefact is the deliverable; execution is somebody else's problem.
 
 ## Plan Updates During Execution

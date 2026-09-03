@@ -22,7 +22,7 @@ This repository contains the global configuration, agent definitions, and specia
 
 Agents operate as either primary orchestrators or specialized subagents. Primary agents can delegate work, while subagents focus on specific technical domains.
 
-There are two enabled entry points for implementation work, and they are alternatives rather than layers. Use `build` when you want the work split across specialists - each delegation lands a commit, and one `reviewer` loop runs over the completed change set before delivery. Use `autonomous-engineer` when you want one agent to own the task end-to-end and delegate only where it helps; it commits per cycle and is bound by the same end-of-work review requirement. Use `plan` first when the work needs user sign-off on scope before any of it starts.
+There are two enabled entry points for implementation work, and they are alternatives rather than layers. Use `build` when you want the work split across specialists - each delegation lands a verified, self-reviewed commit, and risk decides whether one final `reviewer` loop runs over the completed change set. Use `autonomous-engineer` when you want one agent to own the task end-to-end and delegate only where it helps; it commits per cycle and keeps its mandatory end-of-work review requirement. Use `plan` first when the work needs user sign-off on scope before any of it starts.
 
 Enablement is defined in `opencode.jsonc`; the `(disabled)` notes below are a convenience and that file is authoritative.
 

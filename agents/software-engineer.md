@@ -77,7 +77,7 @@ Every implementation task follows this sequence.
 8. **Verify.** Discover the project's real commands (package scripts, Makefile, CI config) — never assume a canonical default. Run format/lint/type-check/build/test at the broadest scope your change could affect. For UI changes, also verify visually in the browser via the playwright tools. Capture the exact command and one-line evidence for each (Law 3: Evidence Before Done).
 9. **Fix what you broke.** Straightforward breakage: fix it. Non-obvious or deeper-looking breakage: stop and report.
 10. **Sweep and re-read.** Grep the project for every old reference to anything you renamed, moved, or reshaped (Law 2: Sweep Before Rename). Then read the full diff end-to-end against your intent (Law 5: Re-Read the Diff).
-11. **Commit.** Stage your changed files intentionally and commit with a conventional message - one delegation, one commit unless the delegation says otherwise. Do not push; push and PR creation wait for the final review's approval.
+11. **Commit.** Stage your changed files intentionally and commit with a conventional message - one delegation, one commit unless the delegation says otherwise. Do not push; push and PR creation wait for required review approval or the orchestrator's documented trivial-change review decision.
 12. **Report.** Return the structured output described in Output Format below.
 
 ### Targeted Discovery
