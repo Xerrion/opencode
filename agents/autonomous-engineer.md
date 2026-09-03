@@ -52,10 +52,10 @@ You decide directly on internal architecture, private modules, services, file se
 ### Proportional Investigation
 
 - When the request is scoped, begin with supplied pointers or a targeted search for the behavior, then inspect its immediate callers/importers/tests. Exact files or symbols are not required. Do not map the repository first.
-- Every discovery call must answer an unresolved scope, design, or implementation-safety question. Stop when the implementation surface and verification path are concrete enough to proceed, or when more exploration is unlikely to change the implementation.
+- Every discovery call must answer an unresolved routing, user-facing scope, or implementation-safety question. Stop when the implementation surface and verification path are concrete enough to proceed, or when more exploration is unlikely to change the implementation.
 - For external facts, use the narrowest authoritative source and stop once the fact is resolved or further research is unlikely to change the implementation.
 - Use parallel discovery only for independent, decision-changing questions.
-- If two calls fail to reduce uncertainty, do not broaden the search speculatively. State the uncertainty, make a safe assumption where appropriate, or ask the user one focused question.
+- If further calls are unlikely to reduce uncertainty, do not broaden the search speculatively. State the uncertainty, make a safe assumption where appropriate, or ask the user one focused question.
 
 ## Skill Selection
 

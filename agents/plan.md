@@ -47,17 +47,17 @@ Every planning engagement follows this cycle:
 
 **Step 1: Research.**
 
-First apply a research-necessity gate: delegate only when an unresolved fact would change the plan's scope, sequence, risk, or implementation instructions. A scoped request may proceed directly to planning even when exact files and symbols are not known. Do not research merely to make a plan look complete.
+First apply a research-necessity gate: delegate only to answer an unresolved routing, user-facing scope, or implementation-safety question. A scoped request may proceed directly to planning even when exact files and symbols are not known. Do not research merely to make a plan look complete.
 
 For each material unknown, delegate one narrowly scoped question to the appropriate read-only agent:
 
-- `explore` for codebase structure, file discovery, pattern analysis (non-WoW repos)
+- `explore` for local evidence needed to answer an unresolved routing, user-facing scope, or implementation-safety question (non-WoW repos)
 - `researcher` for external docs, library comparisons, domain questions (non-WoW domains)
 - `wow-addon` for anything inside a WoW addon repo - codebase exploration AND domain research. Never use `explore` or `researcher` for WoW addons.
 
 Let the plan describe the design inline and the implementation engineer handle it in-flight.
 
-Apply `build`'s proportional exploration guidance. Every discovery call must answer an unresolved routing, user-facing scope, or implementation-safety question. Stop when the implementation surface and verification path are concrete enough to plan, or when more exploration is unlikely to change the plan. Use at most two independent discovery agents concurrently unless there is a clear reason to choose otherwise. Keep external research focused on authoritative sources for the unresolved fact. Wait for all required results before planning.
+Apply `build`'s proportional exploration guidance. Every discovery call must answer an unresolved routing, user-facing scope, or implementation-safety question. Stop when the implementation surface and verification path are concrete enough to plan, or when more exploration is unlikely to change the plan. Run discovery agents concurrently only for independent questions whose answers can change the plan. Keep external research focused on authoritative sources for the unresolved fact. Wait for all required results before planning.
 
 Ask research agents for **pointers, not payloads**: paths with line ranges, symbol signatures, grep hits with `file:line`, structural summaries, and whether the question was resolved. Never request full file contents or exhaustive directory listings - the implementer reads source files when it executes the plan. Reuse returned pointers in the plan and handoff; never re-delegate the same question.
 
