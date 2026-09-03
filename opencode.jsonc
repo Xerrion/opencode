@@ -75,359 +75,41 @@
   "permission": {
     "read": "allow",
     "glob": "allow",
-    "edit": "deny",
+    "grep": "allow",
+    "edit": "ask",
+    "write": "ask",
     "bash": {
       "*": "ask",
       "rm *": "deny",
       "sudo *": "deny",
       "shutdown*": "deny",
-      "reboot*": "deny"
+      "reboot*": "deny",
+      "git push --force*": "deny",
+      "git reset --hard*": "deny"
     },
-    "wow-api-lookup": "deny",
-    "wow-wiki-fetch": "deny",
-    "wow-event-info": "deny",
-    "wow-blizzard-source": "deny",
-    "task": "deny",
-    "webfetch": "deny",
-    "context7_*": "deny",
-    "exa_*": "deny",
-    "gh_grep*": "deny",
-    "servicenow_*": "deny",
-    "playwright_*": "deny",
-    "firefly_iii_*": "deny",
+    "wow-api-lookup": "ask",
+    "wow-wiki-fetch": "ask",
+    "wow-event-info": "ask",
+    "wow-blizzard-source": "ask",
+    "task": "ask",
+    "webfetch": "ask",
+    "context7_*": "ask",
+    "exa_*": "ask",
+    "playwright_*": "ask",
+    "pdf-reader_*": "ask",
+    "serena_*": "ask",
+    "headroom_*": "ask",
+    "submit_plan": "ask",
     "external_directory": {
-      "/Users/lasn/.plannotator/**": "allow",
-      "/Users/lasn/.local/share/wow-annotations/**": "allow",
-      "/Users/lasn/Projects/**": "allow",
-      "/tmp/**": "allow",
-      "/home/xerrion/.local/share/wow-annotations/**": "allow",
-      "/home/xerrion/.local/share/wow-framexml/**": "allow"
+      "C:\\Users\\lasn\\.plannotator\\**": "allow",
+      "C:\\Users\\lasn\\.local\\share\\wow-annotations\\**": "allow",
+      "C:\\Users\\lasn\\Projects\\**": "allow",
+      "C:\\Users\\lasn\\AppData\\Local\\Temp\\**": "allow",
+      "C:\\Users\\xerrion\\.local\\share\\wow-annotations\\**": "allow",
+      "C:\\Users\\xerrion\\.local\\share\\wow-framexml\\**": "allow"
     }
   },
   "agent": {
-    "researcher": {
-      "model": "github-copilot/gpt-5.6-sol",
-      "mode": "subagent",
-      "temperature": 0.2,
-      "permission": {
-        "edit": "deny",
-        "write": "deny",
-        "context7_*": "allow",
-        "exa_*": "allow",
-        "gh_grep*": "allow",
-        "playwright_*": "allow",
-        "webfetch": "allow",
-        "skill": {
-          "research-philosophy": "allow"
-        },
-        "bash": {
-          "gh repo view*": "allow",
-          "gh pr view*": "allow",
-          "gh pr list*": "allow",
-          "gh issue view*": "allow",
-          "gh issue list*": "allow",
-          "gh release view*": "allow",
-          "gh release list*": "allow",
-          "gh run view*": "allow",
-          "gh run list*": "allow",
-          "gh workflow list*": "allow",
-          "gh search *": "allow",
-          "gh api *": "ask",
-          "npm view*": "allow",
-          "npm info*": "allow",
-          "npm show*": "allow",
-          "pip show*": "allow",
-          "pip index*": "allow",
-          "cargo search*": "allow",
-          "cargo info*": "allow"
-        }
-      }
-    },
-    "accountant": {
-      "disable": true,
-      "model": "github-copilot/gpt-5.6-sol",
-      "mode": "primary",
-      "temperature": 0.2,
-      "color": "#2e8b57",
-      "permission": {
-        "edit": "deny",
-        "webfetch": "allow",
-        "firefly_iii_*": "allow",
-        "context7_*": "allow",
-        "exa_*": "allow",
-        "gh_grep*": "allow",
-        "pdf_reader_*": "allow",
-        "bash": {
-          "python3 *": "ask"
-        },
-        "skill": {
-          "accounting-philosophy": "allow"
-        }
-      }
-    },
-    "scribe": {
-      "model": "github-copilot/gpt-5.6-luna",
-      "mode": "subagent",
-      "temperature": 0.3,
-      "permission": {
-        "edit": "allow",
-        "skill": {
-          "writing-philosophy": "allow",
-          "pptx": "allow"
-        },
-        "bash": {
-          "*": "deny"
-        }
-      }
-    },
-    "software-engineer": {
-      "model": "github-copilot/gpt-5.6-sol",
-      "mode": "subagent",
-      "variant": "high",
-      "temperature": 0.3,
-      "permission": {
-        "write": "allow",
-        "read": "allow",
-        "edit": "allow",
-        "playwright_*": "allow",
-        "vercel_*": "allow",
-        "supabase_*": "allow",
-        "skill": {
-          "code-philosophy": "allow",
-          "frontend-philosophy": "allow",
-          "architecture-philosophy": "allow",
-          "implementation-philosophy": "allow",
-          "mcp-builder": "allow",
-          "pptx": "allow"
-        },
-        "bash": {
-          "*": "allow"
-        }
-      }
-    },
-    "autonomous-engineer": {
-      "model": "github-copilot/gpt-5.6-terra",
-      "mode": "primary",
-      "variant": "medium",
-      "temperature": 0.3,
-      "permission": {
-        "write": "allow",
-        "read": "allow",
-        "edit": "allow",
-        "task": "allow",
-        "playwright_*": "allow",
-        "context7_*": "allow",
-        "exa_*": "allow",
-        "gh_grep*": "allow",
-        "webfetch": "allow",
-        "skill": {
-          "code-philosophy": "allow",
-          "frontend-philosophy": "allow",
-          "architecture-philosophy": "allow",
-          "implementation-philosophy": "allow",
-          "writing-philosophy": "allow",
-          "research-philosophy": "allow",
-          "code-review": "allow",
-          "review-philosophy": "allow",
-          "mcp-builder": "allow",
-          "pptx": "allow"
-        },
-        "bash": {
-          "*": "allow",
-          "rm *": "deny",
-          "sudo *": "deny",
-          "shutdown*": "deny",
-          "reboot*": "deny"
-        }
-      }
-    },
-    "red-team": {
-      "model": "github-copilot/gpt-5.6-sol",
-      "mode": "subagent",
-      "variant": "medium",
-      "temperature": 0.2,
-      "color": "#8B0000",
-      "permission": {
-        "edit": "allow",
-        "playwright_*": "allow",
-        "skill": {
-          "code-philosophy": "allow",
-          "frontend-philosophy": "allow",
-          "architecture-philosophy": "allow"
-        },
-        "bash": {
-          "*": "allow",
-          "rm *": "deny",
-          "sudo *": "deny",
-          "shutdown*": "deny",
-          "reboot*": "deny"
-        }
-      }
-    },
-    "reviewer": {
-      "model": "github-copilot/gpt-5.6-sol",
-      "variant": "high",
-      "mode": "subagent",
-      "temperature": 0.1,
-      "permission": {
-        "*": "allow"
-      }
-    },
-    "plan": {
-      "model": "github-copilot/gpt-5.6-terra",
-      "mode": "primary",
-      "temperature": 0.3,
-      "permission": {
-        "edit": "ask",
-        "bash": {
-          "*": "ask"
-        },
-        "task": "allow",
-        "submit_plan": "allow",
-        "skill": {
-          "plan-protocol": "allow",
-          "plan-review": "allow",
-          "architecture-philosophy": "allow"
-        }
-      }
-    },
-    "build": {
-      "model": "github-copilot/gpt-5.6-sol",
-      "variant": "medium",
-      "mode": "primary",
-      "permission": {
-        "read": {
-          "*": "ask",
-          ".deliverables/**": "allow"
-        },
-        "glob": {
-          "*": "ask",
-          ".deliverables/**": "allow"
-        },
-        "bash": {
-          "*": "ask"
-        },
-        "task": "allow"
-      }
-    },
-    "explore": {
-      "model": "github-copilot/gpt-5.6-luna",
-      "variant": "medium",
-      "mode": "subagent",
-      "temperature": 0.2,
-      "permission": {
-        "edit": "deny",
-        "playwright_*": "allow",
-        "bash": {
-          "docker inspect*": "allow"
-        }
-      }
-    },
-    "wow-addon": {
-      "model": "github-copilot/gpt-5.6-terra",
-      "variant": "high",
-      "mode": "subagent",
-      "temperature": 0.3,
-      "color": "#C79C6E",
-      "permission": {
-        "edit": "deny",
-        "write": "deny",
-        "bash": {
-          "*": "deny"
-        },
-        "webfetch": "allow",
-        "playwright_*": "allow",
-        "wow-*": "allow",
-        "wow-api-lookup": "allow",
-        "wow-wiki-fetch": "allow",
-        "wow-event-info": "allow",
-        "wow-blizzard-source": "allow",
-        "task": {
-          "*": "deny"
-        },
-        "skill": {
-          "wow-addon-design": "allow",
-          "wow-addon-toolkit": "allow",
-          "wow-frame-api": "allow",
-          "wow-event-handling": "allow",
-          "wow-lua-patterns": "allow"
-        }
-      }
-    },
-    "jira": {
-      "disable": true,
-      "model": "github-copilot/gpt-5.6-luna",
-      "mode": "primary",
-      "temperature": 0.2,
-      "color": "#2684ff",
-      "permission": {
-        "edit": "deny",
-        "bash": {
-          "*": "deny"
-        },
-        "webfetch": "deny",
-        "atlassian_*": "allow",
-        "skill": {
-          "writing-philosophy": "allow"
-        }
-      }
-    },
-    "agil-refinement": {
-      "model": "github-copilot/gpt-5.6-terra",
-      "mode": "primary",
-      "temperature": 0.3,
-      "color": "#36B37E",
-      "permission": {
-        "edit": "deny",
-        "bash": {
-          "*": "deny"
-        },
-        "webfetch": "deny",
-        "atlassian_*": "allow",
-        "skill": {
-          "writing-philosophy": "allow"
-        }
-      }
-    },
-    "linear": {
-      "disable": true,
-      "model": "github-copilot/gpt-5.6-luna",
-      "mode": "subagent",
-      "temperature": 0.1,
-      "permission": {
-        "edit": "deny",
-        "bash": {
-          "*": "deny"
-        },
-        "webfetch": "deny",
-        "linear_*": "allow"
-      }
-    },
-    "servicenow": {
-      "model": "github-copilot/gpt-5.6-sol",
-      "mode": "primary",
-      "temperature": 0.1,
-      "color": "#0070d2",
-      "permission": {
-        "edit": "allow",
-        "bash": {
-          "*": "allow"
-        },
-        "task": "allow",
-        "webfetch": "allow",
-        "servicenow_*": "allow",
-        "exa_*": "allow",
-        "context7_*": "allow",
-        "skill": {
-          "servicenow-mcp-reference": "allow",
-          "servicenow-scripting": "allow",
-          "servicenow-business-rules": "allow",
-          "servicenow-client-scripts": "allow",
-          "servicenow-gliderecord": "allow",
-          "servicenow-encoded-queries": "allow"
-        }
-      }
-    },
     "general": {
       "disable": true
     }

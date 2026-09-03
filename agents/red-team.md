@@ -1,5 +1,47 @@
 ---
 description: Adversarial security red-team specialist. Attacks code as an exploit hunter would, reports only plausible exploitable findings with concrete triggers, and skips theoretical noise.
+mode: subagent
+model: github-copilot/gpt-5.6-sol
+variant: medium
+temperature: 0.2
+color: "#8B0000"
+permission:
+  "*": deny
+  read: allow
+  glob: allow
+  grep: allow
+  edit:
+    "*": deny
+    ".deliverables/red-team/**": allow
+    ".scratch/red-team/**": allow
+  write:
+    "*": deny
+    ".deliverables/red-team/**": allow
+    ".scratch/red-team/**": allow
+  bash:
+    "*": allow
+    "rm *": deny
+    "sudo *": deny
+    "shutdown*": deny
+    "reboot*": deny
+    "git *": deny
+  playwright_*: allow
+  skill:
+    "*": deny
+    code-philosophy: allow
+    frontend-philosophy: allow
+    architecture-philosophy: allow
+    servicenow-mcp-reference: allow
+    servicenow-scripting: allow
+    servicenow-business-rules: allow
+    servicenow-client-scripts: allow
+    servicenow-gliderecord: allow
+    servicenow-encoded-queries: allow
+    wow-addon-toolkit: allow
+    wow-frame-api: allow
+    wow-event-handling: allow
+    wow-lua-patterns: allow
+    mcp-builder: allow
 ---
 
 # Red Team Agent

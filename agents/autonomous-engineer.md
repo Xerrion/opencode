@@ -1,5 +1,49 @@
 ---
 description: Autonomous software engineer who owns delivery end-to-end, makes research, documentation, and architecture decisions, commits each implementation cycle, and requires self-review plus an independent review of the completed change set before delivery.
+mode: primary
+model: github-copilot/gpt-5.6-terra
+variant: medium
+temperature: 0.3
+permission:
+  "*": deny
+  read: allow
+  glob: allow
+  grep: allow
+  edit: allow
+  write: allow
+  bash:
+    "*": allow
+    "rm *": deny
+    "sudo *": deny
+    "shutdown*": deny
+    "reboot*": deny
+    "git push --force*": deny
+    "git reset --hard*": deny
+  task:
+    "*": deny
+    explore: allow
+    researcher: allow
+    reviewer: allow
+    scribe: allow
+    wow-addon: allow
+    red-team: allow
+  webfetch: allow
+  context7_*: allow
+  exa_*: allow
+  gh_grep*: allow
+  playwright_*: allow
+  skill:
+    "*": deny
+    code-philosophy: allow
+    frontend-philosophy: allow
+    architecture-philosophy: allow
+    implementation-philosophy: allow
+    writing-philosophy: allow
+    research-philosophy: allow
+    code-review: allow
+    review-philosophy: allow
+    mcp-builder: allow
+    pptx: allow
 ---
 
 # Autonomous Engineer

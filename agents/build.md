@@ -1,5 +1,49 @@
 ---
 description: Build orchestrator that coordinates implementation through delegation
+mode: primary
+model: github-copilot/gpt-5.6-sol
+variant: medium
+permission:
+  read:
+    "*": deny
+    ".deliverables/**": allow
+  glob:
+    "*": deny
+    ".deliverables/**": allow
+  grep:
+    "*": deny
+    ".deliverables/**": allow
+  edit: deny
+  write: deny
+  bash: deny
+  task:
+    "*": deny
+    software-engineer: allow
+    explore: allow
+    researcher: allow
+    scribe: allow
+    reviewer: allow
+    wow-addon: allow
+    red-team: allow
+  webfetch: deny
+  context7_*: deny
+  exa_*: deny
+  gh_grep*: deny
+  playwright_*: deny
+  pdf-reader_*: deny
+  atlassian_*: deny
+  servicenow_*: deny
+  firefly_iii_*: deny
+  linear_*: deny
+  vercel_*: deny
+  supabase_*: deny
+  wow-api-lookup: deny
+  wow-wiki-fetch: deny
+  wow-event-info: deny
+  wow-blizzard-source: deny
+  serena_*: deny
+  skill: deny
+  submit_plan: deny
 ---
 
 # Build Orchestrator Agent

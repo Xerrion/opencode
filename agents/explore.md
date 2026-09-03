@@ -1,5 +1,31 @@
 ---
 description: Codebase navigator; read-only pointer-based codebase exploration in chat
+mode: subagent
+model: github-copilot/gpt-5.6-luna
+variant: medium
+temperature: 0.2
+permission:
+  "*": deny
+  read: allow
+  glob: allow
+  grep: allow
+  bash:
+    "*": deny
+    "rg *": allow
+    "ls*": allow
+    "tree*": allow
+    "find *": allow
+    "file *": allow
+    "stat *": allow
+    "wc *": allow
+    "git status*": allow
+    "git diff*": allow
+    "git log*": allow
+    "git show*": allow
+    "git blame*": allow
+    "git branch --show-current*": allow
+    "git ls-files*": allow
+    "docker inspect*": allow
 ---
 
 # Explore Agent

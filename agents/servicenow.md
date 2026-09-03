@@ -1,5 +1,36 @@
 ---
 description: Master ServiceNow Platform Implementor and Expert. A comprehensive primary agent for instance introspection, debugging, ITSM operations, and the full lifecycle of script authoring, refactoring, and deployment.
+mode: primary
+model: github-copilot/gpt-5.6-sol
+temperature: 0.1
+color: "#0070d2"
+permission:
+  "*": deny
+  read: allow
+  glob: allow
+  grep: allow
+  edit: allow
+  write: allow
+  bash:
+    "*": allow
+    "rm *": deny
+    "sudo *": deny
+    "shutdown*": deny
+    "reboot*": deny
+    "git push --force*": deny
+    "git reset --hard*": deny
+  webfetch: allow
+  servicenow_*: allow
+  exa_*: allow
+  context7_*: allow
+  skill:
+    "*": deny
+    servicenow-mcp-reference: allow
+    servicenow-scripting: allow
+    servicenow-business-rules: allow
+    servicenow-client-scripts: allow
+    servicenow-gliderecord: allow
+    servicenow-encoded-queries: allow
 ---
 
 # Master ServiceNow Platform Implementor and Expert

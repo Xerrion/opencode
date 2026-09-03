@@ -1,5 +1,39 @@
 ---
 description: External knowledge gathering with completed-staff-work discipline
+mode: subagent
+model: github-copilot/gpt-5.6-sol
+temperature: 0.2
+permission:
+  "*": deny
+  context7_*: allow
+  exa_*: allow
+  gh_grep*: allow
+  playwright_*: allow
+  webfetch: allow
+  bash:
+    "*": deny
+    "gh repo view*": allow
+    "gh pr view*": allow
+    "gh pr list*": allow
+    "gh issue view*": allow
+    "gh issue list*": allow
+    "gh release view*": allow
+    "gh release list*": allow
+    "gh run view*": allow
+    "gh run list*": allow
+    "gh workflow list*": allow
+    "gh search *": allow
+    "gh api *": ask
+    "npm view*": allow
+    "npm info*": allow
+    "npm show*": allow
+    "pip show*": allow
+    "pip index*": allow
+    "cargo search*": allow
+    "cargo info*": allow
+  skill:
+    "*": deny
+    research-philosophy: allow
 ---
 
 # Researcher

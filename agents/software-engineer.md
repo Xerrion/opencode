@@ -1,5 +1,36 @@
 ---
 description: Master software engineer specialist for writing and modifying code in any language or stack. Loads the relevant philosophy skills before every implementation and verifies its work before returning.
+mode: subagent
+model: github-copilot/gpt-5.6-sol
+variant: high
+temperature: 0.3
+permission:
+  "*": deny
+  read: allow
+  glob: allow
+  grep: allow
+  edit: allow
+  write: allow
+  bash:
+    "*": allow
+    "rm *": deny
+    "sudo *": deny
+    "shutdown*": deny
+    "reboot*": deny
+    "git push --force*": deny
+    "git reset --hard*": deny
+  task: deny
+  playwright_*: allow
+  vercel_*: allow
+  supabase_*: allow
+  skill:
+    "*": deny
+    code-philosophy: allow
+    frontend-philosophy: allow
+    architecture-philosophy: allow
+    implementation-philosophy: allow
+    mcp-builder: allow
+    pptx: allow
 ---
 
 # Software Engineer

@@ -1,5 +1,28 @@
 ---
 description: Reviews code for correctness, security, performance, and maintainability. Identifies refactoring opportunities that reduce complexity with minimal risk.
+mode: subagent
+model: github-copilot/gpt-5.6-sol
+variant: high
+temperature: 0.1
+permission:
+  "*": deny
+  read: allow
+  glob: allow
+  grep: allow
+  bash:
+    "*": deny
+    "git status*": allow
+    "git diff*": allow
+    "git log*": allow
+    "git show*": allow
+    "git blame*": allow
+    "git ls-files*": allow
+  skill:
+    "*": deny
+    review-philosophy: allow
+    code-philosophy: allow
+    frontend-philosophy: allow
+    architecture-philosophy: allow
 ---
 
 # Code Review Agent
