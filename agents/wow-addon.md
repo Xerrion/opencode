@@ -11,31 +11,7 @@ permission:
   glob: allow
   grep: allow
   webfetch: allow
-  playwright_*: deny
-  playwright_browser_navigate: allow
-  playwright_browser_navigate_back: allow
-  playwright_browser_find: allow
-  playwright_browser_wait_for: allow
-  playwright_browser_snapshot: deny
-  playwright_browser_network_requests: deny
-  playwright_browser_click: deny
-  playwright_browser_close: deny
-  playwright_browser_console_messages: deny
-  playwright_browser_drag: deny
-  playwright_browser_drop: deny
-  playwright_browser_evaluate: deny
-  playwright_browser_file_upload: deny
-  playwright_browser_fill_form: deny
-  playwright_browser_handle_dialog: deny
-  playwright_browser_hover: deny
-  playwright_browser_network_request: deny
-  playwright_browser_press_key: deny
-  playwright_browser_resize: deny
-  playwright_browser_run_code_unsafe: deny
-  playwright_browser_select_option: deny
-  playwright_browser_tabs: deny
-  playwright_browser_take_screenshot: deny
-  playwright_browser_type: deny
+  playwright_*: allow
   wow-api-lookup: allow
   wow-wiki-fetch: allow
   wow-event-info: allow

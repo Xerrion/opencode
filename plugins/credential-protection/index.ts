@@ -1,11 +1,11 @@
-import type { Plugin } from "@opencode-ai/plugin";
+import { Plugin } from "@opencode-ai/plugin";
 import {
   containsPlaceholder,
   isCommentLine,
   extractLineContaining,
   redactToolOutput,
-} from "./credential-redaction";
-import { analyzeGitStaging } from "./credential-redaction/git-staging";
+} from "./redaction";
+import { analyzeGitStaging } from "./git-staging";
 
 /**
  * General-Purpose Credential Protection Plugin
@@ -167,57 +167,53 @@ function isSensitiveFile(filePath: string): boolean {
 // Plugin
 // ---------------------------------------------------------------------------
 
-export const CredentialProtection: Plugin = async ({ client }) => {
-  const log = (level: "info" | "warn" | "error", message: string) =>
-    client.app.log({
-      body: { service: "credential-protection", level, message },
-    });
-
-  async function blockCredential(
+export const CredentialProtection = Plugin.define({
+  id: "credential-protection",
+  setup: async (context) => {
+  function blockCredential(
     operation: string,
     credential: { category: string; description: string },
-  ): Promise<never> {
+  ): never {
     const msg =
       `[credential-protection] BLOCKED: ${credential.category} detected in ${operation} operation.\n` +
       `Pattern matched: ${credential.description}\n` +
       `If this is a false positive, use a placeholder value like 'your-api-key-here' or reference an environment variable.`;
-    await log("error", msg);
+    console.error(msg);
     throw new Error(msg);
   }
 
-  await log("info", "Credential protection plugin loaded and active.");
+  console.info("[credential-protection] plugin loaded and active");
 
-  return {
-    "tool.execute.before": async (input: {
-      tool: string;
-      args?: Record<string, unknown>;
-    }) => {
-      const toolName = input.tool;
+  await context.tool.hook("execute.before", (event) => {
+      const toolName = event.tool.toLowerCase();
+      const args =
+        event.input && typeof event.input === "object" && !Array.isArray(event.input)
+          ? (event.input as Record<string, unknown>)
+          : {};
 
       // --- write/edit/patch tools: scan new content for credentials ---
       // oldString is deliberately NOT scanned: edits that REMOVE a credential
       // must not be blocked.
       if (toolName === "write" || toolName === "edit" || toolName === "patch") {
-        const args = input.args ?? {};
-        const text = [args.content, args.newString, args.diff]
+        const text = [args.content, args.newString, args.diff, args.patchText]
           .filter((v): v is string => typeof v === "string")
           .join("\n");
         if (!text) return;
 
         const credential = scanForCredentials(text);
-        if (credential) await blockCredential(toolName, credential);
+        if (credential) blockCredential(toolName, credential);
         return;
       }
 
       // --- bash tool: scan command + check git add ---
-      if (toolName === "bash") {
-        const command = String(input.args?.command || "");
+      if (toolName === "bash" || toolName === "shell") {
+        const command = typeof args.command === "string" ? args.command : "";
         if (!command) return;
 
         // Action A: Scan command for embedded credentials
         const credential = scanForCredentials(command);
         if (credential) {
-          await blockCredential("bash", credential);
+          blockCredential("shell", credential);
         }
 
         // Actions B & C: git staging policy. analyzeGitStaging handles
@@ -228,8 +224,7 @@ export const CredentialProtection: Plugin = async ({ client }) => {
         if (!staging) return;
 
         if (staging.hasBroadAdd) {
-          await log(
-            "warn",
+          console.warn(
             "[credential-protection] WARNING: Broad 'git add' detected. Verify no sensitive files are being staged.",
           );
         }
@@ -237,7 +232,7 @@ export const CredentialProtection: Plugin = async ({ client }) => {
         for (const path of staging.stagedPaths) {
           if (isSensitiveFile(path)) {
             const msg = `[credential-protection] BLOCKED: Attempting to stage sensitive file '${path}'.\nPattern matched: Sensitive file pattern\nIf this file must be tracked, remove the credential content first and stage a sanitized version.`;
-            await log("error", msg);
+            console.error(msg);
             throw new Error(msg);
           }
         }
@@ -246,60 +241,39 @@ export const CredentialProtection: Plugin = async ({ client }) => {
 
       // --- read tool: warn on sensitive file access ---
       if (toolName === "read") {
-        const filePath = String(input.args?.filePath || "");
+        const filePath =
+          typeof args.path === "string"
+            ? args.path
+            : typeof args.filePath === "string"
+              ? args.filePath
+              : "";
         if (!filePath) return;
         if (!isSensitiveFile(filePath)) return;
 
-        await log(
-          "warn",
+        console.warn(
           `[credential-protection] WARNING: Reading sensitive file: ${filePath}. Ensure no credentials are extracted and written to code.`,
         );
       }
-    },
+    });
 
-    // Mutates `output` in place so downstream middleware sees the redacted shape.
-    "tool.execute.after": async (
-      input: { tool: string; callID?: string },
-      output: unknown,
-    ) => {
-      const { hits, error } = redactToolOutput(output);
+    await context.tool.hook("execute.after", (event) => {
+      if (event.status === "error") return;
+
+      const { hits, error } = redactToolOutput(event.result);
 
       if (error) {
-        // NEVER log the secret. Only log that the redactor failed.
-        await client.app.log({
-          body: {
-            service: "credential-protection",
-            level: "error",
-            message:
-              "[credential-protection] redactor threw; payload suppressed",
-            extra: {
-              tool: input.tool,
-              callID: input.callID,
-              error: String(error.message).slice(0, 200),
-            },
-          },
-        });
+        console.error("[credential-protection] redactor threw; payload suppressed");
         return;
       }
 
       if (hits.length === 0) return;
 
       const reasons = Array.from(new Set(hits.map((h) => h.reason)));
-      await client.app.log({
-        body: {
-          service: "credential-protection",
-          level: "warn",
-          message: `[credential-protection] redacted ${hits.length} value(s) from ${input.tool}`,
-          extra: {
-            tool: input.tool,
-            callID: input.callID,
-            hitCount: hits.length,
-            reasons,
-          },
-        },
-      });
-    },
-  };
-};
+      console.warn(
+        `[credential-protection] redacted ${hits.length} value(s) from ${event.tool}; reasons: ${reasons.join(", ")}`,
+      );
+    });
+  },
+});
 
 export default CredentialProtection;

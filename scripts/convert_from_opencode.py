@@ -15,9 +15,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-
-SOURCE_ROOT = Path("/Users/lasn/.config/opencode")
-TARGET_ROOT = Path("/Users/lasn/.copilot")
+SOURCE_ROOT = Path("C:\\Users\\lasse\\.config\\opencode")
+TARGET_ROOT = Path("C:\\Users\\lasse\\.copilot")
 
 PROTECTED_TOP_LEVEL_NAMES = {
     "command-history-state.json",
@@ -124,9 +123,17 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Convert opencode configuration into GitHub Copilot CLI layout."
     )
-    parser.add_argument("--validate", action="store_true", help="validate the generated target layout")
-    parser.add_argument("--list", action="store_true", help="list generated target files")
-    parser.add_argument("--dry-run", action="store_true", help="show planned writes without changing files")
+    parser.add_argument(
+        "--validate", action="store_true", help="validate the generated target layout"
+    )
+    parser.add_argument(
+        "--list", action="store_true", help="list generated target files"
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="show planned writes without changing files",
+    )
     args = parser.parse_args()
 
     try:
@@ -165,7 +172,9 @@ def build_converted_files() -> tuple[list[ConvertedFile], list[SkippedSource]]:
     converted_files.extend(convert_skill_files(skipped_sources))
     converted_files.append(ConvertedFile(TARGET_ROOT / "README.md", build_readme()))
 
-    sorted_files = sorted(converted_files, key=lambda converted_file: str(converted_file.path))
+    sorted_files = sorted(
+        converted_files, key=lambda converted_file: str(converted_file.path)
+    )
     return sorted_files, skipped_sources
 
 
@@ -210,9 +219,15 @@ def convert_instruction_files() -> list[ConvertedFile]:
                     "applyTo": apply_to_for_instruction(skill_name),
                 }
             )
-            target_path = TARGET_ROOT / "instructions" / f"{slugify(skill_name)}.instructions.md"
+            target_path = (
+                TARGET_ROOT / "instructions" / f"{slugify(skill_name)}.instructions.md"
+            )
             instruction_files.append(
-                ConvertedFile(target_path, normalize_newline(frontmatter + source_document.body), skill_path)
+                ConvertedFile(
+                    target_path,
+                    normalize_newline(frontmatter + source_document.body),
+                    skill_path,
+                )
             )
 
     philosophy_path = SOURCE_ROOT / "philosophy" / "AGENTS.md"
@@ -250,7 +265,11 @@ def convert_agent_files() -> list[ConvertedFile]:
         frontmatter = build_frontmatter({"description": description})
         body = prepend_agent_conversion_note(source_document.body)
         target_path = TARGET_ROOT / "agents" / f"{slugify(agent_name)}.agent.md"
-        agent_files.append(ConvertedFile(target_path, normalize_newline(frontmatter + body), agent_path))
+        agent_files.append(
+            ConvertedFile(
+                target_path, normalize_newline(frontmatter + body), agent_path
+            )
+        )
 
     return agent_files
 
@@ -262,7 +281,9 @@ def parse_agent_source_document(path: Path) -> SourceDocument:
         for key, value in source_document.metadata.items()
         if key not in OPENCODE_AGENT_FRONTMATTER_KEYS
     }
-    return SourceDocument(path=source_document.path, metadata=metadata, body=source_document.body)
+    return SourceDocument(
+        path=source_document.path, metadata=metadata, body=source_document.body
+    )
 
 
 def convert_skill_files(skipped_sources: list[SkippedSource]) -> list[ConvertedFile]:
@@ -271,11 +292,17 @@ def convert_skill_files(skipped_sources: list[SkippedSource]) -> list[ConvertedF
     if not skills_directory.exists():
         return skill_files
 
-    for skill_directory in sorted(path for path in skills_directory.iterdir() if path.is_dir()):
+    for skill_directory in sorted(
+        path for path in skills_directory.iterdir() if path.is_dir()
+    ):
         skill_name = skill_directory.name
-        for source_path in sorted(path for path in skill_directory.rglob("*") if path.is_file()):
+        for source_path in sorted(
+            path for path in skill_directory.rglob("*") if path.is_file()
+        ):
             if should_skip_source_path(source_path):
-                skipped_sources.append(SkippedSource(source_path, "excluded source path"))
+                skipped_sources.append(
+                    SkippedSource(source_path, "excluded source path")
+                )
                 continue
 
             text = read_optional_safe_text(source_path, skipped_sources)
@@ -284,7 +311,9 @@ def convert_skill_files(skipped_sources: list[SkippedSource]) -> list[ConvertedF
 
             relative_skill_path = source_path.relative_to(skill_directory)
             target_path = TARGET_ROOT / "skills" / skill_name / relative_skill_path
-            skill_files.append(ConvertedFile(target_path, normalize_newline(text), source_path))
+            skill_files.append(
+                ConvertedFile(target_path, normalize_newline(text), source_path)
+            )
 
     return skill_files
 
@@ -302,11 +331,15 @@ def read_required_safe_text(path: Path) -> str:
         raise ConversionError(f"required source is not UTF-8 text: {path}") from error
 
     if contains_sensitive_literal(content):
-        raise ConversionError(f"sensitive-looking literal found; refusing to copy {path}")
+        raise ConversionError(
+            f"sensitive-looking literal found; refusing to copy {path}"
+        )
     return content
 
 
-def read_optional_safe_text(path: Path, skipped_sources: list[SkippedSource]) -> str | None:
+def read_optional_safe_text(
+    path: Path, skipped_sources: list[SkippedSource]
+) -> str | None:
     try:
         content = path.read_text(encoding="utf-8")
     except UnicodeDecodeError:
@@ -322,7 +355,11 @@ def read_optional_safe_text(path: Path, skipped_sources: list[SkippedSource]) ->
 def contains_sensitive_literal(content: str) -> bool:
     return any(
         pattern.search(content)
-        for pattern in (PRIVATE_KEY_PATTERN, SECRET_ASSIGNMENT_PATTERN, WELL_KNOWN_TOKEN_PATTERN)
+        for pattern in (
+            PRIVATE_KEY_PATTERN,
+            SECRET_ASSIGNMENT_PATTERN,
+            WELL_KNOWN_TOKEN_PATTERN,
+        )
     )
 
 
@@ -495,7 +532,9 @@ def remove_empty_generated_directories() -> None:
         directory = TARGET_ROOT / directory_name
         if not directory.is_dir():
             continue
-        descendants = sorted(directory.rglob("*"), key=lambda path: len(path.parts), reverse=True)
+        descendants = sorted(
+            directory.rglob("*"), key=lambda path: len(path.parts), reverse=True
+        )
         for path in descendants:
             if path.is_dir() and not any(path.iterdir()):
                 path.rmdir()
@@ -509,22 +548,32 @@ def assert_safe_targets(paths: list[Path]) -> None:
         assert_not_protected_target(relative_path)
         if is_allowed_generated_target(relative_path):
             continue
-        raise ConversionError(f"refusing to write outside generated Copilot CLI layout: {path}")
+        raise ConversionError(
+            f"refusing to write outside generated Copilot CLI layout: {path}"
+        )
 
 
 def assert_path_inside_target(path: Path) -> None:
     try:
         path.relative_to(TARGET_ROOT)
     except ValueError as error:
-        raise ConversionError(f"target path escapes Copilot directory: {path}") from error
+        raise ConversionError(
+            f"target path escapes Copilot directory: {path}"
+        ) from error
 
 
 def assert_not_protected_target(relative_path: Path) -> None:
     top_level_name = relative_path.parts[0]
     if top_level_name in PROTECTED_TOP_LEVEL_NAMES:
-        raise ConversionError(f"refusing to write protected Copilot runtime path: {TARGET_ROOT / relative_path}")
-    if any(top_level_name.startswith(prefix) for prefix in PROTECTED_TOP_LEVEL_PREFIXES):
-        raise ConversionError(f"refusing to write protected Copilot runtime path: {TARGET_ROOT / relative_path}")
+        raise ConversionError(
+            f"refusing to write protected Copilot runtime path: {TARGET_ROOT / relative_path}"
+        )
+    if any(
+        top_level_name.startswith(prefix) for prefix in PROTECTED_TOP_LEVEL_PREFIXES
+    ):
+        raise ConversionError(
+            f"refusing to write protected Copilot runtime path: {TARGET_ROOT / relative_path}"
+        )
 
 
 def is_allowed_generated_target(relative_path: Path) -> bool:
@@ -578,7 +627,9 @@ def protected_runtime_paths_to_check() -> list[Path]:
 
 
 def validate_generated_files() -> list[str]:
-    required_directories = [TARGET_ROOT / name for name in sorted({"agents", "instructions", "skills"})]
+    required_directories = [
+        TARGET_ROOT / name for name in sorted({"agents", "instructions", "skills"})
+    ]
     for directory in required_directories:
         if not directory.exists():
             raise ConversionError(f"missing generated directory: {directory}")
@@ -612,7 +663,9 @@ def assert_has_files(paths: list[Path], label: str) -> None:
         raise ConversionError(f"no generated files found for {label}")
 
 
-def assert_no_wrong_extension(directory: Path, pattern: str, expected_suffix: str) -> None:
+def assert_no_wrong_extension(
+    directory: Path, pattern: str, expected_suffix: str
+) -> None:
     for path in sorted(directory.glob(pattern)):
         if not path.name.endswith(expected_suffix):
             raise ConversionError(f"unexpected extension in {directory}: {path.name}")
@@ -626,15 +679,25 @@ def assert_no_forbidden_copilot_cli_files() -> None:
     ]
     if forbidden_paths:
         formatted_paths = ", ".join(str(path) for path in sorted(forbidden_paths))
-        raise ConversionError(f"Copilot CLI target must not contain prompt/chatmode files: {formatted_paths}")
+        raise ConversionError(
+            f"Copilot CLI target must not contain prompt/chatmode files: {formatted_paths}"
+        )
 
 
 def assert_no_excluded_directories_under_generated_roots() -> None:
-    generated_roots = [TARGET_ROOT / "agents", TARGET_ROOT / "instructions", TARGET_ROOT / "skills"]
+    generated_roots = [
+        TARGET_ROOT / "agents",
+        TARGET_ROOT / "instructions",
+        TARGET_ROOT / "skills",
+    ]
     for root in generated_roots:
         for path in root.rglob("*"):
-            if any(part in SOURCE_EXCLUDED_PARTS for part in path.relative_to(root).parts):
-                raise ConversionError(f"excluded directory copied into generated output: {path}")
+            if any(
+                part in SOURCE_EXCLUDED_PARTS for part in path.relative_to(root).parts
+            ):
+                raise ConversionError(
+                    f"excluded directory copied into generated output: {path}"
+                )
 
 
 def validate_markdown_frontmatter() -> list[str]:
@@ -657,7 +720,9 @@ def validate_markdown_frontmatter() -> list[str]:
         disallowed_keys = OPENCODE_AGENT_FRONTMATTER_KEYS.intersection(metadata)
         if disallowed_keys:
             invalid_keys = ", ".join(sorted(disallowed_keys))
-            raise ConversionError(f"opencode-only frontmatter remains in {path}: {invalid_keys}")
+            raise ConversionError(
+                f"opencode-only frontmatter remains in {path}: {invalid_keys}"
+            )
         assert_no_raw_opencode_permission_frontmatter(path, metadata)
         assert_no_immediate_duplicated_yaml_delimiter(path, body)
 
@@ -679,14 +744,18 @@ def validated_frontmatter(path: Path) -> tuple[dict[str, str], str]:
     return metadata, body
 
 
-def assert_no_raw_opencode_permission_frontmatter(path: Path, metadata: dict[str, str]) -> None:
+def assert_no_raw_opencode_permission_frontmatter(
+    path: Path, metadata: dict[str, str]
+) -> None:
     if "permission" in metadata:
         raise ConversionError(f"raw opencode permission map in frontmatter: {path}")
 
 
 def assert_no_immediate_duplicated_yaml_delimiter(path: Path, body: str) -> None:
     if body.lstrip("\n").startswith("---\n"):
-        raise ConversionError(f"duplicated YAML delimiter after generated frontmatter: {path}")
+        raise ConversionError(
+            f"duplicated YAML delimiter after generated frontmatter: {path}"
+        )
 
 
 def validate_generated_content_safety() -> list[str]:
@@ -694,7 +763,9 @@ def validate_generated_content_safety() -> list[str]:
     for path in generated_text_paths():
         content = path.read_text(encoding="utf-8")
         if contains_sensitive_literal(content):
-            raise ConversionError(f"sensitive-looking literal found in generated content: {path}")
+            raise ConversionError(
+                f"sensitive-looking literal found in generated content: {path}"
+            )
         scanned_count += 1
     return [f"Scanned {scanned_count} generated text files for obvious secrets"]
 

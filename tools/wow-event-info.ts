@@ -1,7 +1,7 @@
-import { tool } from "@opencode-ai/plugin/tool";
 import { z } from "zod";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 
 /**
@@ -34,7 +34,23 @@ export function defaultDataRoot(
   return join(homedir(), ".local", "share", dirName);
 }
 
-const ABS_PATH = join(process.env.WOW_ANNOTATIONS_ROOT ?? defaultDataRoot("wow-annotations"), REL_PATH);
+function dataRootCandidates(dirName: string, override?: string): string[] {
+  const candidates = [
+    override,
+    process.env.XDG_DATA_HOME ? join(process.env.XDG_DATA_HOME, dirName) : undefined,
+    defaultDataRoot(dirName),
+    process.env.LOCALAPPDATA ? join(process.env.LOCALAPPDATA, dirName) : undefined,
+    join(homedir(), ".local", "share", dirName),
+  ];
+  return [...new Set(candidates.filter((candidate): candidate is string => candidate !== undefined))];
+}
+
+function resolveEventCatalog(): { path: string; searched: string[] } {
+  const searched = dataRootCandidates("wow-annotations", process.env.WOW_ANNOTATIONS_ROOT)
+    .map((root) => join(root, REL_PATH));
+  return { path: searched.find(existsSync) ?? searched[0]!, searched };
+}
+
 const BUDGET = 40_000;
 const FAMILY_LINE_CAP = 30;
 const SUGGESTION_CAP = 20;
@@ -237,7 +253,7 @@ function renderNoMatch(event: string, rows: Row[]): string {
   return truncateUtf8(lines.join("\n"), BUDGET);
 }
 
-export default tool({
+export default {
   description:
     "Look up a single WoW frame event by exact name in Annotations/Core/Data/Event.lua. Returns its payload signature and a same-prefix family window for orientation. No fuzzy/prefix mode; no wiki fetch.",
   args: {
@@ -255,12 +271,15 @@ export default tool({
       throw new Error("wow-event-info: event must contain only A-Z, 0-9, and underscore");
     }
 
+    const catalog = resolveEventCatalog();
     let raw: string;
     try {
-      raw = await readFile(ABS_PATH, "utf8");
+      raw = await readFile(catalog.path, "utf8");
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`wow-event-info: failed reading event catalog: ${message}`);
+      throw new Error(
+        `wow-event-info: failed reading event catalog (searched ${catalog.searched.join(", ")}): ${message}`,
+      );
     }
 
     let rows: Row[];
@@ -277,4 +296,4 @@ export default tool({
     }
     return renderMatch(normalised, rows, idx);
   },
-});
+};

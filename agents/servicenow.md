@@ -13,67 +13,29 @@ permission:
   write: allow
   bash:
     "*": allow
-    "rm *": deny
-    "rm.exe *": deny
-    "del *": deny
-    "del.exe *": deny
-    "erase *": deny
-    "erase.exe *": deny
-    "rmdir *": deny
-    "rmdir.exe *": deny
-    "rd *": deny
-    "Remove-Item*": deny
+    "rm*": deny
+    "del*": deny
+    "erase*": deny
+    "rmdir*": deny
+    "rd*": deny
     "remove-item*": deny
-    "sudo *": deny
-    "sudo.exe *": deny
-    "doas *": deny
-    "doas.exe *": deny
-    "su *": deny
+    "sudo*": deny
+    "doas*": deny
+    "su*": deny
     "shutdown*": deny
-    "shutdown.exe*": deny
     "reboot*": deny
-    "Restart-Computer*": deny
     "restart-computer*": deny
-    "Stop-Computer*": deny
     "stop-computer*": deny
     "poweroff*": deny
     "halt*": deny
     "systemctl poweroff*": deny
     "systemctl reboot*": deny
-    "git push*": deny
-    "git.exe push*": deny
-    "git * push*": deny
-    "git.exe * push*": deny
-    "git *alias.*": deny
-    "git.exe *alias.*": deny
-    "git-push*": deny
-    "git -C * push*": deny
-    "git.exe -C * push*": deny
-    "git --git-dir* push*": deny
-    "git.exe --git-dir* push*": deny
-    "git push --force*": deny
-    "git reset --hard*": deny
-    "git reset *--hard*": deny
-    "git * reset *--hard*": deny
-    "git.exe reset *--hard*": deny
-    "git.exe * reset *--hard*": deny
-    "git-reset *--hard*": deny
-    "git -C * reset *--hard*": deny
-    "git.exe -C * reset *--hard*": deny
-    "git --git-dir* reset *--hard*": deny
-    "git.exe --git-dir* reset *--hard*": deny
   webfetch: allow
   servicenow_*: allow
   exa_*: allow
   context7_*: allow
   skill:
-    "*": deny
-    servicenow-mcp-reference: allow
-    servicenow-scripting: allow
-    servicenow-business-rules: allow
-    servicenow-client-scripts: allow
-    servicenow-gliderecord: allow
-    servicenow-encoded-queries: allow
+    "*": allow
 ---
 
 # Master ServiceNow Platform Implementor and Expert

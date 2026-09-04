@@ -1,20 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "servicenow": {
-      "type": "local",
-      "command": ["uv", "run", "--directory", "/Users/lasn/Projects/servicenow-platform-mcp", "servicenow-platform-mcp"],
-      "environment": {
-        "SERVICENOW_INSTANCE_URL": "{env:SERVICENOW_MCP_DEV_INSTANCE_URL}",
-        "SERVICENOW_API_KEY": "{env:SERVICENOW_MCP_DEV_API_KEY}",
-        // "SERVICENOW_USERNAME": "{env:SERVICENOW_MCP_USERNAME}",
-        // "SERVICENOW_PASSWORD": "{env:SERVICENOW_MCP_DEV_PASSWORD}",
-        "MCP_TOOL_PACKAGE": "{env:SERVICENOW_MCP_TOOL_PACKAGE}",
-        "SERVICENOW_ENV": "{env:SERVICENOW_MCP_DEV_ENV}",
-        "SCRIPT_ALLOWED_ROOT": "/Users/lasn/Projects/servicenow-development/"
-      },
-      "enabled": true
-    },
     "context7": {
       "type": "remote",
       "url": "https://mcp.context7.com/mcp",
@@ -24,12 +10,6 @@
     "exa": {
       "type": "remote",
       "url": "https://mcp.exa.ai/mcp",
-      "enabled": true,
-      "timeout": 10000
-    },
-    "gh_grep": {
-      "type": "remote",
-      "url": "https://mcp.grep.app",
       "enabled": true,
       "timeout": 10000
     },
@@ -55,11 +35,6 @@
       "type": "local",
       "command": ["uvx", "pdf-mcp"],
       "enabled": true
-    },
-    "atlassian": {
-      "type": "remote",
-      "url": "https://mcp.atlassian.com/v2/mcp",
-      "enabled": true
     }
   },
   "lsp": {
@@ -71,7 +46,6 @@
       "extensions": [".py", ".pyi"]
     }
   },
-  "plugin": ["@plannotator/opencode@0.25.1", "@franlol/opencode-md-table-formatter@0.0.6"],
   "permission": {
     "read": "allow",
     "glob": "allow",
@@ -107,28 +81,7 @@
       "halt*": "deny",
       "systemctl poweroff*": "deny",
       "systemctl reboot*": "deny",
-      "git push*": "deny",
-      "git.exe push*": "deny",
-      "git * push*": "deny",
-      "git.exe * push*": "deny",
-      "git *alias.*": "deny",
-      "git.exe *alias.*": "deny",
-      "git-push*": "deny",
-      "git -C * push*": "deny",
-      "git.exe -C * push*": "deny",
-      "git --git-dir* push*": "deny",
-      "git.exe --git-dir* push*": "deny",
-      "git push --force*": "deny",
-      "git reset --hard*": "deny",
-      "git reset *--hard*": "deny",
-      "git * reset *--hard*": "deny",
-      "git.exe reset *--hard*": "deny",
-      "git.exe * reset *--hard*": "deny",
-      "git-reset *--hard*": "deny",
-      "git -C * reset *--hard*": "deny",
-      "git.exe -C * reset *--hard*": "deny",
-      "git --git-dir* reset *--hard*": "deny",
-      "git.exe --git-dir* reset *--hard*": "deny"
+      "git*": "deny"
     },
     "wow-api-lookup": "ask",
     "wow-wiki-fetch": "ask",

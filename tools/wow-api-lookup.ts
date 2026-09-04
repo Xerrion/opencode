@@ -1,7 +1,7 @@
-import { tool } from "@opencode-ai/plugin/tool";
 import { z } from "zod";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 
 /**
@@ -42,7 +42,23 @@ export function defaultDataRoot(
   return join(homedir(), ".local", "share", dirName);
 }
 
-const ANCHOR_ROOT = process.env.WOW_ANNOTATIONS_ROOT ?? defaultDataRoot("wow-annotations");
+function dataRootCandidates(dirName: string, override?: string): string[] {
+  const candidates = [
+    override,
+    process.env.XDG_DATA_HOME ? join(process.env.XDG_DATA_HOME, dirName) : undefined,
+    defaultDataRoot(dirName),
+    process.env.LOCALAPPDATA ? join(process.env.LOCALAPPDATA, dirName) : undefined,
+    join(homedir(), ".local", "share", dirName),
+  ];
+  return [...new Set(candidates.filter((candidate): candidate is string => candidate !== undefined))];
+}
+
+function resolveAnnotationsRoot(): string {
+  const candidates = dataRootCandidates("wow-annotations", process.env.WOW_ANNOTATIONS_ROOT);
+  return candidates.find((root) => existsSync(join(root, "Annotations", "Core"))) ?? candidates[0]!;
+}
+
+const ANCHOR_ROOT = resolveAnnotationsRoot();
 const REL_CORE = "Annotations/Core";
 const BUDGET = 40_000;
 const MAX_QUERY_LEN = 200;
@@ -481,7 +497,7 @@ function renderNoMatch(query: string, plan: Plan, suggestions: string[]): string
   return lines.join("\n");
 }
 
-export default tool({
+export default {
   description:
     "Exact-symbol lookup against the curated WoW LuaLS annotation tree at Annotations/Core/. Accepts qualified (C_Item.GetItemInfo, Frame:SetSize, AceEvent-3.0:RegisterEvent) and bare (Frame, AbandonSkill) symbol names. No fuzzy/keyword mode; no wiki fetch.",
   args: {
@@ -520,4 +536,4 @@ export default tool({
     const suggestions = await gatherSuggestions(q, plan);
     return renderNoMatch(q, plan, suggestions);
   },
-});
+};

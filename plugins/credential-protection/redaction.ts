@@ -6,7 +6,7 @@
  *
  * This module has ZERO dependency on `@opencode-ai/plugin` or any opencode
  * runtime symbol so that it can be unit-tested in isolation and reused.
- * The plugin file (`credential-protection.ts`) imports from here; this
+ * The plugin entrypoint (`index.ts`) imports from here; this
  * module never imports from there (Strict Layer Direction).
  */
 

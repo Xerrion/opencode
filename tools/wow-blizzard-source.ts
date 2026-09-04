@@ -1,4 +1,3 @@
-import { tool } from "@opencode-ai/plugin/tool";
 import { z } from "zod";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -36,7 +35,17 @@ export function defaultDataRoot(
   return join(homedir(), ".local", "share", dirName);
 }
 
-const FRAMEXML_ROOT = process.env.WOW_FRAMEXML_ROOT ?? defaultDataRoot("wow-framexml");
+function dataRootCandidates(dirName: string, override?: string): string[] {
+  const candidates = [
+    override,
+    process.env.XDG_DATA_HOME ? join(process.env.XDG_DATA_HOME, dirName) : undefined,
+    defaultDataRoot(dirName),
+    process.env.LOCALAPPDATA ? join(process.env.LOCALAPPDATA, dirName) : undefined,
+    join(homedir(), ".local", "share", dirName),
+  ];
+  return [...new Set(candidates.filter((candidate): candidate is string => candidate !== undefined))];
+}
+
 const BUDGET = 40_000;
 const MAX_PATTERN_LEN = 500;
 const RG_CONTEXT = 3;
@@ -225,7 +234,7 @@ function renderNoMatch(pattern: string, flavor: ResolvedFlavor, scope: Scope): s
   ].join("\n");
 }
 
-export default tool({
+export default {
   description:
     "Ripgrep over the per-flavor WoW FrameXML annotated source tree (wow-framexml/<flavor>/Annotations/ under the platform data root: ~/.local/share on macOS/Linux, %LOCALAPPDATA% on Windows). Returns matched lines with 3 lines of context, capped at 5 matches per file and 40 KB total. Scope filters by *.lua.annotated.lua, *.xml.annotated.lua, or both.",
   args: {
@@ -246,10 +255,14 @@ export default tool({
     }
 
     const resolved = resolveFlavor(flavor);
-    const absRoot = join(FRAMEXML_ROOT, resolved, "Annotations");
+    const candidates = dataRootCandidates("wow-framexml", process.env.WOW_FRAMEXML_ROOT)
+      .map((root) => join(root, resolved, "Annotations"));
+    const absRoot = candidates.find(existsSync);
 
-    if (!existsSync(absRoot)) {
-      throw new Error(`wow-blizzard-source: flavor '${resolved}' not available at ${absRoot}`);
+    if (!absRoot) {
+      throw new Error(
+        `wow-blizzard-source: flavor '${resolved}' not available; searched ${candidates.join(", ")}`,
+      );
     }
 
     const { lines, exitCode, stderr } = await runRg(p, scope, absRoot);
@@ -313,4 +326,4 @@ export default tool({
       },
     };
   },
-});
+};
