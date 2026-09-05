@@ -1,4 +1,3 @@
-import { tool } from "@opencode-ai/plugin/tool";
 import { z } from "zod";
 
 /**
@@ -617,7 +616,7 @@ function renderArticle(opts: {
   return { output: body, truncated };
 }
 
-export default tool({
+export default {
   description:
     "Fetch a single page from warcraft.wiki.gg by slug or full URL and render it as Markdown. One arg `page` (slug like `API_C_Item.GetItemInfo`, `PLAYER_LOGIN`, `UIOBJECT_Frame`, or a full https://warcraft.wiki.gg/wiki/... URL). Returns `{ output, metadata: { url, redirectedFrom?, categories } }`. No caching, no auto page-type detection, no retail/classic toggle (the wiki has none).",
   args: {
@@ -714,4 +713,4 @@ export default tool({
       },
     };
   },
-});
+};

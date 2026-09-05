@@ -6,7 +6,7 @@ bun.lock
 # macOS
 .DS_Store
 **/.DS_Store
-
+service.json
 # Python
 __pycache__/
 **/__pycache__/

@@ -4,7 +4,7 @@
     "headroom": {
       "type": "local",
       "command": [
-        "/Users/lasn/.local/bin/headroom",
+        "C:\\Users\\lasse\\scoop\\apps\\python\\current\\Scripts\\headroom.EXE",
         "mcp",
         "serve"
       ],

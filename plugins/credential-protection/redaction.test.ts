@@ -7,7 +7,7 @@ import {
   REDACTION_PATTERNS,
   REDACTION_ERROR_SENTINEL,
   type RedactionHit,
-} from "./index";
+} from "./redaction";
 
 // ---------------------------------------------------------------------------
 // Helpers

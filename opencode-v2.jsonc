@@ -1,0 +1,1226 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "servers": {
+      "headroom": {
+        "type": "local",
+        "command": [
+          "/Users/lasn/.local/bin/headroom",
+          "mcp",
+          "serve"
+        ],
+        "disabled": false
+      },
+      "serena": {
+        "type": "local",
+        "command": [
+          "uvx",
+          "--from",
+          "serena-agent",
+          "serena",
+          "start-mcp-server",
+          "--project-from-cwd",
+          "--context",
+          "agent",
+          "--open-web-dashboard",
+          "False"
+        ],
+        "disabled": false
+      },
+      "linear": {
+        "type": "remote",
+        "url": "https://mcp.linear.app/mcp",
+        "oauth": {}
+      },
+      "servicenow": {
+        "type": "local",
+        "command": [
+          "uv",
+          "run",
+          "--directory",
+          "/Users/lasn/Projects/servicenow-platform-mcp",
+          "servicenow-platform-mcp"
+        ],
+        "environment": {
+          "SERVICENOW_INSTANCE_URL": "{env:SERVICENOW_MCP_DEV_INSTANCE_URL}",
+          "SERVICENOW_API_KEY": "{env:SERVICENOW_MCP_DEV_API_KEY}",
+          "MCP_TOOL_PACKAGE": "{env:SERVICENOW_MCP_TOOL_PACKAGE}",
+          "SERVICENOW_ENV": "{env:SERVICENOW_MCP_DEV_ENV}",
+          "SCRIPT_ALLOWED_ROOT": "/Users/lasn/Projects/servicenow-development/"
+        },
+        "disabled": false
+      },
+      "context7": {
+        "type": "remote",
+        "url": "https://mcp.context7.com/mcp",
+        "timeout": {
+          "catalog": 10000,
+          "execution": 10000
+        },
+        "disabled": false
+      },
+      "exa": {
+        "type": "remote",
+        "url": "https://mcp.exa.ai/mcp",
+        "timeout": {
+          "catalog": 10000,
+          "execution": 10000
+        },
+        "disabled": false
+      },
+      "gh_grep": {
+        "type": "remote",
+        "url": "https://mcp.grep.app",
+        "timeout": {
+          "catalog": 10000,
+          "execution": 10000
+        },
+        "disabled": false
+      },
+      "playwright": {
+        "type": "local",
+        "command": [
+          "mise",
+          "exec",
+          "--",
+          "npx",
+          "-y",
+          "@playwright/mcp@latest",
+          "--headless",
+          "--isolated",
+          "--browser=chromium",
+          "--block-service-workers",
+          "--image-responses=omit",
+          "--output-dir=/tmp/playwright-mcp-research"
+        ],
+        "disabled": false
+      },
+      "pdf-reader": {
+        "type": "local",
+        "command": [
+          "uvx",
+          "pdf-mcp"
+        ],
+        "disabled": false
+      },
+      "atlassian": {
+        "type": "remote",
+        "url": "https://mcp.atlassian.com/v2/mcp",
+        "disabled": false
+      }
+    }
+  },
+  "lsp": {
+    "pyright": {
+      "disabled": true
+    },
+    "basedpyright": {
+      "command": [
+        "basedpyright-langserver",
+        "--stdio"
+      ],
+      "extensions": [
+        ".py",
+        ".pyi"
+      ]
+    }
+  },
+  "plugins": [
+    "@plannotator/opencode@0.25.1",
+    "@franlol/opencode-md-table-formatter@0.0.6"
+  ],
+  "permissions": [
+    {
+      "action": "read",
+      "resource": "*",
+      "effect": "allow"
+    },
+    {
+      "action": "glob",
+      "resource": "*",
+      "effect": "allow"
+    },
+    {
+      "action": "edit",
+      "resource": "*",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "*",
+      "effect": "ask"
+    },
+    {
+      "action": "shell",
+      "resource": "rm *",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "sudo *",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "shutdown*",
+      "effect": "deny"
+    },
+    {
+      "action": "shell",
+      "resource": "reboot*",
+      "effect": "deny"
+    },
+    {
+      "action": "wow-api-lookup",
+      "resource": "*",
+      "effect": "deny"
+    },
+    {
+      "action": "wow-wiki-fetch",
+      "resource": "*",
+      "effect": "deny"
+    },
+    {
+      "action": "wow-event-info",
+      "resource": "*",
+      "effect": "deny"
+    },
+    {
+      "action": "wow-blizzard-source",
+      "resource": "*",
+      "effect": "deny"
+    },
+    {
+      "action": "subagent",
+      "resource": "*",
+      "effect": "deny"
+    },
+    {
+      "action": "webfetch",
+      "resource": "*",
+      "effect": "deny"
+    },
+    {
+      "action": "context7_*",
+      "resource": "*",
+      "effect": "deny"
+    },
+    {
+      "action": "exa_*",
+      "resource": "*",
+      "effect": "deny"
+    },
+    {
+      "action": "gh_grep*",
+      "resource": "*",
+      "effect": "deny"
+    },
+    {
+      "action": "servicenow_*",
+      "resource": "*",
+      "effect": "deny"
+    },
+    {
+      "action": "playwright_*",
+      "resource": "*",
+      "effect": "deny"
+    },
+    {
+      "action": "firefly_iii_*",
+      "resource": "*",
+      "effect": "deny"
+    },
+    {
+      "action": "external_directory",
+      "resource": "/Users/lasn/.plannotator/**",
+      "effect": "allow"
+    },
+    {
+      "action": "external_directory",
+      "resource": "/Users/lasn/.local/share/wow-annotations/**",
+      "effect": "allow"
+    },
+    {
+      "action": "external_directory",
+      "resource": "/Users/lasn/Projects/**",
+      "effect": "allow"
+    },
+    {
+      "action": "external_directory",
+      "resource": "/tmp/**",
+      "effect": "allow"
+    },
+    {
+      "action": "external_directory",
+      "resource": "/home/xerrion/.local/share/wow-annotations/**",
+      "effect": "allow"
+    },
+    {
+      "action": "external_directory",
+      "resource": "/home/xerrion/.local/share/wow-framexml/**",
+      "effect": "allow"
+    }
+  ],
+  "agents": {
+    "researcher": {
+      "model": "github-copilot/gpt-5.6-sol",
+      "request": {
+        "body": {
+          "temperature": 0.2
+        }
+      },
+      "mode": "subagent",
+      "permissions": [
+        {
+          "action": "edit",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "edit",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "context7_*",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "exa_*",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "gh_grep*",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "playwright_*",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "webfetch",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "research-philosophy",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "gh repo view*",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "gh pr view*",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "gh pr list*",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "gh issue view*",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "gh issue list*",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "gh release view*",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "gh release list*",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "gh run view*",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "gh run list*",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "gh workflow list*",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "gh search *",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "gh api *",
+          "effect": "ask"
+        },
+        {
+          "action": "shell",
+          "resource": "npm view*",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "npm info*",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "npm show*",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "pip show*",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "pip index*",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "cargo search*",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "cargo info*",
+          "effect": "allow"
+        }
+      ]
+    },
+    "accountant": {
+      "disabled": true,
+      "request": {
+        "body": {
+          "temperature": 0.2
+        }
+      },
+      "model": "github-copilot/gpt-5.6-sol",
+      "mode": "primary",
+      "color": "#2e8b57",
+      "permissions": [
+        {
+          "action": "edit",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "webfetch",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "firefly_iii_*",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "context7_*",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "exa_*",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "gh_grep*",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "pdf_reader_*",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "python3 *",
+          "effect": "ask"
+        },
+        {
+          "action": "skill",
+          "resource": "accounting-philosophy",
+          "effect": "allow"
+        }
+      ]
+    },
+    "scribe": {
+      "model": "github-copilot/gpt-5.6-luna",
+      "request": {
+        "body": {
+          "temperature": 0.3
+        }
+      },
+      "mode": "subagent",
+      "permissions": [
+        {
+          "action": "edit",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "writing-philosophy",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "pptx",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "*",
+          "effect": "deny"
+        }
+      ]
+    },
+    "software-engineer": {
+      "model": "github-copilot/gpt-5.6-sol#high",
+      "request": {
+        "body": {
+          "temperature": 0.3
+        }
+      },
+      "mode": "subagent",
+      "permissions": [
+        {
+          "action": "edit",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "read",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "edit",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "playwright_*",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "vercel_*",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "supabase_*",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "code-philosophy",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "frontend-philosophy",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "architecture-philosophy",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "implementation-philosophy",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "mcp-builder",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "pptx",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "*",
+          "effect": "allow"
+        }
+      ]
+    },
+    "autonomous-engineer": {
+      "model": "github-copilot/gpt-5.6-terra#medium",
+      "request": {
+        "body": {
+          "temperature": 0.3
+        }
+      },
+      "mode": "primary",
+      "permissions": [
+        {
+          "action": "edit",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "read",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "edit",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "subagent",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "playwright_*",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "context7_*",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "exa_*",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "gh_grep*",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "webfetch",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "code-philosophy",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "frontend-philosophy",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "architecture-philosophy",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "implementation-philosophy",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "writing-philosophy",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "research-philosophy",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "code-review",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "review-philosophy",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "mcp-builder",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "pptx",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "rm *",
+          "effect": "deny"
+        },
+        {
+          "action": "shell",
+          "resource": "sudo *",
+          "effect": "deny"
+        },
+        {
+          "action": "shell",
+          "resource": "shutdown*",
+          "effect": "deny"
+        },
+        {
+          "action": "shell",
+          "resource": "reboot*",
+          "effect": "deny"
+        }
+      ]
+    },
+    "red-team": {
+      "model": "github-copilot/gpt-5.6-sol#medium",
+      "request": {
+        "body": {
+          "temperature": 0.2
+        }
+      },
+      "mode": "subagent",
+      "color": "#8B0000",
+      "permissions": [
+        {
+          "action": "edit",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "playwright_*",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "code-philosophy",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "frontend-philosophy",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "architecture-philosophy",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "rm *",
+          "effect": "deny"
+        },
+        {
+          "action": "shell",
+          "resource": "sudo *",
+          "effect": "deny"
+        },
+        {
+          "action": "shell",
+          "resource": "shutdown*",
+          "effect": "deny"
+        },
+        {
+          "action": "shell",
+          "resource": "reboot*",
+          "effect": "deny"
+        }
+      ]
+    },
+    "reviewer": {
+      "model": "github-copilot/gpt-5.6-sol#high",
+      "request": {
+        "body": {
+          "temperature": 0.1
+        }
+      },
+      "mode": "subagent",
+      "permissions": [
+        {
+          "action": "*",
+          "resource": "*",
+          "effect": "allow"
+        }
+      ]
+    },
+    "plan": {
+      "model": "github-copilot/gpt-5.6-terra",
+      "request": {
+        "body": {
+          "temperature": 0.3
+        }
+      },
+      "mode": "primary",
+      "permissions": [
+        {
+          "action": "edit",
+          "resource": "*",
+          "effect": "ask"
+        },
+        {
+          "action": "shell",
+          "resource": "*",
+          "effect": "ask"
+        },
+        {
+          "action": "subagent",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "submit_plan",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "plan-protocol",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "plan-review",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "architecture-philosophy",
+          "effect": "allow"
+        }
+      ]
+    },
+    "build": {
+      "model": "github-copilot/gpt-5.6-sol#medium",
+      "mode": "primary",
+      "permissions": [
+        {
+          "action": "read",
+          "resource": "*",
+          "effect": "ask"
+        },
+        {
+          "action": "read",
+          "resource": ".deliverables/**",
+          "effect": "allow"
+        },
+        {
+          "action": "glob",
+          "resource": "*",
+          "effect": "ask"
+        },
+        {
+          "action": "glob",
+          "resource": ".deliverables/**",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "*",
+          "effect": "ask"
+        },
+        {
+          "action": "subagent",
+          "resource": "*",
+          "effect": "allow"
+        }
+      ]
+    },
+    "explore": {
+      "model": "github-copilot/gpt-5.6-luna#medium",
+      "request": {
+        "body": {
+          "temperature": 0.2
+        }
+      },
+      "mode": "subagent",
+      "permissions": [
+        {
+          "action": "edit",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "playwright_*",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "docker inspect*",
+          "effect": "allow"
+        }
+      ]
+    },
+    "wow-addon": {
+      "model": "github-copilot/gpt-5.6-terra#high",
+      "request": {
+        "body": {
+          "temperature": 0.3
+        }
+      },
+      "mode": "subagent",
+      "color": "#C79C6E",
+      "permissions": [
+        {
+          "action": "edit",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "edit",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "shell",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "webfetch",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "playwright_*",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "wow-*",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "wow-api-lookup",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "wow-wiki-fetch",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "wow-event-info",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "wow-blizzard-source",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "subagent",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "skill",
+          "resource": "wow-addon-design",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "wow-addon-toolkit",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "wow-frame-api",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "wow-event-handling",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "wow-lua-patterns",
+          "effect": "allow"
+        }
+      ]
+    },
+    "jira": {
+      "disabled": true,
+      "request": {
+        "body": {
+          "temperature": 0.2
+        }
+      },
+      "model": "github-copilot/gpt-5.6-luna",
+      "mode": "primary",
+      "color": "#2684ff",
+      "permissions": [
+        {
+          "action": "edit",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "shell",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "webfetch",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "atlassian_*",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "writing-philosophy",
+          "effect": "allow"
+        }
+      ]
+    },
+    "agil-refinement": {
+      "model": "github-copilot/gpt-5.6-terra",
+      "request": {
+        "body": {
+          "temperature": 0.3
+        }
+      },
+      "mode": "primary",
+      "color": "#36B37E",
+      "permissions": [
+        {
+          "action": "edit",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "shell",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "webfetch",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "atlassian_*",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "writing-philosophy",
+          "effect": "allow"
+        }
+      ]
+    },
+    "linear": {
+      "disabled": true,
+      "request": {
+        "body": {
+          "temperature": 0.1
+        }
+      },
+      "model": "github-copilot/gpt-5.6-luna",
+      "mode": "subagent",
+      "permissions": [
+        {
+          "action": "edit",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "shell",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "webfetch",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "linear_*",
+          "resource": "*",
+          "effect": "allow"
+        }
+      ]
+    },
+    "servicenow": {
+      "model": "github-copilot/gpt-5.6-sol",
+      "request": {
+        "body": {
+          "temperature": 0.1
+        }
+      },
+      "mode": "primary",
+      "color": "#0070d2",
+      "permissions": [
+        {
+          "action": "edit",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "shell",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "subagent",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "webfetch",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "servicenow_*",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "exa_*",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "context7_*",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "servicenow-mcp-reference",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "servicenow-scripting",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "servicenow-business-rules",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "servicenow-client-scripts",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "servicenow-gliderecord",
+          "effect": "allow"
+        },
+        {
+          "action": "skill",
+          "resource": "servicenow-encoded-queries",
+          "effect": "allow"
+        }
+      ]
+    },
+    "general": {
+      "disabled": true
+    }
+  },
+  "instructions": [
+    "./AGENTS.md"
+  ],
+  "providers": {
+    "headroom": {
+      "package": "aisdk:@ai-sdk/openai-compatible",
+      "name": "Headroom Proxy",
+      "settings": {
+        "baseURL": "http://127.0.0.1:8787/v1"
+      },
+      "models": {
+        "gpt-4o": {
+          "name": "GPT-4o",
+          "limit": {
+            "context": 128000,
+            "output": 16384
+          }
+        },
+        "gpt-4.1": {
+          "name": "GPT-4.1",
+          "limit": {
+            "context": 1048576,
+            "output": 32768
+          }
+        }
+      }
+    }
+  },
+  "provider": {
+    "headroom": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Headroom Proxy",
+      "options": {
+        "baseURL": "http://127.0.0.1:8787/v1"
+      },
+      "models": {
+        "gpt-4o": {
+          "name": "GPT-4o",
+          "limit": {
+            "context": 128000,
+            "output": 16384
+          }
+        },
+        "gpt-4.1": {
+          "name": "GPT-4.1",
+          "limit": {
+            "context": 1048576,
+            "output": 32768
+          }
+        }
+      }
+    }
+  }
+}
