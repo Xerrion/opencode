@@ -16,24 +16,23 @@
     "playwright": {
       "type": "local",
       "command": [
-        "mise",
-        "exec",
-        "--",
-        "npx",
+        "bunx",
         "-y",
         "@playwright/mcp@latest",
         "--headless",
         "--isolated",
         "--browser=chromium",
         "--block-service-workers",
-        "--image-responses=omit",
-        "--output-dir=/tmp/playwright-mcp-research"
+        "--image-responses=omit"
       ],
       "enabled": true
     },
     "pdf-reader": {
       "type": "local",
-      "command": ["uvx", "pdf-mcp"],
+      "command": [
+        "uvx",
+        "pdf-mcp"
+      ],
       "enabled": true
     }
   },
@@ -42,8 +41,14 @@
       "disabled": true
     },
     "basedpyright": {
-      "command": ["basedpyright-langserver", "--stdio"],
-      "extensions": [".py", ".pyi"]
+      "command": [
+        "basedpyright-langserver",
+        "--stdio"
+      ],
+      "extensions": [
+        ".py",
+        ".pyi"
+      ]
     }
   },
   "permission": {
@@ -110,7 +115,9 @@
       "disable": true
     }
   },
-  "instructions": ["./AGENTS.md"],
+  "instructions": [
+    "./AGENTS.md"
+  ],
   "provider": {
     "headroom": {
       "npm": "@ai-sdk/openai-compatible",
