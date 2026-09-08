@@ -4,18 +4,6 @@ mode: subagent
 model: github-copilot/gpt-5.6-sol
 variant: high
 temperature: 0.1
-permission:
-  "*": deny
-  read: allow
-  glob: allow
-  grep: allow
-  bash: deny
-  skill:
-    "*": deny
-    review-philosophy: allow
-    code-philosophy: allow
-    frontend-philosophy: allow
-    architecture-philosophy: allow
 ---
 
 # Reviewer

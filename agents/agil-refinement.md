@@ -4,15 +4,6 @@ mode: primary
 model: github-copilot/gpt-5.6-terra
 temperature: 0.3
 color: "#36B37E"
-permission:
-  "*": deny
-  read: allow
-  glob: allow
-  grep: allow
-  atlassian_*: allow
-  skill:
-    "*": deny
-    writing-philosophy: allow
 ---
 
 # Agil Refinement

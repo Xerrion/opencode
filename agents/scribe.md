@@ -3,17 +3,6 @@ description: Technical writer for durable documentation - READMEs, guides, API r
 mode: subagent
 model: github-copilot/gpt-5.6-luna
 temperature: 0.3
-permission:
-  "*": deny
-  read: allow
-  glob: allow
-  grep: allow
-  edit: allow
-  write: allow
-  skill:
-    "*": deny
-    writing-philosophy: allow
-    pptx: allow
 ---
 
 # Scribe

@@ -3,21 +3,6 @@ description: Build orchestrator that coordinates implementation through delegati
 mode: primary
 model: github-copilot/gpt-5.6-sol
 variant: medium
-permission:
-  read:
-    "*": deny
-    ".deliverables/**": allow
-  glob:
-    "*": deny
-    ".deliverables/**": allow
-  grep:
-    "*": deny
-    ".deliverables/**": allow
-  edit: deny
-  write: deny
-  bash: deny
-  task:
-    "*": allow
 ---
 
 # Build Orchestrator

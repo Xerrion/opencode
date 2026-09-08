@@ -3,41 +3,6 @@ description: Planning orchestrator that creates implementation plans, coordinate
 mode: primary
 model: github-copilot/gpt-5.6-terra
 temperature: 0.3
-permission:
-  read: allow
-  glob: allow
-  grep: allow
-  edit: deny
-  write: deny
-  bash: deny
-  task:
-    "*": deny
-    explore: allow
-    researcher: allow
-    wow-addon: allow
-  webfetch: deny
-  context7_*: deny
-  exa_*: deny
-  gh_grep*: deny
-  playwright_*: deny
-  pdf-reader_*: deny
-  atlassian_*: deny
-  servicenow_*: deny
-  firefly_iii_*: deny
-  linear_*: deny
-  vercel_*: deny
-  supabase_*: deny
-  wow-api-lookup: deny
-  wow-wiki-fetch: deny
-  wow-event-info: deny
-  wow-blizzard-source: deny
-  serena_*: deny
-  skill:
-    "*": deny
-    plan-protocol: allow
-    plan-review: allow
-    architecture-philosophy: allow
-  submit_plan: allow
 ---
 
 # Plan Agent

@@ -24,7 +24,7 @@ Agents operate as either primary orchestrators or specialized subagents. Primary
 
 There are two enabled entry points for implementation work, and they are alternatives rather than layers. Use `build` when you want the work split across specialists - each delegation lands a verified, self-reviewed commit, and risk decides whether one final `reviewer` loop runs over the completed change set. Use `autonomous-engineer` when you want one agent to own the task end-to-end and delegate only where it helps; it commits per cycle and keeps its mandatory end-of-work review requirement. Use `plan` first when the work needs user sign-off on scope before any of it starts.
 
-File-defined agents own their enablement, runtime settings, and permissions in YAML frontmatter. `opencode.jsonc` retains only inline-only or intentionally disabled inline agents.
+Permission policy lives in `opencode.jsonc` so shared defaults and agent-specific rules can be reviewed in one place. The top-level `permission` map owns shared defaults; `agent.<name>.permission` owns each agent's overrides. File-defined agents keep their enablement and runtime settings in YAML frontmatter, and their role and workflow instructions in Markdown. Do not duplicate permission maps in `agents/*.md`.
 
 | File                  | Mode     | Purpose                                                                                                                                                                                        |
 | --------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -163,12 +163,12 @@ The `build` agent owns these gates and passes pointers forward, so agents do not
 
 ## 🔐 Permission Model
 
-Safety is enforced through shared defaults and agent-local hard boundaries:
+Permission policy is centralized in `opencode.jsonc`, with shared defaults and agent-specific overrides:
 
 - **Read-only**: Operations are allowed globally for most agents.
 - **Restricted**: Shell commands, writes, edits, delegation, and external namespaces require confirmation by default.
-- **Co-located profiles**: Each file-defined agent has an explicit least-privilege profile in its own frontmatter.
-- **Subagent inheritance**: Shared defaults use `ask`, not `deny`, for capabilities that legitimate descendants need. Agent-local `deny` rules enforce hard role boundaries without creating a global delegation ceiling.
+- **Centralized profiles**: Each file-defined agent's permission map lives under `agent.<name>.permission`, using the Markdown filename without `.md` as the agent name.
+- **Overrides and ordering**: Agent-specific rules override shared defaults; a global `deny` is not an immutable restriction. Preserve rule order: the last matching rule wins, so place catch-all patterns before specific exceptions.
 - **Plugin overlay**: Plannotator adds `submit_plan` and its private plan-file edit rules to `plan`; the effective profile is validated after plugins load.
 - **Allowlist**: Filesystem access is restricted to the current workspace and the `external_directory` allowlist.
 
@@ -188,7 +188,7 @@ To adapt this configuration:
 
 - **Review `AGENTS.md`**: Adjust global rules for communication and quality.
 - **Customize Philosophies**: Modify `skills/*-philosophy/` to match your design standards.
-- **Refine Permissions**: Adjust shared defaults in `opencode.jsonc` and role-specific permissions in each `agents/*.md` frontmatter.
+- **Refine Permissions**: Adjust shared defaults at `permission` and role-specific overrides at `agent.<name>.permission` in `opencode.jsonc`. Keep permission maps out of `agents/*.md` frontmatter.
 - **Add Surface**: Extend the configuration with new agents, skills, slash commands, or custom tools.
 
 ## 📋 Example Flow

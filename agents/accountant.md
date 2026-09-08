@@ -5,38 +5,6 @@ mode: primary
 model: github-copilot/gpt-5.6-sol
 temperature: 0.2
 color: "#2e8b57"
-permission:
-  "*": deny
-  read: allow
-  glob: allow
-  grep: allow
-  firefly_iii_*: allow
-  pdf-reader_*: allow
-  context7_*: allow
-  exa_*: allow
-  gh_grep*: allow
-  webfetch: allow
-  bash:
-    "*": deny
-    "cat *": allow
-    "head *": allow
-    "tail *": allow
-    "rg *": allow
-    "grep *": allow
-    "jq *": allow
-    "awk *": allow
-    "sed *": allow
-    "find *": allow
-    "wc *": allow
-    "sort *": allow
-    "uniq *": allow
-    "cut *": allow
-    "diff *": allow
-    "python3 *": ask
-  skill:
-    "*": deny
-    accounting-philosophy: allow
-  submit_plan: allow
 ---
 
 # Accountant

@@ -3,17 +3,6 @@ description: External knowledge gathering with completed-staff-work discipline
 mode: subagent
 model: github-copilot/gpt-5.6-luna
 temperature: 0.2
-permission:
-  "*": deny
-  context7_*: allow
-  exa_*: allow
-  gh_grep*: allow
-  playwright_*: allow
-  webfetch: allow
-  bash: allow
-  skill:
-    "*": deny
-    research-philosophy: allow
 ---
 
 # Researcher

@@ -4,38 +4,6 @@ mode: primary
 model: github-copilot/gpt-5.6-sol
 temperature: 0.1
 color: "#0070d2"
-permission:
-  "*": deny
-  read: allow
-  glob: allow
-  grep: allow
-  edit: allow
-  write: allow
-  bash:
-    "*": allow
-    "rm*": deny
-    "del*": deny
-    "erase*": deny
-    "rmdir*": deny
-    "rd*": deny
-    "remove-item*": deny
-    "sudo*": deny
-    "doas*": deny
-    "su*": deny
-    "shutdown*": deny
-    "reboot*": deny
-    "restart-computer*": deny
-    "stop-computer*": deny
-    "poweroff*": deny
-    "halt*": deny
-    "systemctl poweroff*": deny
-    "systemctl reboot*": deny
-  webfetch: allow
-  servicenow_*: allow
-  exa_*: allow
-  context7_*: allow
-  skill:
-    "*": allow
 ---
 
 # Master ServiceNow Platform Implementor and Expert
