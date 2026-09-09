@@ -15,8 +15,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-SOURCE_ROOT = Path("C:\\Users\\lasse\\.config\\opencode")
-TARGET_ROOT = Path("C:\\Users\\lasse\\.copilot")
+SOURCE_ROOT = Path.home() / ".config" / "opencode"
+TARGET_ROOT = Path.home() / ".copilot"
 
 PROTECTED_TOP_LEVEL_NAMES = {
     "command-history-state.json",
@@ -190,7 +190,7 @@ def convert_global_instruction_file() -> ConvertedFile:
     source_content = read_required_safe_text(source_path)
     header = (
         "# GitHub Copilot CLI Personal Global Instructions\n\n"
-        "Generated from `/Users/lasn/.config/opencode/AGENTS.md` for the "
+        "Generated from `~/.config/opencode/AGENTS.md` for the "
         "GitHub Copilot CLI personal configuration at `~/.copilot`. "
         "Keep opencode as the source of truth and refresh this copy with "
         "`python3 ~/.copilot/scripts/convert_from_opencode.py`.\n\n"
@@ -455,15 +455,15 @@ def build_readme() -> str:
     return normalize_newline(
         "# GitHub Copilot CLI Personal Configuration\n\n"
         "This directory contains live GitHub Copilot CLI runtime/state plus a "
-        "non-destructive opencode-derived copy generated from `/Users/lasn/.config/opencode`. "
-        "The canonical Copilot CLI location is `/Users/lasn/.copilot`; the older "
-        "`/Users/lasn/.config/github-copilot` conversion is retained only as historical reference.\n\n"
+        "non-destructive opencode-derived copy generated from `~/.config/opencode`. "
+        "The canonical Copilot CLI location is `~/.copilot`; the older "
+        "`~/.config/github-copilot` conversion is retained only as historical reference.\n\n"
         "## Generated opencode-derived files\n\n"
         "- `copilot-instructions.md` - personal global Copilot CLI instructions generated from opencode `AGENTS.md`.\n"
         "- `instructions/*.instructions.md` - Copilot instruction files generated from opencode skills and philosophy guidance.\n"
         "- `skills/<skill-name>/SKILL.md` - Copilot custom skills copied from opencode skills, with safe skill-local resources preserved.\n"
         "- `agents/<name>.agent.md` - Copilot custom agents converted from opencode agents with opencode-only frontmatter removed.\n"
-        "- `scripts/convert_from_opencode.py` - symlink to the versioned converter at `/Users/lasn/.config/opencode/scripts/convert_from_opencode.py`.\n\n"
+        "- `scripts/convert_from_opencode.py` - symlink to the versioned converter at `~/.config/opencode/scripts/convert_from_opencode.py`.\n\n"
         "## Pruning\n\n"
         "Each run deletes files under `agents/`, `instructions/`, and `skills/` that the current "
         "conversion no longer produces, so removing an opencode agent or skill also removes its mirror. "
@@ -483,8 +483,8 @@ def build_readme() -> str:
         "- Files with obvious private keys or token/secret literal assignments are refused or skipped.\n\n"
         "## Refresh\n\n"
         "```bash\n"
-        "python3 /Users/lasn/.copilot/scripts/convert_from_opencode.py\n"
-        "python3 /Users/lasn/.copilot/scripts/convert_from_opencode.py --validate --list\n"
+        "python3 ~/.copilot/scripts/convert_from_opencode.py\n"
+        "python3 ~/.copilot/scripts/convert_from_opencode.py --validate --list\n"
         "```\n"
     )
 
