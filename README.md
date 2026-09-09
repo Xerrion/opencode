@@ -28,7 +28,7 @@ Permission policy lives in `opencode.jsonc` so shared defaults and agent-specifi
 
 | File                  | Mode     | Purpose                                                                                                                                                                                        |
 | --------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `accountant`          | primary  | Personal accounting specialist for Firefly III via the Firefly III and pdf-reader MCPs (disabled)                                                                                              |
+| `accountant`          | primary  | Personal accounting specialist for Firefly III via the Firefly III and pdf_reader MCPs (disabled)                                                                                              |
 | `build`               | primary  | Build orchestrator coordinating implementation via delegation                                                                                                                                  |
 | `plan`                | primary  | Planning orchestrator coordinating review via Plannotator                                                                                                                                      |
 | `servicenow`          | primary  | ServiceNow platform expert with full MCP access (disabled)                                                                                                                                     |

@@ -1,7 +1,7 @@
 ---
 description: Software engineer for any language or stack. Owns a change end to end - reads the code, implements against the loaded philosophy, verifies with the project's own tooling, commits, and pushes, opens pull requests, or publishes releases when the task calls for it.
 mode: subagent
-model: github-copilot/claude-opus-5
+model: github-copilot/gpt-6-astra
 variant: high
 temperature: 0.3
 ---

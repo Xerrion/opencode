@@ -4,11 +4,7 @@
     "servers": {
       "headroom": {
         "type": "local",
-        "command": [
-          "/Users/lasn/.local/bin/headroom",
-          "mcp",
-          "serve"
-        ],
+        "command": ["/Users/lasn/.local/bin/headroom", "mcp", "serve"],
         "disabled": false
       },
       "serena": {
@@ -95,12 +91,9 @@
         ],
         "disabled": false
       },
-      "pdf-reader": {
+      "pdf_reader": {
         "type": "local",
-        "command": [
-          "uvx",
-          "pdf-mcp"
-        ],
+        "command": ["uvx", "pdf-mcp"],
         "disabled": false
       },
       "atlassian": {
@@ -115,20 +108,11 @@
       "disabled": true
     },
     "basedpyright": {
-      "command": [
-        "basedpyright-langserver",
-        "--stdio"
-      ],
-      "extensions": [
-        ".py",
-        ".pyi"
-      ]
+      "command": ["basedpyright-langserver", "--stdio"],
+      "extensions": [".py", ".pyi"]
     }
   },
-  "plugins": [
-    "@plannotator/opencode@0.25.1",
-    "@franlol/opencode-md-table-formatter@0.0.6"
-  ],
+  "plugins": ["@plannotator/opencode@0.25.1", "@franlol/opencode-md-table-formatter@0.0.6"],
   "permissions": [
     {
       "action": "read",
@@ -1170,9 +1154,7 @@
       "disabled": true
     }
   },
-  "instructions": [
-    "./AGENTS.md"
-  ],
+  "instructions": ["./AGENTS.md"],
   "providers": {
     "headroom": {
       "package": "aisdk:@ai-sdk/openai-compatible",

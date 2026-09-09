@@ -1,6 +1,25 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
+    "servicenow": {
+      "type": "local",
+      "command": [
+        "uv",
+        "run",
+        "--directory",
+        "/Users/lasn/Projects/servicenow-platform-mcp",
+        "servicenow-platform-mcp"
+      ],
+      "environment": {
+        "SERVICENOW_INSTANCE_URL": "{env:SERVICENOW_MCP_DEV_INSTANCE_URL}",
+        "SERVICENOW_API_KEY": "{env:SERVICENOW_MCP_DEV_API_KEY}",
+        "MCP_TOOL_PACKAGE": "{env:SERVICENOW_MCP_TOOL_PACKAGE}",
+        "SERVICENOW_ENV": "{env:SERVICENOW_MCP_DEV_ENV}",
+        "SENTRY_DSN": "{env:SERVICENOW_SENTRY_DSN}"
+      },
+      "enabled": true,
+      "timeout": 10000
+    },
     "context7": {
       "type": "remote",
       "url": "https://mcp.context7.com/mcp",
@@ -27,7 +46,7 @@
       ],
       "enabled": true
     },
-    "pdf-reader": {
+    "pdf_reader": {
       "type": "local",
       "command": [
         "uvx",
@@ -97,17 +116,16 @@
     "context7_*": "ask",
     "exa_*": "ask",
     "playwright_*": "ask",
-    "pdf-reader_*": "ask",
+    "pdf_reader_*": "ask",
     "serena_*": "ask",
     "headroom_*": "ask",
     "submit_plan": "ask",
     "external_directory": {
-      "C:\\Users\\lasn\\.plannotator\\**": "allow",
-      "C:\\Users\\lasn\\.local\\share\\wow-annotations\\**": "allow",
-      "C:\\Users\\lasn\\Projects\\**": "allow",
-      "C:\\Users\\lasn\\AppData\\Local\\Temp\\**": "allow",
-      "C:\\Users\\xerrion\\.local\\share\\wow-annotations\\**": "allow",
-      "C:\\Users\\xerrion\\.local\\share\\wow-framexml\\**": "allow"
+      "/Users/lasn/.plannotator/**": "allow",
+      "/Users/lasn/.local/share/wow-annotations/**": "allow",
+      "/Users/lasn/Projects/**": "allow",
+      "/tmp/**": "allow",
+      "/Users/lasn/.local/share/wow-framexml/**": "allow"
     }
   },
   "agent": {
@@ -121,7 +139,7 @@
         "glob": "allow",
         "grep": "allow",
         "firefly_iii_*": "allow",
-        "pdf-reader_*": "allow",
+        "pdf_reader_*": "allow",
         "context7_*": "allow",
         "exa_*": "allow",
         "gh_grep*": "allow",
@@ -155,6 +173,7 @@
       "permission": {
         "*": "deny",
         "read": "allow",
+        "edit": "allow",
         "glob": "allow",
         "grep": "allow",
         "atlassian_*": "allow",
@@ -214,7 +233,7 @@
         "exa_*": "deny",
         "gh_grep*": "deny",
         "playwright_*": "deny",
-        "pdf-reader_*": "deny",
+        "pdf_reader_*": "deny",
         "atlassian_*": "deny",
         "servicenow_*": "deny",
         "firefly_iii_*": "deny",
