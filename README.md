@@ -108,12 +108,15 @@ These skills define the discipline an agent applies to its own act of working, o
 
 ## 🔌 MCP Servers
 
+- **`atlassian`**: Official remote MCP at `https://mcp.atlassian.com/v2/mcp`. The `agil-refinement` agent uses its existing `atlassian_*` permission. OAuth 2.1 stays interactive and runtime-managed; no credentials or static Authorization headers are configured.
 - **`sonarqube`**: Local Docker (`mcp/sonarqube`) for static analysis.
 - **`servicenow`**: Local `servicenow-platform-mcp` accessed via `uv`.
 - **`context7`**: Remote library documentation lookup.
 - **`exa`**: Remote web search.
 - **`gh_grep`**: Remote GitHub code search.
 - **`playwright`**: Local headless browser via `@playwright/mcp`.
+
+Quit and restart opencode after configuration changes. Run `opencode mcp auth atlassian` and complete the browser consent flow before using Atlassian tools.
 
 ## 🧩 Plugins
 
