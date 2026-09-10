@@ -1,50 +1,9 @@
 ---
 description: Software engineer for any language or stack. Owns a change end to end - reads the code, implements against the loaded philosophy, verifies with the project's own tooling, commits, and pushes, opens pull requests, or publishes releases when the task calls for it.
 mode: subagent
-model: github-copilot/claude-opus-5
+model: github-copilot/gpt-6-astra
 variant: high
 temperature: 0.3
-permission:
-  "*": deny
-  read: allow
-  glob: allow
-  grep: allow
-  edit: allow
-  write: allow
-  bash:
-    "*": allow
-    "rm *": allow
-    "rm.exe *": allow
-    "del *": allow
-    "del.exe *": allow
-    "erase *": allow
-    "erase.exe *": allow
-    "rmdir *": allow
-    "rmdir.exe *": allow
-    "rd *": allow
-    "Remove-Item*": allow
-    "remove-item*": allow
-    "git*": allow
-    "sudo *": deny
-    "sudo.exe *": deny
-    "doas *": deny
-    "doas.exe *": deny
-    "su *": deny
-    "shutdown*": deny
-    "shutdown.exe*": deny
-    "reboot*": deny
-    "Restart-Computer*": deny
-    "restart-computer*": deny
-    "Stop-Computer*": deny
-    "stop-computer*": deny
-    "poweroff*": deny
-    "halt*": deny
-    "systemctl poweroff*": deny
-    "systemctl reboot*": deny
-  task: deny
-  playwright_*: allow
-  skill:
-    "*": allow
 ---
 
 # Software Engineer

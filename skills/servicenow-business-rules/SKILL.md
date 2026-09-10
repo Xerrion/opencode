@@ -98,7 +98,7 @@ For async Business Rules:
 
 - They run in a separate transaction -- `current` is a snapshot, not live
 - You cannot abort the original transaction from async
-- Access to `previous` works normally
+- `previous` is unavailable in the async script body; evaluate transition requirements in the supported condition context
 - Ideal for: notifications, external API calls, heavy GlideRecord operations, event generation
 - Use `gs.eventQueue()` for even more decoupled processing
 

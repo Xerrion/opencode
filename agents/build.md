@@ -1,23 +1,8 @@
 ---
 description: Build orchestrator that coordinates implementation through delegation
 mode: primary
-model: github-copilot/gpt-5.6-sol
+model: github-copilot/gpt-5.6-terra
 variant: medium
-permission:
-  read:
-    "*": deny
-    ".deliverables/**": allow
-  glob:
-    "*": deny
-    ".deliverables/**": allow
-  grep:
-    "*": deny
-    ".deliverables/**": allow
-  edit: deny
-  write: deny
-  bash: deny
-  task:
-    "*": allow
 ---
 
 # Build Orchestrator
@@ -107,9 +92,9 @@ Decide review once, over the completed change set - not per delegation. The coun
 
 **When review is required:**
 
-1. Delegate once to `reviewer` with the cumulative changed-file list, the diff paths from the engineer reports, the commit range, verification evidence, and the engineer's `Self-Review` sections.
+1. Delegate once to `reviewer` with the cumulative changed-file list, the diff paths from the engineer reports, the commit range, verification evidence, and the engineer's `Self-Review` sections. Retain the returned `task_id` for follow-up review.
 2. `APPROVE` - done. Push and PR follow if requested.
-3. `REQUEST_CHANGES` - re-delegate to `software-engineer` with every BLOCKER verbatim, never paraphrased. Fixes land as new commits. Return to step 1.
+3. `REQUEST_CHANGES` - re-delegate to `software-engineer` with every BLOCKER verbatim, never paraphrased. Fixes land as new commits. Resume the same `reviewer` session by passing its retained `task_id` to the Task tool, with the fix commit range, changed files, verification evidence, and original BLOCKERs verbatim. Do not start a new reviewer sub-agent. Only when the prior session or its `task_id` is unavailable, start a replacement `reviewer` with the same follow-up context and the original review context from step 1; state why resumption was unavailable. Handle the returned verdict under steps 2-5, not by repeating step 1.
 4. `NEEDS_DISCUSSION` - put the concrete decision to the user before continuing.
 5. After three verdicts without approval, stop and escalate to the user.
 

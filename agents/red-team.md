@@ -5,16 +5,6 @@ model: github-copilot/gpt-5.6-sol
 variant: medium
 temperature: 0.2
 color: "#8B0000"
-permission:
-  "*": allow
-  read: allow
-  glob: allow
-  grep: allow
-  edit: allow
-  write: allow
-  bash: allow
-  skill:
-    "*": allow
 ---
 
 # Red Team Agent

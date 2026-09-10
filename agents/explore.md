@@ -4,12 +4,6 @@ mode: subagent
 model: github-copilot/gpt-5.6-luna
 variant: medium
 temperature: 0.2
-permission:
-  "*": deny
-  read: allow
-  glob: allow
-  grep: allow
-  bash: deny
 ---
 
 # Explore
