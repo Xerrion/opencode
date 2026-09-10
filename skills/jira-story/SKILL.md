@@ -10,21 +10,21 @@ A Story describes what a user or stakeholder needs and why. Do not prescribe imp
 ## Template
 
 ```markdown
-# Story
-
-## User Story
 As a <user/persona>
 I want <goal>
 So that <value/outcome>
 
 ## Context
+
 <Why is this needed? What problem are we solving?>
 
 ## Acceptance Criteria
-- [ ] <Observable and testable outcome>
-- [ ] <Observable and testable outcome>
-- [ ] <Observable and testable outcome>
+
+- <Observable and testable outcome>
+- <Observable and testable outcome>
+- <Observable and testable outcome>
 
 ## Notes
+
 <Relevant constraints, links, designs, dependencies, or technical context>
 ```

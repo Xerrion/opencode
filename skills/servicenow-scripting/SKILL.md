@@ -7,7 +7,7 @@ description: ServiceNow server-side scripting standards. Covers JavaScript mode 
 
 ## JavaScript Mode: ES5 or ES2021
 
-Server-side scripts run in one of two engine modes, and the mode decides which syntax is legal. Confirm the mode for the artifact you are editing before you write. When you cannot confirm it, write ES5 -- ES5 runs in both modes, while ES2021 syntax is a hard failure in ES5 mode.
+Use ES5-compatible syntax by default. Confirm the effective application or per-script mode only when using or reviewing modern syntax, when behavior depends on the mode, or when the user requests a mode report. Reuse mode evidence already established for this task. An ES5-compatible wrapper does not need a mode lookup. When modern syntax is needed but the mode cannot be confirmed, use ES5 instead or report the blocker.
 
 ### How ES2021 gets turned on
 
@@ -18,7 +18,7 @@ Server-side scripts run in one of two engine modes, and the mode decides which s
 
 The per-script toggle is **not** stored on the script record. It lives in the `sys_es_latest_script` table, which holds the target table, the target record sys_id, and a boolean. Two consequences:
 
-1. To read or report on the toggle, query `sys_es_latest_script`. Run `describe` on it first -- the value is not a field on the script record.
+1. To read or report on the toggle, use a targeted `sys_es_latest_script` query for the artifact. Inspect its schema only if the field names are not already known. Do not sample an unrelated record or repeat a confirmed lookup.
 2. XML export does not carry the toggle. An exported script lands on the target instance with ES2021 off, so ES2021 syntax in it breaks there. Move such scripts in update sets and verify the toggle after promotion.
 
 The ES2021 engine is also slightly stricter about legacy behaviour that ES5 mode tolerates (for example, `Array.prototype.sort` rejects a comparator that is neither a function nor `undefined`).

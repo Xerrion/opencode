@@ -1,6 +1,60 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
+    "atlassian": {
+      "type": "remote",
+      "url": "https://mcp.atlassian.com/v2/mcp",
+      "enabled": true
+    },
+    "servicenow": {
+      "type": "local",
+      "command": ["uv", "run", "--directory", "/Users/lasn/Projects/servicenow-platform-mcp", "servicenow-platform-mcp"],
+      "environment": {
+        "SERVICENOW_INSTANCE_URL": "{env:SERVICENOW_MCP_DEV_INSTANCE_URL}",
+        "SERVICENOW_API_KEY": "{env:SERVICENOW_MCP_DEV_API_KEY}",
+        "MCP_TOOL_PACKAGE": "{env:SERVICENOW_MCP_TOOL_PACKAGE}",
+        "SERVICENOW_ENV": "{env:SERVICENOW_MCP_DEV_ENV}",
+        "SENTRY_DSN": "{env:SERVICENOW_SENTRY_DSN}"
+      },
+      "enabled": true,
+      "timeout": 10000
+    },
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp",
+      "enabled": true,
+      "timeout": 10000
+    },
+    "exa": {
+      "type": "remote",
+      "url": "https://mcp.exa.ai/mcp",
+      "enabled": true,
+      "timeout": 10000
+    },
+    "playwright": {
+      "type": "local",
+      "command": [
+        "bunx",
+        "-y",
+        "@playwright/mcp@latest",
+        "--headless",
+        "--isolated",
+        "--browser=chromium",
+        "--block-service-workers",
+        "--image-responses=omit"
+      ],
+      "enabled": true
+    },
+    "pdf_reader": {
+      "type": "local",
+      "command": ["uvx", "pdf-mcp"],
+      "enabled": true
+    },
+    "headroom": {
+      "type": "local",
+      "command": ["/Users/lasn/.local/bin/headroom", "mcp", "serve"],
+      "enabled": true
+    },
     "serena": {
       "type": "local",
       "command": [
@@ -16,15 +70,54 @@
         "False"
       ],
       "enabled": true
+    }
+  },
+  "lsp": {
+    "pyright": {
+      "disabled": true
     },
+    "basedpyright": {
+      "command": ["basedpyright-langserver", "--stdio"],
+      "extensions": [".py", ".pyi"]
+    }
+  },
+  "permission": {
+    "external_directory": {
+      "/Users/lasn/.plannotator/**": "allow",
+      "/Users/lasn/.local/share/wow-annotations/**": "allow",
+      "/Users/lasn/Projects/**": "allow",
+      "/tmp/**": "allow",
+      "/Users/lasn/.local/share/wow-framexml/**": "allow"
+    }
+  },
+  "agent": {
+    "general": {
+      "disable": true
+    }
+  },
+  "provider": {
     "headroom": {
-      "type": "local",
-      "command": [
-        "/Users/lasn/.local/bin/headroom",
-        "mcp",
-        "serve"
-      ],
-      "enabled": true
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Headroom Proxy",
+      "options": {
+        "baseURL": "http://127.0.0.1:8787/v1"
+      },
+      "models": {
+        "gpt-4o": {
+          "name": "GPT-4o",
+          "limit": {
+            "context": 128000,
+            "output": 16384
+          }
+        },
+        "gpt-4.1": {
+          "name": "GPT-4.1",
+          "limit": {
+            "context": 1048576,
+            "output": 32768
+          }
+        }
+      }
     }
   }
 }

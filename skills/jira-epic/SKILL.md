@@ -10,34 +10,40 @@ An Epic describes a large outcome, significant deliverable, or capability. Stori
 ## Template
 
 ```markdown
-# Epic
-
 ## Objective
+
 <High-level capability or outcome>
 
 ## Problem
+
 <What larger problem are we solving?>
 
 ## Desired Outcome
+
 <What should be possible when this Epic is complete?>
 
 ## Scope
 
 ### In Scope
+
 - <Capability>
 - <Capability>
 
 ### Out of Scope
+
 - <Explicit exclusion>
 - <Explicit exclusion>
 
-## Success Criteria
+## Acceptance Criteria
+
 - <Measurable outcome>
 - <Measurable outcome>
 
 ## Dependencies
+
 - <Dependency>
 
 ## References
+
 <Designs, decision records, documentation, or related initiatives>
 ```

@@ -10,30 +10,33 @@ A Spike produces knowledge or a decision, not necessarily production code. Spike
 ## Template
 
 ```markdown
-# Spike / Investigation
-
-## Question
 <What are we trying to learn or decide?>
 
 ## Context
+
 <Why do we need this investigation?>
 
 ## Investigation
+
 - <Area or question to investigate>
 - <Area or question to investigate>
 
 ## Expected Output
-- [ ] Findings documented
-- [ ] Options identified
-- [ ] Trade-offs documented
-- [ ] Recommendation provided
+
+- Findings documented
+- Options identified
+- Trade-offs documented
+- Recommendation provided
 
 ## Timebox
+
 <Optional timebox>
 
 ## Findings
+
 <Completed during investigation>
 
 ## Recommendation
+
 <Completed during investigation>
 ```

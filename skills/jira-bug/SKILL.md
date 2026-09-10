@@ -10,31 +10,34 @@ A Bug describes existing behavior that differs from expected behavior. Separate 
 ## Template
 
 ```markdown
-# Bug
-
-## Description
 <Short description of the problem>
 
 ## Environment
+
 - Environment: <Production / Test / Development>
 - Version/build: <Version>
 - Browser/client: <If relevant>
 - OS/device: <If relevant>
 
 ## Steps to Reproduce
+
 1. <Step>
 2. <Step>
 3. <Step>
 
 ## Actual Result
+
 <What happens?>
 
 ## Expected Result
+
 <What should happen?>
 
 ## Impact
+
 <Who or what is affected, and how severely?>
 
 ## Evidence
+
 <Screenshots, logs, request IDs, traces, or links>
 ```

@@ -10,17 +10,19 @@ A Task describes technical work with a concrete deliverable. State why it is nee
 ## Template
 
 ```markdown
-# Task
-
 ## Purpose
+
 <Why is this technical work needed?>
 
 ## Deliverable
+
 <Concrete artifact or technical change to deliver>
 
 ## Done When
-- [ ] <Verifiable completion condition>
+
+- <Verifiable completion condition>
 
 ## Notes
+
 <Only relevant constraints, dependencies, or links>
 ```

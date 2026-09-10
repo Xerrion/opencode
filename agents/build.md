@@ -1,7 +1,7 @@
 ---
 description: Build orchestrator that coordinates implementation through delegation
 mode: primary
-model: github-copilot/gpt-5.6-sol
+model: github-copilot/gpt-5.6-terra
 variant: medium
 ---
 

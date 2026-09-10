@@ -11,17 +11,16 @@ Never copy the parent's context, description, or acceptance criteria, even in No
 
 ## Template
 
-Omit Notes if not needed. If a parent key or link is available, put `Parent: <key or link>` in Notes without copying parent text.
+Omit Notes if not needed.
 
 ```markdown
-# Sub-task
-
-## Work
 <Specific piece of implementation work>
 
 ## Done When
-- [ ] <Completion condition>
+
+- <Completion condition>
 
 ## Notes
+
 <Only if needed>
 ```

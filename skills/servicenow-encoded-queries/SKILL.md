@@ -9,11 +9,11 @@ Encoded queries are ServiceNow's compact filter language. Use them when a condit
 
 ## Build Queries Safely
 
-1. Confirm the target table and use internal field names.
-2. Confirm each field type and its stored value. Choice labels are not query values, and reference equality uses a sys_id.
+1. Use the confirmed target table and internal field names. Reuse schema evidence from the current task; inspect only unknown fields.
+2. Reuse confirmed field types and stored values. Resolve unknown choices or references before writing. Choice labels are not query values, and reference equality uses a sys_id.
 3. Build complex logic in the condition builder when possible, then copy the query from the breadcrumb. This avoids punctuation and grouping mistakes.
 4. Treat the complete encoded query as code, not as a place to interpolate untrusted text. Use `addQuery(field, operator, value)` for user-supplied values.
-5. Test with a bounded read or count before using the query for updates, deletes, notifications, or automation conditions.
+5. For data updates or deletes selected by a query, establish the affected records and required count before confirmation. For a new or changed automation condition, verify the intended predicate before preview. Reuse a previously verified predicate rather than repeating a count. Do not test change operators with an ordinary record-list query; they require transition context.
 6. Inspect `getEncodedQuery()` when debugging the final GlideRecord query.
 
 ```javascript
@@ -188,4 +188,4 @@ Meaning: active is true, priority is 1 or 2, and assignment group is populated.
 - Every `javascript:` expression is trusted and necessary.
 - Dynamic-filter and tag sys_ids belong to the target instance.
 - Date boundaries and inclusive/exclusive comparisons are explicit.
-- The query was tested with a bounded read or count before any consequential action.
+- Query-driven data writes have the required affected-record evidence. Automation predicates are verified in their applicable context before deployment; unchanged predicates reuse existing evidence.
